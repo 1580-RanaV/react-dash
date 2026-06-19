@@ -109,7 +109,7 @@ const MOVEMENTS = [
   { month: "Jun 2026",  newBiz: 1000.73, nbc:  70,  exp: null,  epc: null,  con:  93.67, coc:  20,  churn: 639.40, chc:  44,  react:  376.77, rec:  28, net:   644.43, mrr: 25212.46, chg:  2.62 },
 ];
 
-const PLAN_COLORS = ["#60A5FA", "#A78BFA", "#FB923C", "#2DD4BF", "#FBBF24", "#34D399"];
+const PLAN_COLORS = ["#00AAFF", "#C37EE5", "#FF8066", "#57C3D9", "#FFC44D", "#59B277"];
 
 const PLAN_CHART = [
   { m: "Jul '25", p0:  800, p1:  400, p2:  500, p3:  7500, p4: 100, p5: 200 },
@@ -241,7 +241,7 @@ const PLAN_ROWS: TableRow[] = PLANS.map((p) => ({
     },
     price: p.price,
     interval: (
-      <span className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:text-stone-400">
+      <span className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-600 dark:border-(--border) dark:text-stone-400">
         Monthly
       </span>
     ),
@@ -317,7 +317,7 @@ const SUBS_PLAN_ROWS: TableRow[] = PLANS.map((p) => ({
     },
     price: p.price,
     interval: (
-      <span className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:text-stone-400">
+      <span className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-600 dark:border-(--border) dark:text-stone-400">
         Monthly
       </span>
     ),
@@ -370,7 +370,7 @@ function MrrTab() {
               <XAxis dataKey="month" tick={TICK} {...AXIS} />
               <YAxis tickFormatter={(v) => `$${v / 1000}K`} tick={TICK} {...AXIS} domain={[0, 110000]} />
               <Tooltip content={(p: any) => <ChartTip {...p} />} />
-              <Line type="monotone" dataKey="mrr"  name="Actual MRR" stroke="#3B82F6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="mrr"  name="Actual MRR" stroke="#3F8CB2" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="goal" name="Goal"       stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 4" dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -483,7 +483,7 @@ function SubscribersTab() {
               <XAxis dataKey="month" tick={TICK} {...AXIS} />
               <YAxis tick={TICK} {...AXIS} domain={[0, 6000]} />
               <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => v.toLocaleString()} />} />
-              <Line type="monotone" dataKey="subs" name="Subscribers" stroke="#3B82F6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="subs" name="Subscribers" stroke="#3F8CB2" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="goal" name="Goal"        stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="6 4" dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -620,7 +620,7 @@ export default function SubscriptionView() {
                 <XAxis dataKey="m" tick={TICK} {...AXIS} />
                 <YAxis domain={[80, 120]} tickFormatter={(v) => `${v}%`} tick={TICK} {...AXIS} />
                 <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `${v.toFixed(1)}%`} />} />
-                <Line type="monotone" dataKey="v" name="NRR" stroke="#10B981" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="v" name="NRR" stroke="#59B277" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -661,15 +661,15 @@ export default function SubscriptionView() {
               <AreaChart data={EXPANSION_DATA} margin={{ top: 5, right: 8, left: -10, bottom: 5 }}>
                 <defs>
                   <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#3F8CB2" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#3F8CB2" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="m" tick={TICK} {...AXIS} />
                 <YAxis tickFormatter={(v) => `$${v}`} tick={TICK} {...AXIS} />
                 <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `$${v}`} />} />
-                <Area type="monotone" dataKey="v" name="Revenue" stroke="#3B82F6" strokeWidth={2} fill="url(#expGrad)" />
+                <Area type="monotone" dataKey="v" name="Revenue" stroke="#3F8CB2" strokeWidth={2} fill="url(#expGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </Card>

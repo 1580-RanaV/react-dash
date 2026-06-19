@@ -85,7 +85,7 @@ function Connector({ onAdd }: { onAdd: () => void }) {
       <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
       <button
         onClick={onAdd}
-        className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 transition-colors z-10"
+        className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-stone-300 dark:border-(--border) text-stone-400 dark:text-stone-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 transition-colors z-10"
         style={{ background: "var(--content-bg)" }}
       >
         <Plus size={12} />
@@ -233,7 +233,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
                   }`}
                   style={{ borderColor: active ? undefined : "var(--border)" }}
                 >
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                     {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                   </span>
                   <div>
@@ -265,7 +265,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
                   }`}
                   style={{ borderColor: active ? undefined : "var(--border)" }}
                 >
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                     {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                   </span>
                   <div>
@@ -415,7 +415,7 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
             <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
             <button
               onClick={() => addAfter(nodes.length - 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-stone-600 text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-(--border) text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
               style={{ background: "var(--content-bg)" }}
             >
               <Plus size={14} />
@@ -523,7 +523,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-700"}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
     >
       <span
         className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? "translate-x-4.5" : "translate-x-0.5"}`}
@@ -575,7 +575,7 @@ function JourneySettings() {
           </p>
           <div className="relative">
             <select
-              className="w-full appearance-none rounded-lg border bg-white dark:bg-stone-800 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none transition-colors hover:bg-stone-50 dark:hover:bg-stone-700"
+              className="w-full appearance-none rounded-lg border bg-white dark:bg-(--input) px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none transition-colors hover:bg-stone-50 dark:hover:bg-white/8"
               style={{ borderColor: "var(--border)" }}
               defaultValue="general"
             >
@@ -597,7 +597,7 @@ function JourneySettings() {
                 onClick={() => setExitRule(opt.key)}
                 className="flex items-center gap-3 text-left"
               >
-                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${exitRule === opt.key ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${exitRule === opt.key ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                   {exitRule === opt.key && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                 </span>
                 <span className="text-sm text-stone-700 dark:text-stone-200">{opt.label}</span>
@@ -625,7 +625,7 @@ function JourneySettings() {
               <input
                 type="number"
                 placeholder="e.g. 100"
-                className="w-36 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-colors"
+                className="w-36 rounded-lg border bg-white dark:bg-(--input) px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-colors"
                 style={{ borderColor: "var(--border)" }}
               />
             </div>
@@ -635,12 +635,12 @@ function JourneySettings() {
                 <input
                   type="number"
                   placeholder="e.g. 30"
-                  className="w-28 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-colors"
+                  className="w-28 rounded-lg border bg-white dark:bg-(--input) px-3 py-2 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 transition-colors"
                   style={{ borderColor: "var(--border)" }}
                 />
                 <div className="relative">
                   <select
-                    className="appearance-none rounded-lg border bg-white dark:bg-stone-800 px-3 py-2 pr-8 text-sm text-stone-700 dark:text-stone-200 outline-none transition-colors hover:bg-stone-50 dark:hover:bg-stone-700"
+                    className="appearance-none rounded-lg border bg-white dark:bg-(--input) px-3 py-2 pr-8 text-sm text-stone-700 dark:text-stone-200 outline-none transition-colors hover:bg-stone-50 dark:hover:bg-white/8"
                     style={{ borderColor: "var(--border)" }}
                     defaultValue="hours"
                   >

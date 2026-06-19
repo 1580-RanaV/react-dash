@@ -197,7 +197,7 @@ export default function DateRangePicker() {
         </div>
 
         {/* Granularity — sits right after presets */}
-        <button className="ml-3 flex h-9 items-center gap-1.5 px-3 rounded-lg border border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
+        <button className="ml-3 flex h-9 items-center gap-1.5 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
           Day <ChevronDown size={11} className="text-stone-400" />
         </button>
       </div>
@@ -220,7 +220,7 @@ export default function DateRangePicker() {
               onHover={setHover} onPick={handlePick}
               showPrev onPrev={() => setLeft(addMonths(leftBase, -1))}
             />
-            <div className="w-px bg-stone-100 dark:bg-stone-800 shrink-0" />
+            <div className="w-px bg-stone-100 dark:bg-(--input) shrink-0" />
             <MonthGrid
               base={rightBase}
               start={start} end={end} hover={hover} picking={picking}

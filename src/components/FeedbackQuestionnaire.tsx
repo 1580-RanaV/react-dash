@@ -91,11 +91,11 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
 
   return (
     <div
-      className="mt-2 overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700/60"
+      className="mt-2 overflow-hidden rounded-xl border border-stone-200 dark:border-(--border)"
       style={{ background: "var(--content-bg)" }}
     >
       {/* Progress bar */}
-      <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3 dark:border-stone-700/50">
+      <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3 dark:border-(--border)">
         <span className="shrink-0 text-[11px] font-semibold tabular-nums text-stone-400 dark:text-stone-500">
           {step + 1} / {QUESTIONS.length}
         </span>
@@ -104,7 +104,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-                i <= step ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-700"
+                i <= step ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"
               }`}
             />
           ))}
@@ -137,7 +137,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
                     selected
                       ? "border-blue-500 bg-blue-500"
-                      : "border-stone-300 dark:border-stone-600"
+                      : "border-stone-300 dark:border-(--border)"
                   }`}
                 >
                   {selected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
@@ -163,7 +163,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
           >
             <span
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
-                isCustomActive ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-stone-600"
+                isCustomActive ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-(--border)"
               }`}
             >
               {isCustomActive && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
@@ -185,7 +185,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
       </div>
 
       {/* Footer / action */}
-      <div className="border-t border-stone-100 px-4 py-3 dark:border-stone-700/50">
+      <div className="border-t border-stone-100 px-4 py-3 dark:border-(--border)">
         <button
           type="button"
           onClick={advance}

@@ -115,7 +115,7 @@ function ExperienceDropdown() {
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/3 dark:text-stone-200 dark:hover:bg-white/6"
+        className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/3 dark:text-stone-200 dark:hover:bg-white/6"
         style={{ borderColor: "var(--border)" }}
       >
         <span className="max-w-45 truncate">{selected}</span>

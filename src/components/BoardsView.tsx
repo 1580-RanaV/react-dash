@@ -17,7 +17,7 @@ function TypeBadge({ type }: { type: "retention" | "dashboard" | "insights" | "f
   } as const;
   const { icon, label } = config[type];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-stone-700 dark:bg-white/4 dark:text-stone-300">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-(--border) dark:bg-white/4 dark:text-stone-300">
       {icon}
       {label}
     </span>
@@ -66,7 +66,7 @@ function InlineEditor({
         if (e.key === "Escape") { e.preventDefault(); onCancel(); }
       }}
       onClick={(e) => e.stopPropagation()}
-      className="w-full rounded-md border border-blue-400 bg-white px-2 py-0.5 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/15 dark:bg-stone-800 dark:text-stone-100"
+      className="w-full rounded-md border border-blue-400 bg-white px-2 py-0.5 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/15 dark:bg-(--input) dark:text-stone-100"
     />
   );
 }

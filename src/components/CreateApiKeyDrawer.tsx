@@ -46,7 +46,7 @@ export default function CreateApiKeyDrawer({
         <>
           <button
             onClick={close}
-            className="inline-flex h-9 items-center rounded-lg border border-stone-200 bg-white px-4 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/5 dark:text-stone-200 dark:hover:bg-white/10"
+            className="inline-flex h-9 items-center rounded-lg border border-stone-200 bg-white px-4 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:text-stone-200 dark:hover:bg-white/10"
           >
             Cancel
           </button>
@@ -72,7 +72,7 @@ export default function CreateApiKeyDrawer({
             placeholder="e.g. Production API"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-9 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
+            className="h-9 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
           />
         </div>
 

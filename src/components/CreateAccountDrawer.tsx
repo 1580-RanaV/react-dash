@@ -37,7 +37,7 @@ function Field({
         className={`h-10 w-full rounded-lg border px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500 ${
           error
             ? "border-rose-400 bg-rose-50/50 focus:border-rose-400 dark:border-rose-500/60 dark:bg-rose-500/5"
-            : "border-stone-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.03] dark:focus:border-stone-500"
+            : "border-stone-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.03] dark:focus:border-stone-500"
         }`}
       />
       {hint && !error && (

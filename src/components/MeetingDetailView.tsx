@@ -286,12 +286,12 @@ export default function MeetingDetailView() {
           <BackButton href="/meetings" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
         </div>
-        <div className="flex shrink-0 gap-1 p-1 rounded-xl bg-stone-100 dark:bg-stone-800">
+        <div className="flex shrink-0 gap-1 p-1 rounded-xl bg-stone-100 dark:bg-(--input)">
           <a
             href="https://intempt.com/share/meeting/rd-check-in"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-stone-500 dark:text-stone-400 transition-all duration-100 hover:bg-white dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 hover:shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-stone-500 dark:text-stone-400 transition-all duration-100 hover:bg-white dark:hover:bg-white/8 hover:text-stone-900 dark:hover:text-stone-100 hover:shadow-sm"
           >
             <ExternalLink size={13} />
             View public link
@@ -299,7 +299,7 @@ export default function MeetingDetailView() {
           <button
             type="button"
             onClick={copyLink}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-100 hover:bg-white dark:hover:bg-stone-700 hover:shadow-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-100 hover:bg-white dark:hover:bg-white/8 hover:shadow-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
           >
             {linkCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
             {linkCopied ? "Copied" : "Copy link"}
@@ -372,7 +372,7 @@ export default function MeetingDetailView() {
                   <p className="pt-0.5 text-sm leading-6 text-stone-900 dark:text-stone-100">{item.text}</p>
                   {item.children.length ? (
                     <div className="relative mt-3 space-y-4 pl-10">
-                      <div className="absolute bottom-1 left-4 top-0 w-px bg-slate-200 dark:bg-stone-700" />
+                      <div className="absolute bottom-1 left-4 top-0 w-px bg-slate-200 dark:bg-white/12" />
                       {item.children.map((child) => (
                         <div key={`${child.time}-${child.text}`} className="relative grid grid-cols-[64px_minmax(0,1fr)] gap-3">
                           <TimeBadge time={child.time} />

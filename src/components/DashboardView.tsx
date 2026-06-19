@@ -31,7 +31,7 @@ export function HomeEmpty() {
   return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center space-y-3">
-        <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mx-auto">
+        <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-(--input) flex items-center justify-center mx-auto">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-stone-400">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />

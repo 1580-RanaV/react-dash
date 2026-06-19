@@ -70,7 +70,7 @@ function FormatButtons({ active }: { active: string }) {
 function MiniDropdown({ label, fullWidth = true }: { label: string; fullWidth?: boolean }) {
   return (
     <button
-      className={`flex items-center justify-between rounded-lg border px-2.5 h-9  text-left text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5 mt-1.5 ${fullWidth ? "w-full" : ""}`}
+      className={`flex items-center justify-between rounded-lg border px-2.5 h-9  text-left text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5 mt-1.5 ${fullWidth ? "w-full" : ""}`}
       style={{ borderColor: "var(--border)" }}
     >
       <span>{label}</span>
@@ -294,7 +294,7 @@ export default function BoardDetailView({ id }: { id: string }) {
                           </div>
                         </div>
                         <button
-                          className="flex flex-1 items-center justify-between rounded-lg border px-2.5 h-9  text-left text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5"
+                          className="flex flex-1 items-center justify-between rounded-lg border px-2.5 h-9  text-left text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
                           style={{ borderColor: "var(--border)" }}
                         >
                           <span>days</span>
@@ -332,10 +332,10 @@ export default function BoardDetailView({ id }: { id: string }) {
                   <MiniDropdown label="Select" />
                   <div className="mt-1.5 flex items-center gap-1.5">
                     <div className="flex-1 min-w-0"><MiniDropdown label="is" /></div>
-                    <button className="mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:border-stone-700 dark:hover:bg-white/5" style={{ borderColor: "var(--border)" }}>
+                    <button className="mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:border-(--border) dark:hover:bg-white/5" style={{ borderColor: "var(--border)" }}>
                       <Copy size={12} />
                     </button>
-                    <button className="mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:border-stone-700 dark:hover:bg-red-500/8" style={{ borderColor: "var(--border)" }}>
+                    <button className="mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:border-(--border) dark:hover:bg-red-500/8" style={{ borderColor: "var(--border)" }}>
                       <Trash2 size={12} />
                     </button>
                   </div>

@@ -71,7 +71,7 @@ export default function NotificationsMenu() {
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 dark:border-stone-700/50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 dark:border-(--border)">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">Notifications</span>
               {unreadCount > 0 && (

@@ -134,9 +134,9 @@ function VariantsCard() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-700/70">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-stone-200 dark:border-(--border)">
         {/* URL row */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-200/80 dark:border-stone-700/70">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-200/80 dark:border-(--border)">
           <Info size={14} className="text-stone-400 shrink-0" />
           <span className="flex-1 truncate text-xs text-stone-500 dark:text-stone-400">https://intempt.com</span>
           <button
@@ -148,7 +148,7 @@ function VariantsCard() {
         </div>
 
         {/* Control */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/80 dark:border-stone-700/70">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/80 dark:border-(--border)">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-stone-700 dark:text-stone-300">Control</span>
             <span className="rounded-md bg-stone-100 dark:bg-white/8 px-1.5 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400">original</span>
@@ -163,7 +163,7 @@ function VariantsCard() {
         {variants.map((v, i) => (
           <div
             key={v.id}
-            className={`flex items-center justify-between px-4 py-3 ${i < variants.length - 1 ? "border-b border-stone-200/80 dark:border-stone-700/70" : ""}`}
+            className={`flex items-center justify-between px-4 py-3 ${i < variants.length - 1 ? "border-b border-stone-200/80 dark:border-(--border)" : ""}`}
           >
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xs font-medium text-stone-800 dark:text-stone-100 truncate">{v.name}</span>
@@ -192,7 +192,7 @@ function MetricsCard() {
     <Card className="flex h-full flex-col">
       <CardHeader icon={<BarChart3 size={15} />} title="Metrics" />
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto rounded-xl border border-stone-200 px-4 py-4 dark:border-stone-700/70">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto rounded-xl border border-stone-200 px-4 py-4 dark:border-(--border)">
         {/* Primary */}
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -238,7 +238,7 @@ function ConfigTile({
 }) {
   return (
     <div
-      className="flex items-center gap-4 rounded-2xl border bg-white dark:bg-stone-900 px-5 py-4"
+      className="flex items-center gap-4 rounded-2xl border bg-white dark:bg-(--raised) px-5 py-4"
       style={{ borderColor: "var(--border)" }}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400">
@@ -434,7 +434,7 @@ function ResultsControlBar() {
         </button>
       </div>
 
-      <div className="h-4 w-px bg-stone-200 dark:bg-stone-700 shrink-0" />
+      <div className="h-4 w-px bg-stone-200 dark:bg-white/12 shrink-0" />
 
       {/* Stat badges */}
       <div className="flex items-center gap-1.5 shrink-0">
@@ -469,7 +469,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
   ];
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white animate-fade-up dark:bg-stone-950">
+    <div className="relative flex h-full flex-col overflow-hidden bg-white animate-fade-up dark:bg-(--card)">
       {/* Top bar: breadcrumb left, segmented control pinned right */}
       <div
         className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b"
@@ -565,14 +565,14 @@ export default function ExperienceDetailView({ id }: { id: string }) {
               label="Cumulative users"
               change="-- vs. previous period"
               data={USERS_DATA}
-              variantLabel={{ letter: "A", name: "Control", color: "#3B82F6" }}
+              variantLabel={{ letter: "A", name: "Control", color: "#3F8CB2" }}
             />
             <MetricCard
               value="24,276"
               label="Cumulative impressions"
               change="-- vs. previous period"
               data={IMPRESSIONS_DATA}
-              variantLabel={{ letter: "B", name: "Variant 1", color: "#8B5CF6" }}
+              variantLabel={{ letter: "B", name: "Variant 1", color: "#9580FF" }}
             />
           </div>
 
@@ -648,8 +648,8 @@ export default function ExperienceDetailView({ id }: { id: string }) {
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">Setup</p>
                 <div className="flex items-center gap-8">
                   {[
-                    { letter: "A", name: "Control",   color: "#3B82F6" },
-                    { letter: "B", name: "Variant 1", color: "#8B5CF6" },
+                    { letter: "A", name: "Control",   color: "#3F8CB2" },
+                    { letter: "B", name: "Variant 1", color: "#9580FF" },
                   ].map(({ letter, name, color }) => (
                     <div key={letter} className="flex items-center gap-2">
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: color }}>

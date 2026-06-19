@@ -133,7 +133,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
               const active = matchLogic === opt.key;
               return (
                 <button key={opt.key} onClick={() => setMatch(opt.key)} className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${active ? "border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/8" : "hover:bg-stone-50 dark:hover:bg-white/4"}`} style={{ borderColor: active ? undefined : "var(--border)" }}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                     {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                   </span>
                   <div>
@@ -153,7 +153,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
               const active = entryFreq === opt.key;
               return (
                 <button key={opt.key} onClick={() => setFreq(opt.key)} className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${active ? "border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/8" : "hover:bg-stone-50 dark:hover:bg-white/4"}`} style={{ borderColor: active ? undefined : "var(--border)" }}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                     {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
                   </span>
                   <div>
@@ -282,7 +282,7 @@ export default function JourneyNewCanvas() {
               <TriggerNode onClick={() => setShelfOpen(true)} />
               <div className="h-8 w-px bg-stone-300 dark:bg-stone-600" />
               <button
-                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-stone-600 text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-(--border) text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
                 style={{ background: "var(--content-bg)" }}
               >
                 <Plus size={14} />

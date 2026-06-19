@@ -264,7 +264,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                   {msg.attachments.map((item) => (
                     <span
                       key={`${msg.id}-${item.category}`}
-                      className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-stone-700 dark:bg-white/[0.04] dark:text-stone-300"
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-(--border) dark:bg-white/[0.04] dark:text-stone-300"
                     >
                       <span className="h-3.5 w-3.5 shrink-0 rounded-sm" style={{ background: item.bg }} />
                       <span className="truncate">{item.category}: {item.title}</span>
@@ -288,9 +288,9 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
               {attachments.map((item) => (
                 <span
                   key={item.category}
-                  className="group inline-flex max-w-full items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 dark:border-stone-700 dark:bg-white/[0.04]"
+                  className="group inline-flex max-w-full items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 dark:border-(--border) dark:bg-white/[0.04]"
                 >
-                  <span className="h-7 w-7 shrink-0 rounded-md border border-stone-200 dark:border-stone-700" style={{ background: item.bg }} />
+                  <span className="h-7 w-7 shrink-0 rounded-md border border-stone-200 dark:border-(--border)" style={{ background: item.bg }} />
                   <span className="min-w-0">
                     <span className="block max-w-[170px] truncate text-xs font-semibold text-stone-800 dark:text-stone-100">{item.title}</span>
                     <span className="block max-w-[170px] truncate text-xs font-medium text-stone-500 dark:text-stone-400">{item.category}</span>
@@ -397,7 +397,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                                       className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                                         isActive
                                           ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/25 dark:bg-blue-500/12 dark:text-blue-300"
-                                          : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50 dark:border-stone-700 dark:bg-white/[0.03] dark:text-stone-400 dark:hover:bg-white/6"
+                                          : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50 dark:border-(--border) dark:bg-white/[0.03] dark:text-stone-400 dark:hover:bg-white/6"
                                       }`}
                                     >
                                       {option}
@@ -418,7 +418,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                             <input
                               type="search"
                               placeholder={`Search ${selectedReference.toLowerCase()} by name...`}
-                              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.03] dark:text-stone-100 dark:placeholder:text-stone-500"
+                              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.03] dark:text-stone-100 dark:placeholder:text-stone-500"
                             />
                           </div>
                           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
@@ -432,7 +432,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                                 className="min-w-0 text-left"
                               >
                                 <span
-                                  className="block aspect-square rounded-md border border-stone-200 dark:border-stone-700"
+                                  className="block aspect-square rounded-md border border-stone-200 dark:border-(--border)"
                                   style={{ background: tile.bg }}
                                 />
                                 <span className="mt-1.5 block truncate text-xs font-semibold text-stone-800 dark:text-stone-100">

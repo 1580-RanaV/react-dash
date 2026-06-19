@@ -40,7 +40,7 @@ export default function AssetCreatorView({ type }: { type: string }) {
       <p className="text-sm text-stone-400">Editor coming soon</p>
       <button
         onClick={goBack}
-        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/8"
+        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/8"
         style={{ borderColor: "var(--border)" }}
       >
         ← Back to assets

@@ -60,7 +60,7 @@ export default function ProfileMenu() {
             </div>
           </div>
 
-          <div className="mx-4 border-t border-stone-100 dark:border-stone-700/50" />
+          <div className="mx-4 border-t border-stone-100 dark:border-(--border)" />
 
           {/* Appearance toggle */}
           <div className="px-3 pt-2.5 pb-1">

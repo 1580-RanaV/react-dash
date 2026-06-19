@@ -326,7 +326,7 @@ export default function ConnectionsView() {
             if (e.key === "Escape") { commitConnRef.current = true; setRenamingConnId(null); }
           }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/10 dark:bg-stone-900 dark:text-stone-100"
+          className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/10 dark:bg-(--raised) dark:text-stone-100"
         />
       ) : row.cells.name,
     },
@@ -384,7 +384,7 @@ export default function ConnectionsView() {
             if (e.key === "Escape") { commitRef.current = true; setRenamingId(null); }
           }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/10 dark:bg-stone-900 dark:text-stone-100"
+          className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-sm font-medium text-stone-900 outline-none ring-2 ring-blue-500/10 dark:bg-(--raised) dark:text-stone-100"
         />
       ) : row.cells.name,
     },

@@ -95,11 +95,11 @@ export default function DesignSystemView() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search palettes..."
-            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-8 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
+            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-8 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
           />
         </div>
 
-        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-stone-700 dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
+        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
           <ListFilter size={13} />
           Filter
         </button>

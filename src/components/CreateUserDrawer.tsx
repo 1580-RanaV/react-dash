@@ -19,7 +19,7 @@ function Field({
       </span>
       <input
         placeholder={placeholder}
-        className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100 dark:placeholder:text-stone-500"
+        className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100 dark:placeholder:text-stone-500"
       />
     </label>
   );
@@ -57,7 +57,7 @@ export default function CreateUserDrawer({ onClose }: { onClose: () => void }) {
 
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-stone-700 dark:text-stone-300">Lead stage</span>
-          <select className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100">
+          <select className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100">
             <option>Select a stage</option>
             <option>New</option>
             <option>Qualified</option>

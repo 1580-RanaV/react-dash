@@ -501,10 +501,10 @@ function RevenueView() {
             <YAxis yAxisId="u" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} ticks={[0, 30, 60, 90, 120]} />
             <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} ticks={[0, 1, 2, 3, 4]} />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
-            <Bar yAxisId="u" dataKey="users" fill="#60A5FA" radius={[2, 2, 0, 0]} name="Users" maxBarSize={18}>
+            <Bar yAxisId="u" dataKey="users" fill="#00AAFF" radius={[2, 2, 0, 0]} name="Users" maxBarSize={18}>
               <LabelList dataKey="users" position="top" style={{ fontSize: 9, fill: "#94a3b8" }} />
             </Bar>
-            <Line yAxisId="r" dataKey="revenue" stroke="#22C55E" strokeWidth={1.5} dot={{ fill: "#22C55E", r: 2.5, strokeWidth: 0 }} name="Revenue ($)" />
+            <Line yAxisId="r" dataKey="revenue" stroke="#59B277" strokeWidth={1.5} dot={{ fill: "#59B277", r: 2.5, strokeWidth: 0 }} name="Revenue ($)" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -518,7 +518,7 @@ function RevenueView() {
             bigSub: "total events",
             change: "+0.0%",
             data: DAILY_DATA.map((d) => ({ date: d.date, value: 0 })),
-            color: "#60A5FA",
+            color: "#00AAFF",
             yTicks: [0, 1, 2, 3, 4],
           },
           {
@@ -528,7 +528,7 @@ function RevenueView() {
             bigSub: "total revenue",
             change: "+0.0%",
             data: DAILY_DATA.map((d) => ({ date: d.date, value: 0 })),
-            color: "#22C55E",
+            color: "#59B277",
             yTicks: [0, 1, 2, 3, 4],
           },
         ].map(({ title, sub, big, bigSub, change, data, color, yTicks }) => (
@@ -615,10 +615,10 @@ function EngagementView() {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <EngChart title="Page Views" sub="Total number of page views in the selected period" big="4.06K" bigSub="total page views" change="+239.1%" data={PAGE_VIEWS_DATA} color="#60A5FA" />
-        <EngChart title="Sessions" sub="Total number of user sessions in the selected period" big="2.79K" bigSub="total sessions" change="+250.4%" data={SESSIONS_DATA} color="#A78BFA" />
-        <EngChart title="Active Users" sub="Total number of active users in the selected period" big="1.87K" bigSub="total active users" change="-70.0%" data={ACTIVE_USERS_DATA} color="#34D399" />
-        <EngChart title="User Retention" sub="Average user retention rate in the selected period" big="11.4%" bigSub="average retention rate" change="+406.2%" data={RETENTION_DATA} color="#FBBF24" />
+        <EngChart title="Page Views" sub="Total number of page views in the selected period" big="4.06K" bigSub="total page views" change="+239.1%" data={PAGE_VIEWS_DATA} color="#00AAFF" />
+        <EngChart title="Sessions" sub="Total number of user sessions in the selected period" big="2.79K" bigSub="total sessions" change="+250.4%" data={SESSIONS_DATA} color="#C37EE5" />
+        <EngChart title="Active Users" sub="Total number of active users in the selected period" big="1.87K" bigSub="total active users" change="-70.0%" data={ACTIVE_USERS_DATA} color="#59B277" />
+        <EngChart title="User Retention" sub="Average user retention rate in the selected period" big="11.4%" bigSub="average retention rate" change="+406.2%" data={RETENTION_DATA} color="#FFC44D" />
       </div>
     </div>
   );
@@ -780,7 +780,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
       }}
       onTransitionEnd={() => { if (closing) setClosed(true); }}
     >
-      <div className="mt-6 mb-2 rounded-xl border border-stone-200 dark:border-stone-700/50 overflow-hidden" style={{ background: "var(--content-bg)" }}>
+      <div className="mt-6 mb-2 rounded-xl border border-stone-200 dark:border-(--border) overflow-hidden" style={{ background: "var(--content-bg)" }}>
         {/* Header */}
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-4 mb-2.5">
@@ -789,7 +789,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
               {completedCount} of {total} completed
             </span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-stone-100 dark:bg-stone-700/50 overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-stone-100 dark:bg-(--muted) overflow-hidden">
             <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -813,7 +813,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
                     </svg>
                   </span>
                 ) : (
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-stone-200 dark:border-stone-600">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-stone-200 dark:border-(--border)">
                     <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 leading-none">{i + 1}</span>
                   </span>
                 )}
@@ -828,7 +828,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
                 {!done && !fading && (
                   <button
                     onClick={() => handleAction(step.id)}
-                    className="shrink-0 h-8 px-3.5 rounded-lg border border-stone-200 dark:border-stone-600 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
+                    className="shrink-0 h-8 px-3.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
                   >
                     {step.action}
                   </button>

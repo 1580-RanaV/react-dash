@@ -40,7 +40,7 @@ const PRODUCT_ROWS: TableRow[] = [
     id: "42338",
     href: "/catalog/products/42338",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "PavaShot C5 OC Rounds 5% Capsaicin .68 Cal Projectiles",
       price: "$54.95",
       status: { label: "Active", tone: "green" },
@@ -51,7 +51,7 @@ const PRODUCT_ROWS: TableRow[] = [
   {
     id: "40305",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "Real Avid Smart-Fit Vise Block for Glock Pistols",
       price: "$37.95",
       status: { label: "Active", tone: "green" },
@@ -62,7 +62,7 @@ const PRODUCT_ROWS: TableRow[] = [
   {
     id: "37768",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "Glock 47464 Magazine 9mm 24rd Extended Black Polymer",
       price: "$37.95",
       status: { label: "Active", tone: "green" },
@@ -73,7 +73,7 @@ const PRODUCT_ROWS: TableRow[] = [
   {
     id: "38951",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "Smith & Wesson 25rd Magazine Fits S&W M&P15-22 22LR Black",
       price: "$22.95",
       status: { label: "Active", tone: "green" },
@@ -84,7 +84,7 @@ const PRODUCT_ROWS: TableRow[] = [
   {
     id: "38443",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "Colt Mfg O1911C 1911 Government 45 ACP Stainless National Match Barrel",
       price: "$952.95",
       status: { label: "Active", tone: "green" },
@@ -95,7 +95,7 @@ const PRODUCT_ROWS: TableRow[] = [
   {
     id: "37939",
     cells: {
-      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />,
+      image: <div className="h-9 w-9 rounded-md border border-stone-200 bg-stone-100 dark:border-(--border) dark:bg-(--input)" />,
       title: "Bergara B-14 Ridge Carbon Wilderness Rifle .308 Win",
       price: "$0.40",
       status: { label: "Active", tone: "green" },

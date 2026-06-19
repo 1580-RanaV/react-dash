@@ -154,7 +154,7 @@ function PauseResumeButton({ paused, onToggle }: { paused: boolean; onToggle: ()
     <button
       onClick={onToggle}
       className="inline-flex h-9 items-center gap-2 overflow-hidden rounded-lg px-3.5 text-xs font-semibold text-white transition-colors duration-150"
-      style={{ background: paused ? "#10B981" : "#F59E0B" }}
+      style={{ background: paused ? "#59B277" : "#FFC44D" }}
     >
       <span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
         {/* Pause icon: two bars */}
@@ -250,7 +250,7 @@ function LiveTab({ onRowSelect }: { onRowSelect: (row: LiveRow | null) => void }
         action={
           <div className="flex items-center gap-3">
             <LiveIndicator paused={paused} />
-            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/6">
+            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-200 px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/6">
               Clear
             </button>
             <PauseResumeButton paused={paused} onToggle={() => setPaused((p) => !p)} />

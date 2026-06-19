@@ -225,7 +225,7 @@ function WorkspaceSwitcher() {
             ))}
           </div>
 
-          <div className="mx-2 border-t border-stone-100 dark:border-stone-700/50" />
+          <div className="mx-2 border-t border-stone-100 dark:border-(--border)" />
 
           {/* Projects */}
           <div className="px-2 pt-2 pb-2.5">
@@ -491,7 +491,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
         `}
         style={{
           width: 196,
-          background: "var(--main-bg)",
+          background: "var(--sidebar-background)",
         }}
       >
         {/* Top: workspace switcher */}
@@ -506,7 +506,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
         <div className="relative flex-1 min-h-0">
           <div
             className="pointer-events-none absolute top-0 inset-x-0 z-10 h-12 transition-opacity duration-300"
-            style={{ opacity: topFade ? 1 : 0, background: "linear-gradient(to bottom, var(--main-bg) 0%, transparent 100%)" }}
+            style={{ opacity: topFade ? 1 : 0, background: "linear-gradient(to bottom, var(--sidebar-background) 0%, transparent 100%)" }}
           />
           <nav ref={navRef} className="h-full overflow-y-auto px-2 py-2 space-y-3">
             {navSections.map((section, si) => (
@@ -527,7 +527,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
           </nav>
           <div
             className="pointer-events-none absolute bottom-0 inset-x-0 z-10 h-4 transition-opacity duration-300"
-            style={{ opacity: bottomFade ? 1 : 0, background: "linear-gradient(to top, var(--main-bg) 0%, transparent 100%)" }}
+            style={{ opacity: bottomFade ? 1 : 0, background: "linear-gradient(to top, var(--sidebar-background) 0%, transparent 100%)" }}
           />
         </div>
 
@@ -544,7 +544,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
           <span className="flex-1 text-xs font-medium text-stone-600 dark:text-stone-400 tracking-tight">
             Intempt
           </span>
-          <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-600 flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
+          <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
             <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
           </button>
         </div>

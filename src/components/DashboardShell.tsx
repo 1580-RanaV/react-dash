@@ -24,7 +24,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   }, []);
 
   return (
-    <div className="flex h-full" style={{ background: "var(--main-bg)" }}>
+    <div className="flex h-full" style={{ background: "var(--sidebar-background)" }}>
       {/* Desktop sidebar spacer — keeps content from sliding under the fixed sidebar */}
       <div className="hidden md:block shrink-0" style={{ width: 196 }} />
 

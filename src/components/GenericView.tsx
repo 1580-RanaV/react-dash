@@ -27,7 +27,7 @@ export default function GenericView({
       {/* Empty state */}
       <div className="flex-1 flex items-center justify-center animate-fade-up">
         <div className="text-center space-y-2">
-          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800/60 flex items-center justify-center mx-auto text-stone-400 dark:text-stone-500">
+          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-(--muted) flex items-center justify-center mx-auto text-stone-400 dark:text-stone-500">
             {icon}
           </div>
           <p className="text-sm font-medium text-stone-500 dark:text-stone-400">

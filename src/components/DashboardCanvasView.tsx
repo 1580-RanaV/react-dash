@@ -136,20 +136,20 @@ function ChartCard({ card }: { card: CardDef }) {
           <AreaChart data={card.data} margin={{ top: 8, right: 6, left: -12, bottom: 0 }}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#60A5FA" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#60A5FA" stopOpacity={0.01} />
+                <stop offset="5%"  stopColor="#00AAFF" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="#00AAFF" stopOpacity={0.01} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.7} />
-            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#a8a29e" }} axisLine={false} tickLine={false} dy={4} />
-            <YAxis tick={{ fontSize: 10, fill: "#a8a29e" }} axisLine={false} tickLine={false} width={38} />
-            <Area type="monotone" dataKey="v" stroke="#60A5FA" strokeWidth={2} fill={`url(#${gradId})`} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} dy={4} />
+            <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={38} />
+            <Area type="monotone" dataKey="v" stroke="#00AAFF" strokeWidth={2} fill={`url(#${gradId})`} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
       <div className="flex items-center justify-center gap-1.5 pt-1 pb-2">
-        <span className="h-2 w-2 rounded-none shrink-0" style={{ background: "#60A5FA" }} />
+        <span className="h-2 w-2 rounded-none shrink-0" style={{ background: "#00AAFF" }} />
         <span className="text-xs text-stone-400 dark:text-stone-500">(B/A)*100</span>
       </div>
     </div>
@@ -443,14 +443,14 @@ export default function DashboardCanvasView({ id }: { id: string }) {
           </div>
           <div className="flex items-center gap-2 px-4 py-2.5 shrink-0">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
               style={{ borderColor: "var(--border)" }}
             >
               <Filter size={12} />
               Filter
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
               style={{ borderColor: "var(--border)" }}
             >
               <Repeat size={12} />

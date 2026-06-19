@@ -32,7 +32,7 @@ const BOOKING_TYPES: {
 
 function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex h-6 items-center rounded-md border border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-600 dark:border-stone-700 dark:bg-white/3 dark:text-stone-300">
+    <span className="inline-flex h-6 items-center rounded-md border border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-600 dark:border-(--border) dark:bg-white/3 dark:text-stone-300">
       {label}
     </span>
   );

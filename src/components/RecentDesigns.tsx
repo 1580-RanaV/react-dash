@@ -47,7 +47,7 @@ export default function RecentDesigns() {
               key={item.id}
               onClick={() => navigate("/asset-library")}
               className={`flex items-center gap-3 py-3 text-left hover:bg-stone-50 dark:hover:bg-white/4 transition-colors -mx-2 px-2 rounded-lg ${
-                i < RECENT.length - 1 ? "border-b border-stone-100 dark:border-stone-700/40" : ""
+                i < RECENT.length - 1 ? "border-b border-stone-100 dark:border-(--border)" : ""
               }`}
             >
               {/* Thumb — type icon in a blue-tinted square */}

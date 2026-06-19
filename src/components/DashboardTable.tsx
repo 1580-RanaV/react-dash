@@ -165,7 +165,7 @@ export default function DashboardTable({
             <input
               type="search"
               placeholder={searchPlaceholder}
-              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
+              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </div>
           <div ref={filterRef} className="relative">
@@ -174,7 +174,7 @@ export default function DashboardTable({
               className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-xs font-medium transition-colors
                 ${activeCount > 0
                   ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-stone-700 dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
+                  : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
                 }
                 ${!hasFilter ? "opacity-40 cursor-default" : "cursor-pointer"}`}
             >
@@ -243,7 +243,7 @@ export default function DashboardTable({
                             })}
                             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
                           >
-                            <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${active ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                            <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${active ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
                               {active && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                             </span>
                             {opt.icon && <span className="text-stone-400 dark:text-stone-500">{opt.icon}</span>}
@@ -283,12 +283,12 @@ export default function DashboardTable({
         <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-stone-50 dark:bg-white/[0.035]">
+            <tr style={{ background: "var(--muted)" }}>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`border-b border-r border-stone-200/80 px-4 py-3 text-xs font-semibold text-slate-500 last:border-r-0 dark:border-stone-700/70 dark:text-slate-400 ${column.align === "center" ? "text-center" : ""}`}
-                  style={{ width: column.width }}
+                  className={`border-b border-r px-4 py-3 text-xs font-semibold text-slate-500 last:border-r-0 dark:text-slate-400 ${column.align === "center" ? "text-center" : ""}`}
+                  style={{ width: column.width, borderColor: "var(--border)" }}
                 >
                   <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     {column.label}
@@ -296,7 +296,7 @@ export default function DashboardTable({
                   </span>
                 </th>
               ))}
-              <th className="border-b border-stone-200/80 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-stone-700/70 dark:text-slate-400" style={{ width: 44, minWidth: 44 }}>
+              <th className="border-b px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
                 {actionsLabel ?? ""}
               </th>
             </tr>
@@ -306,7 +306,7 @@ export default function DashboardTable({
               <tr>
                 <td
                   colSpan={columns.length + 1}
-                  className="h-36 border-b border-stone-200/70 px-4 py-8 text-center text-sm font-medium text-slate-500 dark:border-stone-700/60 dark:text-slate-400"
+                  className="h-36 border-b border-(--border) px-4 py-8 text-center text-sm font-medium text-slate-500 dark:text-slate-400"
                 >
                   {emptyState ?? "No items yet."}
                 </td>
@@ -325,7 +325,7 @@ export default function DashboardTable({
                     {columns.map((column, index) => (
                       <td
                         key={column.key}
-                        className={`border-b border-r border-stone-200/70 px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:border-stone-700/60 dark:text-stone-100 ${column.align === "center" ? "text-center" : ""}`}
+                        className={`border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100 ${column.align === "center" ? "text-center" : ""}`}
                       >
                         <div className={`${column.align === "center" ? "flex justify-center" : index === 0 ? "flex items-center gap-2" : ""}`}>
                           {index === 0 && isGroup ? (
@@ -335,7 +335,7 @@ export default function DashboardTable({
                         </div>
                       </td>
                     ))}
-                    <td className="border-b border-stone-200/70 px-3 py-3 dark:border-stone-700/60" style={{ width: 44, minWidth: 44 }}>
+                    <td className="border-b border-(--border) px-3 py-3" style={{ width: 44, minWidth: 44 }}>
                       <div className="flex items-center justify-center">
                         <ThreeDotsMenu items={row.menuItems ?? menuItems} />
                       </div>
@@ -343,18 +343,18 @@ export default function DashboardTable({
                   </tr>
                   {isGroup && isExpanded
                     ? row.children!.map((child) => (
-                        <tr key={child.id} className="bg-stone-50/50 hover:bg-stone-50 dark:bg-white/[0.018] dark:hover:bg-white/[0.035]">
+                        <tr key={child.id} className="bg-stone-50/50 hover:bg-stone-50 dark:bg-(--muted) dark:hover:bg-white/6">
                           {columns.map((column, index) => (
                             <td
                               key={column.key}
-                              className="border-b border-r border-stone-200/70 px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:border-stone-700/60 dark:text-stone-100"
+                              className="border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100"
                             >
                               <div className={index === 0 ? "pl-6" : ""}>
                                 <CellContent value={child.cells[column.key] ?? ""} />
                               </div>
                             </td>
                           ))}
-                          <td className="border-b border-stone-200/70 px-3 py-3 dark:border-stone-700/60" />
+                          <td className="border-b border-(--border) px-3 py-3" />
                         </tr>
                       ))
                     : null}

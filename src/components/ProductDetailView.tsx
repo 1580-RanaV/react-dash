@@ -36,7 +36,7 @@ export default function ProductDetailView() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left 50%: image centered */}
         <div className="relative flex items-center justify-center p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
-          <div className="relative w-full max-w-120 aspect-square overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-700">
+          <div className="relative w-full max-w-120 aspect-square overflow-hidden rounded-2xl border border-stone-200 dark:border-(--border)">
             <img
               src="/pava.png"
               alt="PavaShot C5 OC Rounds 5% Capsaicin .68 Cal Projectiles"
@@ -48,7 +48,7 @@ export default function ProductDetailView() {
               type="button"
               aria-label="Expand product image"
               onClick={() => setIsImageOpen(true)}
-              className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 bg-white/90 text-stone-800 shadow-sm backdrop-blur transition hover:bg-white dark:border-stone-700 dark:bg-stone-950/80 dark:text-stone-100 dark:hover:bg-stone-900"
+              className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 bg-white/90 text-stone-800 shadow-sm backdrop-blur transition hover:bg-white dark:border-(--border) dark:bg-stone-950/80 dark:text-stone-100 dark:hover:bg-stone-900"
             >
               <Maximize2 size={16} />
             </button>

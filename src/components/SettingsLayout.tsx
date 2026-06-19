@@ -70,7 +70,7 @@ function SettingsRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-stone-100 dark:border-stone-700/40 last:border-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-stone-100 dark:border-(--border) last:border-0">
       <div className="flex-1 min-w-0 sm:pr-8">
         <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{label}</p>
         {description && (
@@ -84,7 +84,7 @@ function SettingsRow({
 
 function FakeSelect({ value }: { value: string }) {
   return (
-    <button className="flex h-9 items-center gap-2 px-3 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors">
+    <button className="flex h-9 items-center gap-2 px-3 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) hover:bg-stone-50 dark:hover:bg-white/8 transition-colors">
       <span className="text-sm text-stone-700 dark:text-stone-200">{value}</span>
       <ChevronLeft size={11} className="text-stone-400 -rotate-90" />
     </button>
@@ -99,7 +99,7 @@ function FakeToggle({ on = false }: { on?: boolean }) {
       aria-checked={enabled}
       role="switch"
       className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-        enabled ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-700"
+        enabled ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"
       }`}
     >
       <span
@@ -189,7 +189,7 @@ function WeeklyHours() {
                 className={`w-12 h-9 shrink-0 rounded-lg text-xs font-semibold transition-colors ${
                   active
                     ? "bg-blue-500 text-white"
-                    : "border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5"
+                    : "border border-stone-200 dark:border-(--border) text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5"
                 }`}
               >
                 {day}
@@ -200,14 +200,14 @@ function WeeklyHours() {
                   {slots.map((slot, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       {/* Start time */}
-                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
+                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
                         <span className="flex-1">{fmt24to12(slot.start)}</span>
                         <Clock size={12} className="text-stone-300 shrink-0" />
                         <input type="time" value={slot.start} onChange={(e) => updateSlot(day, idx, "start", e.target.value)} className="sr-only" tabIndex={-1} />
                       </div>
                       <span className="text-xs text-stone-400">to</span>
                       {/* End time */}
-                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
+                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
                         <span className="flex-1">{fmt24to12(slot.end)}</span>
                         <Clock size={12} className="text-stone-300 shrink-0" />
                         <input type="time" value={slot.end} onChange={(e) => updateSlot(day, idx, "end", e.target.value)} className="sr-only" tabIndex={-1} />
@@ -226,7 +226,7 @@ function WeeklyHours() {
                       )}
                       {/* Copy to all — only on first active day, first slot */}
                       {day === firstActiveDay && idx === 0 && (
-                        <button onClick={() => copyToAll(day)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-stone-600 text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                        <button onClick={() => copyToAll(day)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
                           <Copy size={12} />
                           Copy to all
                         </button>
@@ -270,7 +270,7 @@ function OOOSection() {
   }
 
   return (
-    <div className="border-t border-stone-100 dark:border-stone-700/40 pt-6 mt-6">
+    <div className="border-t border-stone-100 dark:border-(--border) pt-6 mt-6">
       <div className="flex items-start justify-between gap-4 py-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Out of office</p>
@@ -289,7 +289,7 @@ function OOOSection() {
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-stone-100 dark:border-stone-700/50 bg-stone-50 dark:bg-stone-800/50 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-4 py-3"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
@@ -324,12 +324,12 @@ function OOOSection() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Start Date</label>
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                    className="h-9 w-44 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 transition" />
+                    className="h-9 w-44 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 transition" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-stone-500 dark:text-stone-400">End Date</label>
                   <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                    className="h-9 w-44 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 transition" />
+                    className="h-9 w-44 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 transition" />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -338,7 +338,7 @@ function OOOSection() {
                   <input type="text" value={reason} onChange={(e) => setReason(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addEntry()}
                     placeholder="e.g. On vacation"
-                    className="h-9 flex-1 max-w-xs rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition" />
+                    className="h-9 flex-1 max-w-xs rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition" />
                   <button onClick={addEntry} className="h-9 px-4 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
                     Add OOO
                   </button>
@@ -361,7 +361,7 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
   }
 
   return (
-    <div className="flex items-center justify-between py-4 border-b border-stone-100 dark:border-stone-700/40 last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-stone-100 dark:border-(--border) last:border-0">
       <div className="flex items-center gap-2.5">
         <img src={logo} alt={name} width={20} height={20} className="rounded shrink-0 object-contain" />
         <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{name}</span>
@@ -369,7 +369,7 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
       {state === "connected" ? (
         <button
           onClick={() => setState("idle")}
-          className="h-9 px-3 rounded-md border border-stone-200 dark:border-stone-600 text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+          className="h-9 px-3 rounded-md border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
         >
           Disconnect
         </button>
@@ -418,11 +418,11 @@ const CATEGORIES: {
 }[] = [
   { key: "meeting",   label: "Meeting update",  badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",    desc: "Calendar invites, RSVPs, reschedules",   sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
   { key: "marketing", label: "Marketing",        badge: "bg-stone-800 text-white border border-stone-700 dark:bg-stone-200 dark:text-stone-900 dark:border-stone-300",         desc: "Newsletters, promos, cold outreach",     sub: "Emails moved to Marketing folder",      defaultAction: "folder" },
-  { key: "respond",   label: "To respond",       badge: "bg-stone-100 text-stone-400 border border-stone-200 dark:bg-stone-700 dark:text-stone-500 dark:border-stone-600",    desc: "Emails needing your reply",              sub: "AI will skip this type",                defaultAction: "skip",  muted: true },
-  { key: "fyi",       label: "FYI",              badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-stone-700/50 dark:text-stone-400 dark:border-stone-600",  desc: "Info only, no action needed",            sub: "Labeled, stays in inbox",               defaultAction: "label"  },
+  { key: "respond",   label: "To respond",       badge: "bg-stone-100 text-stone-400 border border-stone-200 dark:bg-white/12 dark:text-stone-500 dark:border-(--border)",    desc: "Emails needing your reply",              sub: "AI will skip this type",                defaultAction: "skip",  muted: true },
+  { key: "fyi",       label: "FYI",              badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-(--muted) dark:text-stone-400 dark:border-(--border)",  desc: "Info only, no action needed",            sub: "Labeled, stays in inbox",               defaultAction: "label"  },
   { key: "comment",   label: "Comment",          badge: "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20", desc: "Feedback and discussion threads",     sub: "Labeled, stays in inbox",               defaultAction: "label"  },
   { key: "notif",     label: "Notification",     badge: "bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",     desc: "App alerts, system updates",             sub: "Emails moved to Notification folder",   defaultAction: "folder" },
-  { key: "awaiting",  label: "Awaiting reply",   badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-stone-700/50 dark:text-stone-400 dark:border-stone-600",  desc: "Sent by you, waiting on them",          sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
+  { key: "awaiting",  label: "Awaiting reply",   badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-(--muted) dark:text-stone-400 dark:border-(--border)",  desc: "Sent by you, waiting on them",          sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
   { key: "actioned",  label: "Actioned",         badge: "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20", desc: "Already handled",              sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
 ];
 
@@ -450,7 +450,7 @@ function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
   const isMarketing = cat.key === "marketing";
 
   return (
-    <div className={`py-4 border-b border-stone-100 dark:border-stone-700/40 last:border-0 ${cat.muted && action === "skip" ? "opacity-50" : ""}`}>
+    <div className={`py-4 border-b border-stone-100 dark:border-(--border) last:border-0 ${cat.muted && action === "skip" ? "opacity-50" : ""}`}>
       {/* Main row */}
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
@@ -466,7 +466,7 @@ function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
           <select
             value={action}
             onChange={(e) => setAction(e.target.value as EmailAction)}
-            className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+            className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-600 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
           >
             {(Object.entries(ACTION_LABELS) as [EmailAction, string][]).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
@@ -484,7 +484,7 @@ function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
             <select
               value={marketingStrength}
               onChange={(e) => setMarketingStrength(e.target.value)}
-              className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+              className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-600 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
             >
               {Object.entries(MARKETING_STRENGTH_LABELS).map(([val, label]) => (
                 <option key={val} value={val}>{label}</option>
@@ -507,7 +507,7 @@ function InboxSection() {
       <SectionHeader title="Inbox" sub="Let AI organize your emails as they arrive, so your inbox stays focused." />
 
       {/* Master toggle */}
-      <div className="flex items-center justify-between py-4 border-b border-stone-100 dark:border-stone-700/40">
+      <div className="flex items-center justify-between py-4 border-b border-stone-100 dark:border-(--border)">
         <div>
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Enable inbox intelligence</p>
           <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Auto-organize new emails as they arrive</p>
@@ -552,11 +552,11 @@ function BasicInfoSection() {
     <div>
       <SectionHeader title="Basic info" sub="Configure your project name, timezone, and access settings." />
       <SettingsRow label="Project name" description="The display name for this project">
-        <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Linea" />
+        <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Linea" />
       </SettingsRow>
       <SettingsRow label="Timezone" description="Used for scheduling, reminders, and reports">
         <div className="relative">
-          <select className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-52">
+          <select className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-52">
             <option>Europe / Kyiv</option>
             <option>UTC</option>
             <option>America / New_York</option>
@@ -567,14 +567,14 @@ function BasicInfoSection() {
         </div>
       </SettingsRow>
       <SettingsRow label="Company email domain" description="Members with this domain can join automatically">
-        <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" placeholder="e.g. intempt.com" defaultValue="intempt.com" />
+        <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" placeholder="e.g. intempt.com" defaultValue="intempt.com" />
       </SettingsRow>
       <SettingsRow label="Automatic project access" description="Anyone from these domains can automatically join">
         <div className="relative">
           <select
             value={accessLevel}
             onChange={(e) => setAccessLevel(e.target.value)}
-            className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-44"
+            className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-44"
           >
             {ACCESS_LEVELS.map((l) => <option key={l}>{l}</option>)}
           </select>
@@ -594,8 +594,8 @@ function RadioGroup({ options, value, onChange }: { options: { value: string; la
             onClick={() => onChange(opt.value)}
             className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
               value === opt.value
-                ? "border-blue-500 bg-white dark:bg-stone-900"
-                : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900"
+                ? "border-blue-500 bg-white dark:bg-(--raised)"
+                : "border-stone-300 dark:border-(--border) bg-white dark:bg-(--raised)"
             }`}
           >
             {value === opt.value && <span className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -621,7 +621,7 @@ function SubSection({ title, description, children }: { title: string; descripti
 function MsgSelect({ value, options }: { value: string; options: string[] }) {
   return (
     <div className="relative mt-1.5">
-      <select defaultValue={value} className="w-full h-10 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer">
+      <select defaultValue={value} className="w-full h-10 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer">
         {options.map((o) => <option key={o}>{o}</option>)}
       </select>
       <ChevronLeft size={12} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
@@ -701,7 +701,7 @@ function MessagesSection() {
         <div>
           <SettingsRow label="User Creation Mode" description="New users will be created automatically when processing emails">
             <div className="relative">
-              <select className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-56">
+              <select className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-56">
                 <option>Create users automatically</option>
                 <option>Create users manually</option>
                 <option>Never create users</option>
@@ -711,7 +711,7 @@ function MessagesSection() {
           </SettingsRow>
           <SettingsRow label="Account Creation Mode" description="New accounts will be created automatically for new domains">
             <div className="relative">
-              <select className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-56">
+              <select className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-56">
                 <option>Create accounts automatically</option>
                 <option>Create accounts manually</option>
                 <option>Never create accounts</option>
@@ -768,7 +768,7 @@ function BookingPreferences() {
   const bufferOptions = ["No buffer", "5 minutes", "10 minutes", "15 minutes", "30 minutes", "1 hour"];
 
   return (
-    <div className="border-t border-stone-100 dark:border-stone-700/40 pt-6 mt-6">
+    <div className="border-t border-stone-100 dark:border-(--border) pt-6 mt-6">
       <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Booking Preferences</p>
       <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 mb-6">Personal buffer times and booking limits</p>
 
@@ -783,13 +783,13 @@ function BookingPreferences() {
               min={0}
               value={noticeValue}
               onChange={(e) => setNoticeValue(e.target.value)}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
             />
             <div className="relative">
               <select
                 value={noticeUnit}
                 onChange={(e) => setNoticeUnit(e.target.value)}
-                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
               >
                 {["Minutes", "Hours", "Days"].map((u) => <option key={u}>{u}</option>)}
               </select>
@@ -809,7 +809,7 @@ function BookingPreferences() {
                 <select
                   value={bufferBefore}
                   onChange={(e) => setBufferBefore(e.target.value)}
-                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
+                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
                 >
                   {bufferOptions.map((o) => <option key={o}>{o}</option>)}
                 </select>
@@ -822,7 +822,7 @@ function BookingPreferences() {
                 <select
                   value={bufferAfter}
                   onChange={(e) => setBufferAfter(e.target.value)}
-                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
+                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
                 >
                   {bufferOptions.map((o) => <option key={o}>{o}</option>)}
                 </select>
@@ -842,7 +842,7 @@ function BookingPreferences() {
               min={1}
               value={maxMeetings}
               onChange={(e) => setMaxMeetings(e.target.value)}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
             />
             <span className="text-sm text-stone-400 dark:text-stone-500">meetings</span>
           </div>
@@ -873,7 +873,7 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
     <div className="absolute inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-100 dark:border-stone-700/50 p-6 animate-fade-up"
+        className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-(--raised) shadow-2xl border border-stone-100 dark:border-(--border) p-6 animate-fade-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -888,7 +888,7 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
         </div>
 
         {/* OTP step */}
-        <div className="rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-700/50 px-4 py-4 mb-5">
+        <div className="rounded-xl bg-stone-50 dark:bg-(--muted) border border-stone-100 dark:border-(--border) px-4 py-4 mb-5">
           <p className="text-xs font-medium text-stone-700 dark:text-stone-300 mb-1">Verify your identity</p>
           <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">
             {sent ? "A 6-digit code was sent to rana@intempt.com" : "We'll send a one-time code to the registered owner email."}
@@ -900,13 +900,13 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               placeholder="Enter 6-digit code"
-              className="w-full h-9 rounded-lg border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-rose-400 tracking-widest placeholder:tracking-normal"
+              className="w-full h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-rose-400 tracking-widest placeholder:tracking-normal"
             />
           ) : (
             <button
               onClick={handleSendOtp}
               disabled={sending}
-              className="h-9 px-4 rounded-lg border border-stone-200 dark:border-stone-600 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-50"
+              className="h-9 px-4 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors disabled:opacity-50"
             >
               {sending ? "Sending…" : "Send OTP to rana@intempt.com"}
             </button>
@@ -917,7 +917,7 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={onClose}
-            className="h-9 px-4 rounded-lg text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+            className="h-9 px-4 rounded-lg text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors"
           >
             Cancel
           </button>
@@ -937,7 +937,7 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
 function DeleteRow({ target, label, desc }: { target: DeleteTarget; label: string; desc: string }) {
   const onDelete = useContext(DangerContext);
   return (
-    <div className="mt-8 pt-6 border-t border-stone-100 dark:border-stone-700/40 flex items-center justify-between gap-6">
+    <div className="mt-8 pt-6 border-t border-stone-100 dark:border-(--border) flex items-center justify-between gap-6">
       <div className="min-w-0">
         <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{label}</p>
         <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{desc}</p>
@@ -1062,7 +1062,7 @@ export const contentMap: Record<string, React.ReactNode> = {
   about: (
     <div>
       <SectionHeader title="Profile" sub="Manage your profile information, display name, and personal handle." />
-      <div className="flex items-center gap-5 mb-8 pb-6 border-b border-stone-100 dark:border-stone-700/40">
+      <div className="flex items-center gap-5 mb-8 pb-6 border-b border-stone-100 dark:border-(--border)">
         <button className="group relative w-20 h-20 rounded-full overflow-hidden shrink-0">
           <img src="/dp.png" alt="Profile" className="w-full h-full object-cover" />
           <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1079,17 +1079,17 @@ export const contentMap: Record<string, React.ReactNode> = {
       </div>
       <div>
         <SettingsRow label="Full name" description="Your display name across the workspace">
-          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Rana V" />
+          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Rana V" />
         </SettingsRow>
         <SettingsRow label="Email address" description="Used for login and notifications">
-          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-400 w-48 outline-none" defaultValue="rana@intempt.com" disabled />
+          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-400 w-48 outline-none" defaultValue="rana@intempt.com" disabled />
         </SettingsRow>
         <SettingsRow label="Display name" description="Short name shown in conversations">
-          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="rana" />
+          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="rana" />
         </SettingsRow>
         <SettingsRow label="Username" description="Used for your booking link, creator handle, and shared URLs.">
-          <div className="flex h-9 items-center overflow-hidden rounded-md border border-stone-200 dark:border-stone-600 bg-white dark:bg-stone-800 w-64 focus-within:border-blue-400">
-            <span className="shrink-0 border-r border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700/50 px-3 text-sm text-stone-400 dark:text-stone-500 h-full flex items-center">intempt.com/</span>
+          <div className="flex h-9 items-center overflow-hidden rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) w-64 focus-within:border-blue-400">
+            <span className="shrink-0 border-r border-stone-200 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-3 text-sm text-stone-400 dark:text-stone-500 h-full flex items-center">intempt.com/</span>
             <input className="flex-1 px-3 text-sm font-semibold text-stone-700 dark:text-stone-200 outline-none bg-transparent h-full" defaultValue="person-17429" />
           </div>
         </SettingsRow>
@@ -1110,9 +1110,9 @@ export const contentMap: Record<string, React.ReactNode> = {
   domains: (
     <div>
       <SectionHeader title="Domains" sub="Verified domains allow members to join your organization automatically." />
-      <div className="rounded-xl border border-stone-100 dark:border-stone-700/50 overflow-hidden mb-4">
+      <div className="rounded-xl border border-stone-100 dark:border-(--border) overflow-hidden mb-4">
         {["intempt.com", "intempt.io"].map((domain, i) => (
-          <div key={domain} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-stone-100 dark:border-stone-700/40" : ""}`}>
+          <div key={domain} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-stone-100 dark:border-(--border)" : ""}`}>
             <div className="flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
               <span className="text-sm text-stone-700 dark:text-stone-300">{domain}</span>
@@ -1140,7 +1140,7 @@ export const contentMap: Record<string, React.ReactNode> = {
         { name: "Roman", email: "roman@intempt.com", role: "Member", color: "#10b981" },
         { name: "Markiian", email: "markiian@intempt.com", role: "Member", color: "#8b5cf6" },
       ].map((p) => (
-        <div key={p.email} className="flex items-center gap-3 py-2.5 border-b border-stone-100 dark:border-stone-700/40 last:border-0">
+        <div key={p.email} className="flex items-center gap-3 py-2.5 border-b border-stone-100 dark:border-(--border) last:border-0">
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0" style={{ background: p.color }}>
             {p.name[0]}
           </div>
@@ -1231,7 +1231,7 @@ export default function SettingsLayout({ onBack, children }: { onBack: () => voi
         <div className="flex items-center gap-2 px-4 py-3.5 shrink-0">
           <img src="/logo.png" alt="Intempt" width={18} height={18} className="rounded-md opacity-60" style={{ objectFit: "contain" }} />
           <span className="flex-1 text-xs font-medium text-stone-400 dark:text-stone-600 tracking-tight">Intempt</span>
-          <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-600 flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
+          <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
             <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
           </button>
         </div>

@@ -123,7 +123,7 @@ export default function RetentionTab() {
 
 function ControlPill({ label }: { label: string }) {
   return (
-    <button className="inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5" style={{ borderColor: "var(--border)" }}>
+    <button className="inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5" style={{ borderColor: "var(--border)" }}>
       {label}
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-stone-400">
         <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />

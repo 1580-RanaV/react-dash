@@ -31,7 +31,7 @@ function TextInput({
         className={`h-10 w-full rounded-lg border px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500 ${
           error
             ? "border-rose-400 bg-rose-50/50 dark:border-rose-500/60 dark:bg-rose-500/5"
-            : "border-stone-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/3 dark:focus:border-stone-500"
+            : "border-stone-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:focus:border-stone-500"
         }`}
       />
       {error && <p className="mt-1 text-xs font-medium text-rose-500">{error}</p>}
@@ -51,7 +51,7 @@ function SelectInput({
         className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border px-3 text-sm font-medium text-left outline-none transition-colors ${
           error
             ? "border-rose-400 bg-rose-50/50 dark:border-rose-500/60 dark:bg-rose-500/5"
-            : "border-stone-200 bg-white hover:bg-stone-50 dark:border-stone-700 dark:bg-white/3 dark:hover:bg-white/6"
+            : "border-stone-200 bg-white hover:bg-stone-50 dark:border-(--border) dark:bg-white/3 dark:hover:bg-white/6"
         } ${value ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-stone-500"}`}
       >
         <span>{value || placeholder || "Select..."}</span>
@@ -194,7 +194,7 @@ export default function CreateDealDrawer({ onClose }: { onClose: () => void }) {
             type="date"
             value={closeDate}
             onChange={(e) => setCloseDate(e.target.value)}
-            className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100"
+            className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:text-stone-100"
           />
         </div>
       </div>

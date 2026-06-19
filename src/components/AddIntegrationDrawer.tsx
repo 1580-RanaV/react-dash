@@ -136,7 +136,7 @@ function IntegrationCard({ item }: { item: Integration }) {
 
       {tooltipPos && typeof window !== "undefined" && createPortal(
         <div
-          className="pointer-events-none fixed z-9999 w-44 rounded-xl bg-stone-900 px-3 py-2.5 text-left text-xs leading-relaxed text-white shadow-lg dark:bg-stone-800"
+          className="pointer-events-none fixed z-9999 w-44 rounded-xl bg-stone-900 px-3 py-2.5 text-left text-xs leading-relaxed text-white shadow-lg dark:bg-(--input)"
           style={{ left: tooltipPos.x, top: tooltipPos.y, transform: "translate(-50%, -100%)" }}
         >
           {item.description}

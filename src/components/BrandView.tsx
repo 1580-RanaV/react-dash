@@ -81,7 +81,7 @@ function ThemeSelect() {
       <button
         ref={triggerRef}
         onClick={openDropdown}
-        className="h-10 w-full flex items-center gap-2.5 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100"
+        className="h-10 w-full flex items-center gap-2.5 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors hover:border-stone-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100"
       >
         <ColorRect colors={selected.colors} className="h-5 w-10 shrink-0" />
         <span className="flex-1 text-left">{selected.name}</span>
@@ -234,7 +234,7 @@ function EditableField({
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className={`h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100 ${select ? "pr-9" : ""}`}
+          className={`h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100 ${select ? "pr-9" : ""}`}
         />
         {select ? (
           <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -267,7 +267,7 @@ function EditableTextArea({
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`w-full resize-none rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm leading-6 text-stone-800 outline-none transition-[height,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-200 ${height}`}
+        className={`w-full resize-none rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm leading-6 text-stone-800 outline-none transition-[height,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-200 ${height}`}
       />
     </label>
   );
@@ -323,9 +323,9 @@ function LogoEditor() {
   return (
     <div className="flex items-center justify-center">
       <div className="text-center">
-        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-stone-200 bg-stone-100 text-xl font-bold tracking-tight text-stone-400 shadow-sm dark:border-stone-700 dark:bg-stone-800/60">
+        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-stone-200 bg-stone-100 text-xl font-bold tracking-tight text-stone-400 shadow-sm dark:border-(--border) dark:bg-(--muted)">
           F
-          <button className="absolute bottom-1 right-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-stone-700 shadow-sm ring-1 ring-stone-200 transition-colors hover:bg-stone-50 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-700 dark:hover:bg-stone-800">
+          <button className="absolute bottom-1 right-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-stone-700 shadow-sm ring-1 ring-stone-200 transition-colors hover:bg-stone-50 dark:bg-(--raised) dark:text-stone-200 dark:ring-stone-700 dark:hover:bg-white/6">
             <Pencil size={15} />
           </button>
         </div>
@@ -384,7 +384,7 @@ function IdentityContent() {
           <AccordionSection icon={<MessageSquare size={16} />} title="Voice" summary="Tone profile, language rules, and writing examples." open={openSections.Voice} onToggle={() => toggleSection("Voice")}>
               <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
                 {voiceCards.map((voice) => (
-                  <button key={voice.title} className={`rounded-lg border p-3 text-left transition-colors ${voice.active ? "border-blue-500 bg-white shadow-sm dark:bg-blue-500/10" : "border-stone-200 bg-white/70 hover:bg-white dark:border-stone-700 dark:bg-white/[0.025] dark:hover:bg-white/[0.05]"}`}>
+                  <button key={voice.title} className={`rounded-lg border p-3 text-left transition-colors ${voice.active ? "border-blue-500 bg-white shadow-sm dark:bg-blue-500/10" : "border-stone-200 bg-white/70 hover:bg-white dark:border-(--border) dark:bg-white/[0.025] dark:hover:bg-white/[0.05]"}`}>
                     <p className="text-xs font-semibold text-stone-900 dark:text-stone-100">{voice.title}</p>
                     <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{voice.desc}</p>
                   </button>
@@ -502,7 +502,7 @@ function KnowledgeShelf({ onClose }: { onClose: () => void }) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/brand-guide"
-                className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100"
+                className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100"
               />
             </div>
           )}

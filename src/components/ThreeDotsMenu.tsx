@@ -111,7 +111,7 @@ export default function ThreeDotsMenu({
                 danger
                   ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
                   : "text-stone-900 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-white/6"
-              } ${index === items.length - 1 && danger ? "border-t border-stone-200 dark:border-stone-700" : ""}`}
+              } ${index === items.length - 1 && danger ? "border-t border-stone-200 dark:border-(--border)" : ""}`}
             >
               <Icon size={14} />
               {item.label}

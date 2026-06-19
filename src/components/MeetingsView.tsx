@@ -96,7 +96,7 @@ function AddToLiveMeetingDrawer({ onClose }: { onClose: () => void }) {
           </span>
           <input
             placeholder="E.g. Product team sync"
-            className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-400 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
+            className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-400 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
           />
         </label>
 
@@ -107,7 +107,7 @@ function AddToLiveMeetingDrawer({ onClose }: { onClose: () => void }) {
             Capture meetings from GMeet, Zoom, MS Teams, and more.
           </p>
           <div
-            className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 transition-colors focus-within:border-stone-400 dark:border-stone-700 dark:bg-white/3 dark:focus-within:border-stone-500"
+            className="flex h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 transition-colors focus-within:border-stone-400 dark:border-(--border) dark:bg-white/3 dark:focus-within:border-stone-500"
           >
             <Link2 size={14} className="shrink-0 text-stone-400" />
             <input
@@ -124,7 +124,7 @@ function AddToLiveMeetingDrawer({ onClose }: { onClose: () => void }) {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="h-10 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-stone-400 dark:border-stone-700 dark:bg-white/3 dark:text-stone-100 dark:focus:border-stone-500"
+              className="h-10 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-stone-400 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:focus:border-stone-500"
             >
               {LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>{lang}</option>

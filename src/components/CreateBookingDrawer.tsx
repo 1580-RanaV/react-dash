@@ -29,7 +29,7 @@ function TextInput({ placeholder, defaultValue }: { placeholder?: string; defaul
     <input
       defaultValue={defaultValue}
       placeholder={placeholder}
-      className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-400 dark:border-stone-700 dark:bg-white/[0.03] dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
+      className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-400 dark:border-(--border) dark:bg-white/[0.03] dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-500"
     />
   );
 }
@@ -65,7 +65,7 @@ function Select({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 text-left text-xs font-medium text-stone-900 outline-none transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/[0.03] dark:text-stone-100 dark:hover:bg-white/6"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 text-left text-xs font-medium text-stone-900 outline-none transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/[0.03] dark:text-stone-100 dark:hover:bg-white/6"
       >
         <span className="truncate">{selected.label}</span>
         <ChevronDown size={14} className={`shrink-0 text-stone-500 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -106,7 +106,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: b
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 rounded-full shadow-sm transition-colors ${checked ? "bg-blue-500" : "bg-stone-300 dark:bg-stone-700"}`}
+      className={`relative h-6 w-11 rounded-full shadow-sm transition-colors ${checked ? "bg-blue-500" : "bg-stone-300 dark:bg-white/12"}`}
     >
       <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
     </button>

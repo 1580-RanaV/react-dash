@@ -69,7 +69,7 @@ export default function DeleteConfirmDialog({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-white/8"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-colors hover:bg-stone-100 dark:border-(--border) dark:hover:bg-white/8"
             >
               <X size={14} />
             </button>
@@ -107,7 +107,7 @@ export default function DeleteConfirmDialog({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && canDelete) onConfirm();
                 }}
-                className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-red-300 focus:ring-2 focus:ring-red-500/10 dark:border-stone-700 dark:bg-white/[0.035] dark:text-stone-100 dark:placeholder:text-stone-500"
+                className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-red-300 focus:ring-2 focus:ring-red-500/10 dark:border-(--border) dark:bg-white/[0.035] dark:text-stone-100 dark:placeholder:text-stone-500"
               />
             </label>
           </div>
@@ -117,7 +117,7 @@ export default function DeleteConfirmDialog({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 items-center rounded-lg border border-stone-200 px-5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/8"
+              className="inline-flex h-9 items-center rounded-lg border border-stone-200 px-5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/8"
             >
               Cancel
             </button>

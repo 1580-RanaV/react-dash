@@ -61,7 +61,7 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
         <div className="flex items-center justify-center gap-3 p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
           <button
             onClick={() => setImgIdx((i) => (i - 1 + IMAGES.length) % IMAGES.length)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/5 dark:hover:bg-white/10"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
           >
             <ChevronLeft size={15} />
           </button>
@@ -75,7 +75,7 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
           </div>
           <button
             onClick={() => setImgIdx((i) => (i + 1) % IMAGES.length)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/5 dark:hover:bg-white/10"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
           >
             <ChevronRight size={15} />
           </button>
@@ -214,7 +214,7 @@ function AvatarMdContent({ name }: { name: string }) {
     <div className="relative">
       <button
         onClick={handleCopy}
-        className="absolute right-0 top-0 inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
+        className="absolute right-0 top-0 inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
       >
         {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
         {copied ? "Copied" : "Copy"}

@@ -17,13 +17,13 @@ const CHART_DATA = [
 
 const SERIES = [
   { key: "a", color: "#0080FF", event: "Session start" },
-  { key: "b", color: "#8B5CF6", event: "Session End"   },
+  { key: "b", color: "#9580FF", event: "Session End"   },
 ];
 
 const TABLE_DATES = ["Jun 9", "Jun 10", "Jun 11", "Jun 12", "Jun 13", "Jun 14", "Jun 15"];
 const TABLE_ROWS = [
   { key: "a", label: "Session start", color: "#0080FF", total: 1177338, avg: 168191, values: [104178, 119411, 97841, 266438, 108066, 481404, 0] },
-  { key: "b", label: "Session End",   color: "#8B5CF6", total: 1103460, avg: 157637, values: [90965, 108647, 87614, 247978, 102799, 465457, 0] },
+  { key: "b", label: "Session End",   color: "#9580FF", total: 1103460, avg: 157637, values: [90965, 108647, 87614, 247978, 102799, 465457, 0] },
 ];
 
 function fmtY(v: number) {
@@ -37,7 +37,7 @@ function fmtFull(v: number) { return v.toLocaleString(); }
 function ControlDropdown({ label, icon }: { label: string; icon?: React.ReactNode }) {
   return (
     <button
-      className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-white/5"
+      className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
       style={{ borderColor: "var(--border)" }}
     >
       {icon && <span className="text-stone-400">{icon}</span>}
@@ -105,16 +105,16 @@ export default function InsightsTab() {
                   <stop offset="95%" stopColor="#0080FF" stopOpacity={0.01} />
                 </linearGradient>
                 <linearGradient id="gradB" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#8B5CF6" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.01} />
+                  <stop offset="5%"  stopColor="#9580FF" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#9580FF" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.7} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} dy={6} />
-              <YAxis tickFormatter={fmtY} tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} width={44} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} dy={6} />
+              <YAxis tickFormatter={fmtY} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={44} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="a" name="Session start" stroke="#0080FF" strokeWidth={2} fill="url(#gradA)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-              <Area type="monotone" dataKey="b" name="Session End"   stroke="#8B5CF6" strokeWidth={2} fill="url(#gradB)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="b" name="Session End"   stroke="#9580FF" strokeWidth={2} fill="url(#gradB)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
