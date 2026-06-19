@@ -199,7 +199,7 @@ function BrowserIcon({ type }: { type: string }) {
   const { bg, fg, label } = map[type] ?? map.unknown;
   return (
     <span
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
       style={{ background: bg, color: fg }}
     >
       {label}
@@ -255,12 +255,12 @@ function TrafficView() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-stone-400 mb-1">Purchases</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Purchases</p>
                 <p className="text-xl font-bold text-stone-900 dark:text-stone-100">0</p>
                 <p className="text-xs text-stone-400 mt-0.5">0%</p>
               </div>
               <div>
-                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-stone-400 mb-1">Revenue</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Revenue</p>
                 <p className="text-xl font-bold text-stone-900 dark:text-stone-100">$0</p>
                 <p className="text-xs text-stone-400 mt-0.5">0%</p>
               </div>
@@ -310,7 +310,7 @@ function TrafficView() {
               ))}
             </div>
           </div>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Traffic by Channel</p>
+          <p className="text-base font-semibold text-stone-800 dark:text-stone-200">Traffic by Channel</p>
           <p className="text-xs text-stone-400 mt-0.5 mb-3">Where your website visitors are coming from</p>
           <div className="space-y-0.5">
             {CHANNELS.map((c) => <HBar key={c.name} name={c.name} pct={c.pct} users={c.users} />)}
@@ -355,7 +355,7 @@ function TrafficView() {
               ))}
             </div>
           </div>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Page Performance</p>
+          <p className="text-base font-semibold text-stone-800 dark:text-stone-200">Page Performance</p>
           <p className="text-xs text-stone-400 mt-0.5 mb-3">Most visited pages ranked by traffic and revenue</p>
           <div className="space-y-0.5">
             {PAGES.map((p) => <HBar key={p.name} name={p.name} pct={p.pct} users={p.users} />)}
@@ -403,7 +403,7 @@ function TrafficView() {
               ))}
             </div>
           </div>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Users by Country</p>
+          <p className="text-base font-semibold text-stone-800 dark:text-stone-200">Users by Country</p>
           <p className="text-xs text-stone-400 mt-0.5 mb-3">Geographic distribution of your website users</p>
           <div className="space-y-0.5">
             {COUNTRIES.map((c) => (
@@ -456,7 +456,7 @@ function TrafficView() {
               ))}
             </div>
           </div>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Web Browsers</p>
+          <p className="text-base font-semibold text-stone-800 dark:text-stone-200">Web Browsers</p>
           <p className="text-xs text-stone-400 mt-0.5 mb-3">Which browsers your visitors use to access your site</p>
           <div className="space-y-0.5">
             {BROWSERS.map((b) => (
@@ -485,7 +485,7 @@ function RevenueView() {
         <div className="flex items-start gap-2 mb-1">
           <InfoBadge />
           <div>
-            <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+            <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
               Traffic &amp; Revenue Overview{" "}
               <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
             </p>
@@ -533,7 +533,7 @@ function RevenueView() {
           },
         ].map(({ title, sub, big, bigSub, change, data, color, yTicks }) => (
           <div key={title} className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-            <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+            <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
               {title}{" "}
               <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
             </p>
@@ -578,7 +578,7 @@ function EngChart({
   const isPositive = change.startsWith("+");
   return (
     <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-      <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+      <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
         {title}{" "}
         <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
       </p>
@@ -814,7 +814,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
                   </span>
                 ) : (
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-stone-200 dark:border-(--border)">
-                    <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 leading-none">{i + 1}</span>
+                    <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 leading-none">{i + 1}</span>
                   </span>
                 )}
 

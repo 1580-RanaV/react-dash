@@ -143,7 +143,7 @@ const MORE_PARTICIPANTS = [
 ];
 
 function Initial({ label, className }: { label: string; className: string }) {
-  return <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${className}`}>{label}</span>;
+  return <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${className}`}>{label}</span>;
 }
 
 function TimeBadge({ time }: { time: string }) {
@@ -341,7 +341,7 @@ export default function MeetingDetailView() {
                     <div className="max-h-56 overflow-y-auto py-2">
                       {MORE_PARTICIPANTS.map((participant) => (
                         <div key={participant.name} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-stone-100">
-                          <Initial label={participant.initials} className={`h-6 w-6 text-[9px] ${participant.color}`} />
+                          <Initial label={participant.initials} className={`h-6 w-6 text-xs ${participant.color}`} />
                           <span className="truncate">{participant.name}</span>
                         </div>
                       ))}

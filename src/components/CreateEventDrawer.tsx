@@ -49,7 +49,7 @@ function makeGroup(): FilterGroup { return { id: uid(), joinOperator: "AND", fil
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
       {children}
     </p>
   );

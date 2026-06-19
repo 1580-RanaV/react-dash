@@ -129,7 +129,7 @@ export default function MetricCard({
       {/* Variant label */}
       {variantLabel && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: variantLabel.color }}>
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: variantLabel.color }}>
             {variantLabel.letter}
           </span>
           <span className="text-xs font-semibold text-stone-800 dark:text-stone-100">{variantLabel.name}</span>

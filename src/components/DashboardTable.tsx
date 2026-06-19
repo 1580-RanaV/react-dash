@@ -165,13 +165,13 @@ export default function DashboardTable({
             <input
               type="search"
               placeholder={searchPlaceholder}
-              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
+              className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </div>
           <div ref={filterRef} className="relative">
             <button
               onClick={() => hasFilter && setFilterOpen((o) => !o)}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-xs font-medium transition-colors
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors
                 ${activeCount > 0
                   ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
                   : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
@@ -181,7 +181,7 @@ export default function DashboardTable({
               <ListFilter size={13} />
               Filter
               {activeCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] font-semibold text-white">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white">
                   {activeCount}
                 </span>
               )}
@@ -210,7 +210,7 @@ export default function DashboardTable({
                               if (active) setSortDir((d) => d === "asc" ? "desc" : "asc");
                               else { setSortField(field); setSortDir("asc"); }
                             }}
-                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors
+                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors
                               ${active ? "bg-stone-100 text-stone-900 dark:bg-white/8 dark:text-stone-100" : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"}`}
                           >
                             <span>{field}</span>

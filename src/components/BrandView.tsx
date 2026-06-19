@@ -75,7 +75,7 @@ function ThemeSelect() {
 
   return (
     <div className="block min-w-0">
-      <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         Default Theme
       </span>
       <button
@@ -227,7 +227,7 @@ function EditableField({
 
   return (
     <label className="block min-w-0">
-      <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </span>
       <span className="relative block">
@@ -259,7 +259,7 @@ function EditableTextArea({
 
   return (
     <label className="block min-w-0">
-      <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </span>
       <textarea

@@ -187,7 +187,7 @@ function BrowserIcon({ type }: { type: string }) {
   const { bg, fg, label } = map[type] ?? map.unknown;
   return (
     <span
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
       style={{ background: bg, color: fg }}
     >
       {label}
@@ -241,12 +241,12 @@ function TrafficView() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-stone-400 mb-1">Purchases</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Purchases</p>
                 <p className="text-xl font-bold text-stone-900 dark:text-stone-100">0</p>
                 <p className="text-xs text-stone-400 mt-0.5">0%</p>
               </div>
               <div>
-                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-stone-400 mb-1">Revenue</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">Revenue</p>
                 <p className="text-xl font-bold text-stone-900 dark:text-stone-100">$0</p>
                 <p className="text-xs text-stone-400 mt-0.5">0%</p>
               </div>

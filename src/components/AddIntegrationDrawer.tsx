@@ -72,11 +72,11 @@ function IntegrationSection({ title, badge, items }: { title: string; badge?: st
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
           {title}
         </span>
         {badge && (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
             {badge}
           </span>
         )}
@@ -130,7 +130,7 @@ function IntegrationCard({ item }: { item: Integration }) {
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="text-xs font-medium leading-tight text-stone-800 dark:text-stone-200">{item.name}</p>
-          <p className={`text-[11px] font-medium ${TYPE_COLOR[item.type]}`}>{TYPE_LABEL[item.type]}</p>
+          <p className={`text-xs font-medium ${TYPE_COLOR[item.type]}`}>{TYPE_LABEL[item.type]}</p>
         </div>
       </div>
 

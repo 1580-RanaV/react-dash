@@ -75,7 +75,7 @@ export default function NotificationsMenu() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-semibold leading-none">
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold leading-none">
                   {unreadCount}
                 </span>
               )}

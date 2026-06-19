@@ -208,7 +208,7 @@ export default function BoardDetailView({ id }: { id: string }) {
               </div>
 
               {/* Series / Steps / Events card — mt aligns top with chart start */}
-              <div className="rounded-xl border mt-7" style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}>
+              <div className="rounded-xl border mt-2" style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}>
                 <PanelSection
                   title={activeTab === "funnels" ? "Steps" : activeTab === "retention" ? "Events" : "Series"}
                   icon={<span className="text-sm font-bold">#</span>}

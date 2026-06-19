@@ -105,7 +105,7 @@ export default function GridCardView({
                 <img src={card.image} alt={card.name} className="absolute inset-0 h-full w-full object-cover" />
               )}
               {card.id === newId && (
-                <span className="absolute right-2 top-2 inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="absolute right-2 top-2 inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
                   New
                 </span>
               )}

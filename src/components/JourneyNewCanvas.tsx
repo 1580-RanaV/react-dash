@@ -303,7 +303,7 @@ export default function JourneyNewCanvas() {
             <Plus size={14} />
           </button>
           <div
-            className="text-[10px] font-semibold tabular-nums text-stone-400 dark:text-stone-500 w-full text-center py-1 border-t border-b"
+            className="text-xs font-semibold tabular-nums text-stone-400 dark:text-stone-500 w-full text-center py-1 border-t border-b"
             style={{ borderColor: "var(--border)" }}
           >
             {pct}%

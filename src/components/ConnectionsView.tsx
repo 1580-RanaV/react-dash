@@ -71,7 +71,7 @@ function IntegrationLogo({ name }: { name: string }) {
           />
         ) : (
           <span
-            className="w-full h-full flex items-center justify-center text-[10px] font-bold"
+            className="w-full h-full flex items-center justify-center text-xs font-bold"
             style={INTEGRATION_FALLBACK[name]
               ? { background: INTEGRATION_FALLBACK[name].bg, color: INTEGRATION_FALLBACK[name].text }
               : { color: "#64748b" }}
@@ -91,7 +91,7 @@ function createdByCell(name: string): React.ReactNode {
   return (
     <span className="flex items-center gap-2">
       <span
-        className="inline-flex w-6 h-6 rounded-full items-center justify-center text-[10px] font-bold text-white shrink-0"
+        className="inline-flex w-6 h-6 rounded-full items-center justify-center text-xs font-bold text-white shrink-0"
         style={{ background: color }}
       >
         {initials}
@@ -136,19 +136,19 @@ function JsShelfContent() {
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Snippet</p>
           <CopyButton text={JS_SNIPPET} />
         </div>
-        <pre className="rounded-xl bg-stone-950 p-4 text-[11px] leading-5 text-stone-200 overflow-x-auto whitespace-pre-wrap break-all font-mono">
+        <pre className="rounded-xl bg-stone-950 p-4 text-xs leading-5 text-stone-200 overflow-x-auto whitespace-pre-wrap break-all font-mono">
           {JS_SNIPPET}
         </pre>
       </div>
 
       <div className="space-y-3">
         <div>
-          <p className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-0.5">Project</p>
+          <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-0.5">Project</p>
           <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{JS_PROJECT}</p>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-0.5">Source ID</p>
+            <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-0.5">Source ID</p>
             <p className="text-sm font-mono font-medium text-stone-800 dark:text-stone-100">{JS_SOURCE_ID}</p>
           </div>
           <CopyButton text={JS_SOURCE_ID} />

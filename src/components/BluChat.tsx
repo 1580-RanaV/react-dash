@@ -384,7 +384,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                             { title: "Style", key: "style" as const, options: IMAGE_STYLE_OPTIONS },
                           ].map((group) => (
                             <div key={group.title}>
-                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                                 {group.title}
                               </p>
                               <div className="flex flex-wrap gap-1.5">
@@ -410,7 +410,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                         </div>
                       ) : (
                         <div className="px-3.5 pb-3">
-                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                             {referenceTitle(selectedReference)}
                           </p>
                           <div className="relative mb-3">
@@ -421,7 +421,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                               className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/[0.03] dark:text-stone-100 dark:placeholder:text-stone-500"
                             />
                           </div>
-                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                             Presets
                           </p>
                           <div className="grid max-h-[260px] grid-cols-3 gap-3 overflow-y-auto pr-1">
@@ -456,7 +456,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                         boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
                       }}
                     >
-                      <div className="px-3.5 pb-2 pt-3 text-[10px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                      <div className="px-3.5 pb-2 pt-3 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                         References
                       </div>
                       <div className="pb-1">

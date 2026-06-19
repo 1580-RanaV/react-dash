@@ -205,7 +205,7 @@ function WorkspaceSwitcher() {
         >
           {/* Organizations */}
           <div className="px-2 pt-2.5 pb-1">
-            <p className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
+            <p className="px-2 mb-1 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
               Organizations
             </p>
             {organizations.map((o) => (
@@ -229,7 +229,7 @@ function WorkspaceSwitcher() {
 
           {/* Projects */}
           <div className="px-2 pt-2 pb-2.5">
-            <p className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
+            <p className="px-2 mb-1 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
               Projects
             </p>
             <div className="max-h-48 overflow-y-auto">
@@ -304,7 +304,12 @@ function NavItemRow({
   `;
   const rowContent = (
     <>
-      <span className={isActive ? "text-blue-600" : "text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300"}>
+      <span
+        key={isActive ? "active" : "idle"}
+        className={isActive
+          ? "text-blue-600 animate-nav-pop"
+          : "text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300"}
+      >
         {item.icon}
       </span>
       <span className="flex-1 leading-none">{item.label}</span>
@@ -545,7 +550,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
             Intempt
           </span>
           <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
-            <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
+            <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
           </button>
         </div>
       </aside>

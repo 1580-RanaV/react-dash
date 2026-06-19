@@ -96,7 +96,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
     >
       {/* Progress bar */}
       <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3 dark:border-(--border)">
-        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-stone-400 dark:text-stone-500">
+        <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-400 dark:text-stone-500">
           {step + 1} / {QUESTIONS.length}
         </span>
         <div className="flex flex-1 gap-1">

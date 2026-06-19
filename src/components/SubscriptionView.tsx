@@ -30,7 +30,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Chip({ n }: { n: number }) {
   return (
-    <span className="ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10.5px] font-medium bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400">{n}</span>
+    <span className="ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400">{n}</span>
   );
 }
 
@@ -351,7 +351,7 @@ function MrrTab() {
         ].map(({ label, value, sub, subCls }) => (
           <div key={label} className="rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
             <div className="mb-2 flex items-center gap-1">
-              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
               <Info size={11} className="text-stone-400" />
             </div>
             <p className="text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
@@ -464,7 +464,7 @@ function SubscribersTab() {
         ].map(({ label, value, sub, subCls }) => (
           <div key={label} className="rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
             <div className="mb-2 flex items-center gap-1">
-              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
               <Info size={11} className="text-stone-400" />
             </div>
             <p className="text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>

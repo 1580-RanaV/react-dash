@@ -18,7 +18,7 @@ const USER_COLUMNS: TableColumn[] = [
 
 function Tag({ label, color }: { label: string; color: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: color + "18", color }}>
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: color + "18", color }}>
       {label}
     </span>
   );

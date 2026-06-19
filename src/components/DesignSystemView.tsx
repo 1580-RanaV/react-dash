@@ -4,12 +4,9 @@ import { useRef, useState } from "react";
 import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
+import DesignThemeDetailView, { type ThemePalette } from "./DesignThemeDetailView";
 
-type Palette = {
-  id: string;
-  name: string;
-  colors: [string, string, string, string];
-};
+type Palette = ThemePalette;
 
 const DEFAULT_PALETTES: Palette[] = [
   { id: "alexandria",  name: "Alexandria",  colors: ["#7B6FA8", "#C9A8D4", "#2D2050", "#F0ECF8"] },
@@ -30,11 +27,12 @@ function makeGeneratedPalette(): Palette {
   };
 }
 
-function PaletteCard({ palette, isNew = false }: { palette: Palette; isNew?: boolean }) {
+function PaletteCard({ palette, isNew = false, onClick }: { palette: Palette; isNew?: boolean; onClick: () => void }) {
   const { name, colors } = palette;
   return (
     <div
-      className="group flex flex-col overflow-hidden rounded-xl transition-shadow hover:shadow-lg"
+      onClick={onClick}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl transition-shadow hover:shadow-lg"
       style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
     >
       <div className="flex h-28">
@@ -48,13 +46,14 @@ function PaletteCard({ palette, isNew = false }: { palette: Palette; isNew?: boo
           style={{ background: `conic-gradient(${colors[0]} 0deg 180deg, ${colors[1]} 180deg 360deg)` }}
         />
         <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{name}</span>
-        {isNew && <span className="ml-auto inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">New</span>}
+        {isNew && <span className="ml-auto inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">New</span>}
       </div>
     </div>
   );
 }
 
 export default function DesignSystemView() {
+  const [selected, setSelected] = useState<Palette | null>(null);
   const [search, setSearch]       = useState("");
   const [shelfOpen, setShelfOpen] = useState(false);
   const [shelfMethod, setShelfMethod] = useState<"ai" | "upload" | null>(null);
@@ -62,6 +61,8 @@ export default function DesignSystemView() {
   const [palettes, setPalettes]   = useState<Palette[]>(DEFAULT_PALETTES);
   const [newId, setNewId]         = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  if (selected) return <DesignThemeDetailView palette={selected} onBack={() => setSelected(null)} />;
 
   const filtered = search
     ? palettes.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -120,7 +121,7 @@ export default function DesignSystemView() {
       <div className="px-6 pb-6">
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
           {filtered.map((palette) => (
-            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} />
+            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} onClick={() => setSelected(palette)} />
           ))}
         </div>
       </div>

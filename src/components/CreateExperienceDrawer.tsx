@@ -65,7 +65,7 @@ export default function CreateExperienceDrawer({ onClose }: { onClose: () => voi
       )}
     >
       <div className="space-y-6">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
+        <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
           Experience type
         </p>
 
