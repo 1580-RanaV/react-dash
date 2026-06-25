@@ -11,6 +11,7 @@ import BoardDetailView from "./components/boards/BoardDetailView";
 import ProductDetailView from "./components/ProductDetailView";
 import DashboardCanvasView from "./components/DashboardCanvasView";
 import AssetCreatorView from "./components/AssetCreatorView";
+import UserDetailView from "./components/UserDetailView";
 
 function ExperienceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +82,7 @@ export default function App() {
               <DashboardShell>
                 <Routes>
                   <Route path="/home" element={<DashboardView view="home" />} />
+                  <Route path="/users/:id" element={<UserDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />
                   <Route path="/journeys/new" element={<JourneyNewCanvas />} />
                   <Route path="/journeys/:id" element={<JourneyDetailPage />} />

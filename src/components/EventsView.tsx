@@ -8,6 +8,7 @@ import { CartesianGrid, Line, LineChart, Bar, BarChart, ResponsiveContainer, Too
 import CreateEventDrawer from "./CreateEventDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import SlidingSidebar from "./SlidingSidebar";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 // ── shared helpers ─────────────────────────────────────────────────────────────
 
@@ -587,6 +588,7 @@ export default function EventsView() {
   const [selectedLive, setSelectedLive] = useState<LiveRow | null>(null);
   const [selectedTableEvent, setSelectedTableEvent] = useState<EventMeta | null>(null);
   const [deletedEventIds, setDeletedEventIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<EventMeta | null>(null);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
@@ -640,10 +642,19 @@ export default function EventsView() {
         <EventTableDetailDrawer
           meta={selectedTableEvent}
           onClose={() => setSelectedTableEvent(null)}
-          onDelete={() => {
-            setDeletedEventIds((s) => new Set([...s, selectedTableEvent.id]));
+          onDelete={() => setDeleteTarget(selectedTableEvent)}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          entityType="event"
+          entityName={deleteTarget.name}
+          onConfirm={() => {
+            setDeletedEventIds((s) => new Set([...s, deleteTarget.id]));
+            setDeleteTarget(null);
             setSelectedTableEvent(null);
           }}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </div>

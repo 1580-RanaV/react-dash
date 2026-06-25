@@ -130,7 +130,7 @@ function MonthGrid({
 }
 
 // ─── Main component ───────────────────────────────────────────
-export default function DateRangePicker() {
+export default function DateRangePicker({ className }: { className?: string }) {
   const today = new Date(2026, 5, 2); // Jun 2, 2026 (matches session date)
   const [start, setStart]     = useState(addDays(today, -29));
   const [end,   setEnd]       = useState(today);
@@ -169,17 +169,17 @@ export default function DateRangePicker() {
   return (
     <div ref={ref} className="relative">
       {/* Trigger bar */}
-      <div className="flex items-center gap-1 px-4 py-2.5 flex-wrap">
+      <div className={className ?? "flex items-center gap-1 px-4 py-2.5 flex-wrap"}>
         {/* Date range label */}
         <button
           onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-2 mr-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
         >
           <Calendar size={15} />
           <span>{fmt(start)} – {fmt(end)}</span>
         </button>
 
-        {/* Presets */}
+        {/* Presets + granularity row */}
         <div className="flex items-center gap-0.5">
           {PRESETS.map(p => (
             <button
@@ -194,12 +194,10 @@ export default function DateRangePicker() {
               {p.label}
             </button>
           ))}
+          <button className="ml-2 flex h-7 items-center gap-1.5 px-2.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
+            Day <ChevronDown size={11} className="text-stone-400" />
+          </button>
         </div>
-
-        {/* Granularity — sits right after presets */}
-        <button className="ml-3 flex h-9 items-center gap-1.5 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
-          Day <ChevronDown size={11} className="text-stone-400" />
-        </button>
       </div>
 
       {/* Calendar dropdown */}

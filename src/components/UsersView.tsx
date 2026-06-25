@@ -25,7 +25,7 @@ function Tag({ label, color }: { label: string; color: string }) {
   );
 }
 
-const USER_ROWS = [
+export const USERS_DATA = [
   { id: "u01",  name: "Sarah Mitchell",   account: "Apex Dynamics",       email: "s.mitchell@apexdyn.com",        title: "VP of Marketing",         tags: [["Customer", "#0080FF"], ["High Value", "#16a34a"]] },
   { id: "u02",  name: "James Okonkwo",    account: "NovaTech Solutions",   email: "j.okonkwo@novatech.io",         title: "Senior Engineer",         tags: [["Lead", "#f97316"]] },
   { id: "u03",  name: "Priya Sharma",     account: "Linea Studio",         email: "priya@lineastudio.co",          title: "Head of Design",          tags: [["Customer", "#0080FF"], ["Designer", "#8b5cf6"]] },
@@ -56,8 +56,11 @@ const USER_ROWS = [
   { id: "u28",  name: "Mia Thompson",     account: "Data Pipeline Co",     email: "mia.t@datapipe.eu",             title: "Data Scientist",          tags: [["Enterprise", "#0ea5e9"]] },
   { id: "u29",  name: "Alex Fernandez",   account: "Mobile App Inc",       email: "alex.f@mobileapp.com",          title: "Android Developer",       tags: [["Customer", "#0080FF"]] },
   { id: "u30",  name: "Grace O'Sullivan", account: "Dev Playground",       email: "grace@devplayground.io",        title: "Growth Engineer",         tags: [["Internal", "#64748b"]] },
-].map(({ id, name, account, email, title, tags }) => ({
+];
+
+const USER_ROWS = USERS_DATA.map(({ id, name, account, email, title, tags }) => ({
   id,
+  href: `/users/${id}`,
   cells: {
     user:         name,
     accountName:  account,
@@ -72,7 +75,7 @@ const USER_ROWS = [
 }));
 
 const TABS = [
-  { key: "table",     label: "Table",     icon: <Table2 size={14} />,        count: USER_ROWS.length },
+  { key: "table",     label: "Table",     icon: <Table2 size={14} />,        count: USERS_DATA.length },
   { key: "board",     label: "Board",     icon: <LayoutDashboard size={14} />, count: null },
   { key: "analytics", label: "Analytics", icon: <BarChart2 size={14} />,       count: null },
 ] as const;
