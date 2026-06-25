@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Package, Plus, Rss, Trash2 } from "lucide-react";
+import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
@@ -178,22 +179,7 @@ export default function CatalogView() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex items-center gap-1 px-4 pt-3 shrink-0">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium transition-colors duration-100
-              ${tab === t.key
-                ? "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400"
-                : "text-stone-500 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/6"
-              }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ViewTabs tabs={tabs} activeTab={tab} onChange={setTab} />
 
       <div key={tab} className="flex-1 min-h-0 flex flex-col animate-fade-up">
         {tab === "products" ? (

@@ -3,6 +3,7 @@ export const DASHBOARD_VIEW_KEYS = [
   "users",
   "events",
   "subscribers",
+  "attributes",
   "connections",
   "asset-library",
   "avatars",

@@ -27,6 +27,7 @@ import {
   CalendarDays,
   CalendarClock,
   BarChart2,
+  Database,
   LayoutDashboard,
   CreditCard,
   ChevronRight,
@@ -53,6 +54,7 @@ const nav: NavSection[] = [
       { label: "Home", icon: <Home size={15} /> },
       { label: "Brand", icon: <Palette size={15} /> },
       { label: "Asset Library", icon: <Library size={15} /> },
+      { label: "Attributes", icon: <Database size={15} /> },
       {
         label: "Users",
         icon: <Users size={15} />,
@@ -262,6 +264,7 @@ const NAV_VIEWS: Record<string, string> = {
   Users: "users",
   Events: "events",
   Subscribers: "subscribers",
+  Attributes: "attributes",
   Connections: "connections",
   "Asset Library": "asset-library",
   Avatars: "avatars",

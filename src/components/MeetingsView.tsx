@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CalendarDays, Link2, Plus, Table2, Trash2 } from "lucide-react";
+import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import SlidingSidebar from "./SlidingSidebar";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
@@ -174,12 +175,7 @@ export default function MeetingsView() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 relative overflow-hidden">
-      <div className="flex items-center gap-1 px-4 pt-3 shrink-0">
-        <button className="flex h-9 items-center gap-2 px-3 rounded-lg bg-blue-50 text-sm font-medium text-blue-600 transition-colors duration-100 dark:bg-blue-500/10 dark:text-blue-400">
-          <Table2 size={15} />
-          Table
-        </button>
-      </div>
+      <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} /> }]} activeTab="table" />
 
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
         <DashboardTable

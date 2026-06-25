@@ -10,6 +10,7 @@ export default function SlidingSidebar({
   footer,
   footerBorder = true,
   contentClassName,
+  headerActions,
   onClose,
 }: {
   title: React.ReactNode;
@@ -18,6 +19,7 @@ export default function SlidingSidebar({
   footer?: React.ReactNode | ((close: () => void) => React.ReactNode);
   footerBorder?: boolean;
   contentClassName?: string;
+  headerActions?: React.ReactNode;
   onClose: () => void;
 }) {
   const [visible, setVisible] = useState(false);
@@ -52,16 +54,19 @@ export default function SlidingSidebar({
         }}
       >
         <div className="shrink-0 px-7 pb-5 pt-7">
-          <div className="flex items-start justify-between gap-5">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               {typeof title === "string"
                 ? <h2 className="mb-1 text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
                 : title}
               {description ? <p className="text-sm leading-5 text-stone-500 dark:text-stone-400">{description}</p> : null}
             </div>
+            {headerActions && (
+              <div className="mt-0.5 flex shrink-0 items-center gap-1">{headerActions}</div>
+            )}
             <button
               onClick={close}
-              className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
             >
               <X size={15} />
             </button>

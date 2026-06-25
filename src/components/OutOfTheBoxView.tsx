@@ -6,6 +6,7 @@ import {
   ComposedChart, Bar, Line, AreaChart, Area, LabelList,
   XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid,
 } from "recharts";
+import ViewTabs from "./ViewTabs";
 import {
   Globe, HandCoins, Activity, ChevronDown, Info,
   TrendingDown, UserPlus, ShoppingCart, Users, HistoryIcon,
@@ -471,22 +472,7 @@ export default function OutOfTheBoxView() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
-      <div className="flex items-center gap-1 px-4 pt-3 shrink-0">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium transition-colors duration-100 ${
-              tab === t.key
-                ? "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400"
-                : "text-stone-500 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/6"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ViewTabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
       <div className="shrink-0">
         <DateRangePicker />

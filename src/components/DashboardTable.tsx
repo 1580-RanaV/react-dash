@@ -1,7 +1,7 @@
 
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ChevronRight, Info, ListFilter, Search } from "lucide-react";
+import { ChevronRight, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThreeDotsMenu, { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 
@@ -106,6 +106,8 @@ export default function DashboardTable({
   onRowClick,
   filterConfig,
   hideToolbar = false,
+  selectable = false,
+  onDeleteSelected,
 }: {
   columns: TableColumn[];
   rows: TableRow[];
@@ -117,17 +119,26 @@ export default function DashboardTable({
   onRowClick?: (row: TableRow) => void;
   filterConfig?: FilterConfig;
   hideToolbar?: boolean;
+  selectable?: boolean;
+  onDeleteSelected?: (ids: string[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
+  const columnsRef = useRef<HTMLDivElement>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [colSearch, setColSearch] = useState("");
   const navigate = useNavigate();
 
   const hasFilter = !!(filterConfig?.sortFields?.length || filterConfig?.groups?.length);
   const activeCount = activeFilters.size + (sortField ? 1 : 0);
+  const visibleColumns = columns.filter((c) => !hiddenCols.has(c.key));
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -138,6 +149,22 @@ export default function DashboardTable({
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, []);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (columnsRef.current && !columnsRef.current.contains(e.target as Node)) {
+        setColumnsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    if (!selectable || !selectAllRef.current) return;
+    const visibleCount = rows.filter((r) => selected.has(r.id)).length;
+    selectAllRef.current.indeterminate = visibleCount > 0 && visibleCount < rows.length;
+  }, [selected, rows, selectable]);
 
   function toggleRow(row: TableRow) {
     if (row.type !== "group" || !row.children?.length) return;
@@ -190,6 +217,7 @@ export default function DashboardTable({
             {filterOpen && filterConfig && (
               <div
                 className="absolute left-0 top-[calc(100%+6px)] z-50 w-52 rounded-xl animate-card-in overflow-hidden"
+
                 style={{
                   background: "var(--content-bg)",
                   border: "1px solid var(--border)",
@@ -269,10 +297,113 @@ export default function DashboardTable({
               </div>
             )}
           </div>
+
+          <div ref={columnsRef} className="relative">
+            <button
+              onClick={() => setColumnsOpen((o) => !o)}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors
+                ${hiddenCols.size > 0
+                  ? "border-stone-200 bg-blue-50 text-blue-600 dark:border-(--border) dark:bg-blue-500/10 dark:text-blue-400"
+                  : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
+                }`}
+            >
+              <LayoutGrid size={13} />
+              Columns ({visibleColumns.length})
+            </button>
+
+            {columnsOpen && (
+              <div
+                className="absolute left-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl animate-card-in overflow-hidden"
+                style={{
+                  background: "var(--content-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                <div className="px-3 pt-3 pb-2">
+                  <div className="relative">
+                    <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      value={colSearch}
+                      onChange={(e) => setColSearch(e.target.value)}
+                      placeholder="Search columns..."
+                      className="h-8 w-full rounded-lg border border-stone-200 bg-stone-50 pl-7 pr-2.5 text-xs font-medium text-stone-700 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-white/4 dark:text-stone-200 dark:placeholder:text-stone-500"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-56 overflow-y-auto pb-2">
+                  {columns
+                    .filter((c) => !colSearch || c.label.toLowerCase().includes(colSearch.toLowerCase()))
+                    .map((col) => {
+                      const visible = !hiddenCols.has(col.key);
+                      return (
+                        <button
+                          key={col.key}
+                          onClick={() => setHiddenCols((prev) => {
+                            const next = new Set(prev);
+                            visible ? next.add(col.key) : next.delete(col.key);
+                            return next;
+                          })}
+                          className="flex w-full items-center justify-between px-3.5 py-2 text-left text-xs font-medium transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+                        >
+                          <span className={visible ? "text-stone-700 dark:text-stone-300" : "text-stone-400 dark:text-stone-500"}>{col.label}</span>
+                          <span className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${visible ? "bg-blue-500" : "bg-stone-200 dark:bg-white/15"}`}>
+                            <span className={`h-3 w-3 rounded-full bg-white shadow transition-transform ${visible ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+                {hiddenCols.size > 0 && (
+                  <div className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>
+                    <button
+                      onClick={() => { setHiddenCols(new Set()); setColSearch(""); }}
+                      className="w-full py-0.5 text-center text-xs font-medium text-blue-500 transition-colors hover:text-blue-600"
+                    >
+                      Show all
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>}
       {hideToolbar && action && <div className="mb-3 flex justify-end shrink-0">{action}</div>}
+      {selectable && selected.size > 0 && (() => {
+        const visibleSelected = rows.filter((r) => selected.has(r.id));
+        if (!visibleSelected.length) return null;
+        return (
+          <div
+            className="mb-3 flex shrink-0 items-center justify-between rounded-xl border px-4 py-2.5"
+            style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
+          >
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
+              {visibleSelected.length} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelected(new Set())}
+                className="inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-50 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-white/6 dark:hover:text-stone-200"
+                style={{ borderColor: "var(--border)" }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteSelected?.(visibleSelected.map((r) => r.id));
+                  setSelected(new Set());
+                }}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-50 px-3 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+              >
+                <Trash2 size={13} />
+                Delete {visibleSelected.length}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
       <div
         className="flex-1 min-h-0 overflow-hidden rounded-xl flex flex-col"
         style={{
@@ -284,7 +415,20 @@ export default function DashboardTable({
           <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
           <thead className="sticky top-0 z-10">
             <tr style={{ background: "var(--muted)" }}>
-              {columns.map((column) => (
+              {selectable && (
+                <th className="border-b border-r px-3 py-3" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
+                  <div className="flex items-center justify-center">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={rows.length > 0 && rows.every((r) => selected.has(r.id))}
+                      onChange={(e) => setSelected(e.target.checked ? new Set(rows.map((r) => r.id)) : new Set())}
+                      className="h-4 w-4 cursor-pointer rounded accent-blue-500"
+                    />
+                  </div>
+                </th>
+              )}
+              {visibleColumns.map((column) => (
                 <th
                   key={column.key}
                   className={`border-b border-r px-4 py-3 text-xs font-semibold text-slate-500 last:border-r-0 dark:text-slate-400 ${column.align === "center" ? "text-center" : ""}`}
@@ -305,7 +449,7 @@ export default function DashboardTable({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length + 1}
+                  colSpan={visibleColumns.length + 1 + (selectable ? 1 : 0)}
                   className="h-36 border-b border-(--border) px-4 py-8 text-center text-sm font-medium text-slate-500 dark:text-slate-400"
                 >
                   {emptyState ?? "No items yet."}
@@ -314,15 +458,36 @@ export default function DashboardTable({
             ) : rows.map((row) => {
               const isGroup = row.type === "group" && Boolean(row.children?.length);
               const isExpanded = Boolean(expanded[row.id]);
+              const isSelected = selectable && selected.has(row.id);
 
               return (
                 <Fragment key={row.id}>
                   <tr
                     key={row.id}
                     onClick={() => handleRowClick(row)}
-                    className={`group hover:bg-stone-50/70 dark:hover:bg-white/[0.03] ${isGroup || row.href || onRowClick ? "cursor-pointer" : ""}`}
+                    className={`group ${isSelected ? "bg-blue-50/60 dark:bg-blue-500/8" : "hover:bg-stone-50/70 dark:hover:bg-white/3"} ${isGroup || row.href || onRowClick ? "cursor-pointer" : ""}`}
                   >
-                    {columns.map((column, index) => (
+                    {selectable && (
+                      <td
+                        className="border-b border-r border-(--border) px-3 py-3"
+                        style={{ width: 44, minWidth: 44 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const next = new Set(selected);
+                              e.target.checked ? next.add(row.id) : next.delete(row.id);
+                              setSelected(next);
+                            }}
+                            className="h-4 w-4 cursor-pointer rounded accent-blue-500"
+                          />
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.map((column, index) => (
                       <td
                         key={column.key}
                         className={`border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100 ${column.align === "center" ? "text-center" : ""}`}
@@ -344,7 +509,7 @@ export default function DashboardTable({
                   {isGroup && isExpanded
                     ? row.children!.map((child) => (
                         <tr key={child.id} className="bg-stone-50/50 hover:bg-stone-50 dark:bg-(--muted) dark:hover:bg-white/6">
-                          {columns.map((column, index) => (
+                          {visibleColumns.map((column, index) => (
                             <td
                               key={column.key}
                               className="border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100"

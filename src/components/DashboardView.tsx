@@ -24,6 +24,7 @@ import MeetingsView from "./MeetingsView";
 import SchedulerView from "./SchedulerView";
 import UsersView from "./UsersView";
 import SubscribersView from "./SubscribersView";
+import AttributesView from "./AttributesView";
 
 const GENERIC_VIEWS: Record<string, { label: string; icon: React.ReactNode }> = {};
 
@@ -66,6 +67,7 @@ export default function DashboardView({ view = "home" }: { view?: string }) {
   if (view === "boards")       return <BoardsView />;
   if (view === "events")       return <Suspense><EventsView /></Suspense>;
   if (view === "subscribers")  return <Suspense><SubscribersView /></Suspense>;
+  if (view === "attributes")   return <AttributesView />;
   if (view === "avatars")      return <AvatarsView />;
   if (view === "poses")        return <PosesView />;
   if (view === "scenes")       return <ScenesView />;
