@@ -1,14 +1,13 @@
 
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Check, CheckCircle2, ChevronDown, Copy, FileText, Globe, Mail, MessageSquare, MousePointer2, Phone, Trash2, TrendingUp, XCircle, Zap } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Check, CheckCircle2, ChevronDown, Copy, FileText, Globe, Mail, MessageSquare, MousePointer2, Phone, TrendingUp, XCircle, Zap } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { USERS_DATA } from "./UsersView";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import DateRangePicker from "./DateRangePicker";
-import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 const TABS = [
   { key: "overview",  label: "Overview" },
@@ -462,26 +461,13 @@ function ActivityTab() {
   const [selectedId, setSelectedId] = useState<string>(ACTIVITY_EVENTS[0].id);
   const [detailTab, setDetailTab]   = useState<"info" | "raw">("info");
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
-
   function copyField(label: string, value: string) {
     navigator.clipboard.writeText(value).catch(() => {});
     setCopiedLabel(label);
     setTimeout(() => setCopiedLabel(null), 1500);
   }
 
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    const remaining = ACTIVITY_EVENTS.filter((e) => e.id !== deleteTarget.id && !deletedIds.has(e.id));
-    setDeletedIds((s) => new Set([...s, deleteTarget.id]));
-    if (selectedId === deleteTarget.id) {
-      setSelectedId(remaining[0]?.id ?? "");
-    }
-    setDeleteTarget(null);
-  }
-
-  const visibleEvents = ACTIVITY_EVENTS.filter((e) => !deletedIds.has(e.id));
+  const visibleEvents = ACTIVITY_EVENTS;
   const selected = visibleEvents.find((e) => e.id === selectedId) ?? visibleEvents[0];
 
   // Group events by day
@@ -551,27 +537,12 @@ function ActivityTab() {
                     </span>
                     <span className="max-w-45 truncate text-xs text-stone-400 dark:text-stone-500">{ev.userLabel}</span>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: ev.id, name: ev.name }); }}
-                    className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 text-stone-400"
-                  >
-                    <Trash2 size={12} />
-                  </button>
                 </div>
               ))}
             </div>
           </div>
         ))}
       </div>
-
-      {deleteTarget && (
-        <DeleteConfirmDialog
-          entityType="event"
-          entityName={deleteTarget.name}
-          onConfirm={confirmDelete}
-          onClose={() => setDeleteTarget(null)}
-        />
-      )}
 
       {/* Right: event detail */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden rounded-xl border" style={{ borderColor: "var(--border)" }}>
@@ -846,10 +817,20 @@ function PrivacyTab() {
 // ── main component ─────────────────────────────────────────────
 
 export default function UserDetailView() {
-  const { id } = useParams<{ id: string }>();
+  const { id, "*": splat } = useParams<{ id: string; "*": string }>();
+  const navigate = useNavigate();
+  const validTabs = TABS.map((t) => t.key) as Tab[];
+  const activeTab: Tab = validTabs.includes(splat as Tab) ? (splat as Tab) : "overview";
+
+  useEffect(() => {
+    if (!splat || !validTabs.includes(splat as Tab)) {
+      navigate(`/users/${id}/overview`, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const idx  = USERS_DATA.findIndex((u) => u.id === id);
   const user = USERS_DATA[idx];
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   if (!user) {
     return (
@@ -876,7 +857,7 @@ export default function UserDetailView() {
         <SubTabCorner
           tabs={TABS as unknown as { key: string; label: string }[]}
           active={activeTab}
-          onChange={(k) => setActiveTab(k as Tab)}
+          onChange={(k) => navigate(`/users/${id}/${k}`)}
         />
       </div>
 

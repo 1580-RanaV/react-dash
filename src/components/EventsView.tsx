@@ -438,20 +438,35 @@ const LIVE_TABLE_ROWS: TableRow[] = LIVE_ROWS.map((r) => ({
 function LiveIndicator({ paused }: { paused: boolean }) {
   return (
     <>
-      <style>{`@keyframes livebar{0%,100%{height:3px}50%{height:14px}}`}</style>
-      <div className="flex items-end gap-0.5 h-4">
-        {(["0ms", "110ms", "55ms", "165ms"] as const).map((delay, i) => (
-          <span
-            key={i}
-            className="w-0.75 rounded-full transition-all duration-300"
-            style={
-              paused
-                ? { height: 2, background: "var(--border)" }
-                : { background: "#0080FF", animation: `livebar 0.65s ease-in-out ${delay} infinite` }
-            }
+      <style>{`
+        @keyframes livewave {
+          from { stroke-dashoffset: 12; }
+          to   { stroke-dashoffset: -46; }
+        }
+      `}</style>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0">
+        {/* Full shape — dim base */}
+        <polyline
+          points="22 12 18 12 15 21 9 3 6 12 2 12"
+          stroke={paused ? "#d1d5db" : "#0080FF"}
+          strokeOpacity={paused ? 1 : 0.18}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Traveling bright segment */}
+        {!paused && (
+          <polyline
+            points="22 12 18 12 15 21 9 3 6 12 2 12"
+            stroke="#0080FF"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="12 34"
+            style={{ animation: "livewave 1.4s linear infinite" }}
           />
-        ))}
-      </div>
+        )}
+      </svg>
     </>
   );
 }

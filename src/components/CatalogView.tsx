@@ -52,6 +52,7 @@ const PRODUCT_ROWS: TableRow[] = [
   },
   {
     id: "40305",
+    href: "/catalog/products/42338",
     cells: {
       image: <img src="https://picsum.photos/seed/40305/36/36" alt="" className="h-9 w-9 rounded-md object-cover" />,
       title: "Real Avid Smart-Fit Vise Block for Glock Pistols",
@@ -63,6 +64,7 @@ const PRODUCT_ROWS: TableRow[] = [
   },
   {
     id: "37768",
+    href: "/catalog/products/42338",
     cells: {
       image: <img src="https://picsum.photos/seed/37768/36/36" alt="" className="h-9 w-9 rounded-md object-cover" />,
       title: "Glock 47464 Magazine 9mm 24rd Extended Black Polymer",
@@ -74,6 +76,7 @@ const PRODUCT_ROWS: TableRow[] = [
   },
   {
     id: "38951",
+    href: "/catalog/products/42338",
     cells: {
       image: <img src="https://picsum.photos/seed/38951/36/36" alt="" className="h-9 w-9 rounded-md object-cover" />,
       title: "Smith & Wesson 25rd Magazine Fits S&W M&P15-22 22LR Black",
@@ -85,6 +88,7 @@ const PRODUCT_ROWS: TableRow[] = [
   },
   {
     id: "38443",
+    href: "/catalog/products/42338",
     cells: {
       image: <img src="https://picsum.photos/seed/38443/36/36" alt="" className="h-9 w-9 rounded-md object-cover" />,
       title: "Colt Mfg O1911C 1911 Government 45 ACP Stainless National Match Barrel",
@@ -96,6 +100,7 @@ const PRODUCT_ROWS: TableRow[] = [
   },
   {
     id: "37939",
+    href: "/catalog/products/42338",
     cells: {
       image: <img src="https://picsum.photos/seed/37939/36/36" alt="" className="h-9 w-9 rounded-md object-cover" />,
       title: "Bergara B-14 Ridge Carbon Wilderness Rifle .308 Win",

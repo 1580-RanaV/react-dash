@@ -82,7 +82,7 @@ export default function App() {
               <DashboardShell>
                 <Routes>
                   <Route path="/home" element={<DashboardView view="home" />} />
-                  <Route path="/users/:id" element={<UserDetailView />} />
+                  <Route path="/users/:id/*" element={<UserDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />
                   <Route path="/journeys/new" element={<JourneyNewCanvas />} />
                   <Route path="/journeys/:id" element={<JourneyDetailPage />} />
