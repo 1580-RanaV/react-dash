@@ -1,6 +1,7 @@
 
 
 import { CalendarDays, Check, Copy, Globe, Info, KeyRound, Mail, MousePointer2, Pencil, Plus, RefreshCw, ShieldCheck, Trash2, Workflow } from "lucide-react";
+import CodeBlock from "./CodeBlock";
 import ViewTabs from "./ViewTabs";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useRef, useState } from "react";
@@ -131,18 +132,19 @@ function CopyButton({ text, className = "" }: { text: string; className?: string
 
 function JsShelfContent() {
   return (
-    <div className="px-5 pt-3 pb-5 space-y-5">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Snippet</p>
-          <CopyButton text={JS_SNIPPET} />
-        </div>
-        <pre className="rounded-xl bg-stone-950 p-4 text-xs leading-5 text-stone-200 overflow-x-auto whitespace-pre-wrap break-all font-mono">
-          {JS_SNIPPET}
-        </pre>
+    <div className="flex flex-col gap-5 pb-5">
+      {/* Snippet label — padded like the rest of sidebar */}
+      <div className="px-7 pt-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Snippet</p>
       </div>
 
-      <div className="space-y-3">
+      {/* Code block */}
+      <div className="px-7">
+        <CodeBlock code={JS_SNIPPET} language="html" />
+      </div>
+
+      {/* Meta fields */}
+      <div className="px-7 space-y-3">
         <div>
           <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-0.5">Project</p>
           <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{JS_PROJECT}</p>
@@ -472,6 +474,7 @@ export default function ConnectionsView() {
               </span>
             }
             onClose={() => setSelectedConnId(null)}
+            contentClassName={selectedConnId === "js-sdk" ? "overflow-y-auto pb-5" : undefined}
           >
             {selectedConnId === "js-sdk" ? (
               <JsShelfContent />

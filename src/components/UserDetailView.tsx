@@ -6,6 +6,7 @@ import { Check, CheckCircle2, ChevronDown, Copy, FileText, Globe, Mail, MessageS
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { USERS_DATA } from "./UsersView";
 import BackButton from "./BackButton";
+import CodeBlock from "./CodeBlock";
 import SubTabCorner from "./SubTabCorner";
 import DateRangePicker from "./DateRangePicker";
 
@@ -613,19 +614,7 @@ function ActivityTab() {
 
           {detailTab === "raw" && (
             <div className="p-5">
-              <div className="relative rounded-xl overflow-hidden" style={{ background: "var(--input)" }}>
-                <button
-                  onClick={() => copyField("__raw__", rawJson)}
-                  className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-stone-200/70 dark:hover:bg-white/10"
-                >
-                  {copiedLabel === "__raw__"
-                    ? <Check size={13} className="text-green-500" />
-                    : <Copy size={13} className="text-stone-400 dark:text-stone-500" />}
-                </button>
-                <pre className="overflow-x-auto p-5 pr-10 text-xs font-mono leading-relaxed text-stone-700 dark:text-stone-300">
-                  {rawJson}
-                </pre>
-              </div>
+              <CodeBlock code={rawJson} language="json" />
             </div>
           )}
         </div>
