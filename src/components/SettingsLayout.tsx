@@ -361,35 +361,42 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
   }
 
   return (
-    <div className="flex items-center justify-between py-4 border-b border-stone-100 dark:border-(--border) last:border-0">
-      <div className="flex items-center gap-2.5">
-        <img src={logo} alt={name} width={20} height={20} className="rounded shrink-0 object-contain" />
-        <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{name}</span>
+    <div className="py-4 border-b border-stone-100 dark:border-(--border) last:border-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <img src={logo} alt={name} width={20} height={20} className="rounded shrink-0 object-contain" />
+          <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{name}</span>
+        </div>
+        {state === "connected" ? (
+          <button
+            onClick={() => setState("idle")}
+            className="h-9 px-3 rounded-md border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
+          >
+            Disconnect
+          </button>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={state === "loading"}
+            className="h-9 px-4 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: "#0080FF" }}
+          >
+            {state === "loading" ? (
+              <span className="flex items-center gap-1.5">
+                <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Connecting
+              </span>
+            ) : "Connect"}
+          </button>
+        )}
       </div>
-      {state === "connected" ? (
-        <button
-          onClick={() => setState("idle")}
-          className="h-9 px-3 rounded-md border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
-        >
-          Disconnect
-        </button>
-      ) : (
-        <button
-          onClick={handleConnect}
-          disabled={state === "loading"}
-          className="h-9 px-4 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          style={{ background: "#0080FF" }}
-        >
-          {state === "loading" ? (
-            <span className="flex items-center gap-1.5">
-              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              Connecting
-            </span>
-          ) : "Connect"}
-        </button>
+      {state === "connected" && (
+        <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
+          Connected to project <span className="font-medium text-stone-600 dark:text-stone-400">Intempt</span> on <span className="font-medium text-stone-600 dark:text-stone-400">Intempt</span> in org <span className="font-medium text-stone-600 dark:text-stone-400">Intempt External Use</span>.
+        </p>
       )}
     </div>
   );

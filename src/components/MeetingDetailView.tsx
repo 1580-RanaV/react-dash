@@ -286,25 +286,6 @@ export default function MeetingDetailView() {
           <BackButton href="/meetings" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
         </div>
-        <div className="flex shrink-0 gap-1 p-1 rounded-xl bg-stone-100 dark:bg-(--input)">
-          <a
-            href="https://intempt.com/share/meeting/rd-check-in"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium text-stone-500 dark:text-stone-400 transition-all duration-100 hover:bg-white dark:hover:bg-white/8 hover:text-stone-900 dark:hover:text-stone-100 hover:shadow-sm"
-          >
-            <ExternalLink size={13} />
-            View public link
-          </a>
-          <button
-            type="button"
-            onClick={copyLink}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-100 hover:bg-white dark:hover:bg-white/8 hover:shadow-sm text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
-          >
-            {linkCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-            {linkCopied ? "Copied" : "Copy link"}
-          </button>
-        </div>
       </div>
 
       <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,900px)_minmax(420px,1fr)] gap-0">
@@ -349,6 +330,25 @@ export default function MeetingDetailView() {
                   </div>
                 ) : null}
               </span>
+            </div>
+            <div className="flex shrink-0 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-(--input)">
+              <a
+                href="https://intempt.com/share/meeting/rd-check-in"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-stone-500 transition-all duration-100 hover:bg-white hover:text-stone-900 hover:shadow-sm dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
+              >
+                <ExternalLink size={12} />
+                View public link
+              </a>
+              <button
+                type="button"
+                onClick={copyLink}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-stone-500 transition-all duration-100 hover:bg-white hover:text-stone-900 hover:shadow-sm dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
+              >
+                {linkCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                {linkCopied ? "Copied" : "Copy link"}
+              </button>
             </div>
           </div>
 
