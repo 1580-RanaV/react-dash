@@ -101,6 +101,141 @@ const JOURNEY_ROWS: TableRow[] = [
       lastUpdated: "May 7, 2026 12:27 AM",
     },
   },
+  {
+    id: "win-back-lapsed",
+    href: "/journeys/win-back-lapsed",
+    cells: {
+      name: "Win-Back Lapsed Customers",
+      status: { label: "Running", tone: "green" },
+      sent: "412",
+      opens: { value: "389", subValue: "94.42%" },
+      clicks: { value: "201", subValue: "48.79%" },
+      replies: { value: "3", subValue: "0.73%" },
+      attributedRevenue: { value: "$28,340.00", subValue: "6.88%" },
+      revenueSent: { value: "$68.79", muted: true },
+      lastUpdated: "Jun 1, 2026 09:15 AM",
+    },
+  },
+  {
+    id: "post-purchase-upsell",
+    href: "/journeys/post-purchase-upsell",
+    cells: {
+      name: "Post-Purchase Upsell",
+      status: { label: "Running", tone: "green" },
+      sent: "534",
+      opens: { value: "610", subValue: "114.23%" },
+      clicks: { value: "298", subValue: "55.81%" },
+      replies: { value: "1", subValue: "0.19%" },
+      attributedRevenue: { value: "$41,220.50", subValue: "7.72%" },
+      revenueSent: { value: "$77.19", muted: true },
+      lastUpdated: "May 30, 2026 03:44 PM",
+    },
+  },
+  {
+    id: "welcome-series",
+    href: "/journeys/welcome-series",
+    cells: {
+      name: "Welcome Series",
+      status: { label: "Paused", tone: "blue" },
+      sent: "1,208",
+      opens: { value: "1,044", subValue: "86.42%" },
+      clicks: { value: "487", subValue: "40.32%" },
+      replies: { value: "12", subValue: "0.99%" },
+      attributedRevenue: { value: "$9,870.00", subValue: "0.82%" },
+      revenueSent: { value: "$8.17", muted: true },
+      lastUpdated: "Apr 14, 2026 11:00 AM",
+    },
+  },
+  {
+    id: "vip-loyalty-reward",
+    href: "/journeys/vip-loyalty-reward",
+    cells: {
+      name: "VIP Loyalty Reward",
+      status: { label: "Running", tone: "green" },
+      sent: "88",
+      opens: { value: "102", subValue: "115.91%" },
+      clicks: { value: "74", subValue: "84.09%" },
+      replies: { value: "0", subValue: "0%" },
+      attributedRevenue: { value: "$19,450.00", subValue: "22.10%" },
+      revenueSent: { value: "$220.91", muted: true },
+      lastUpdated: "May 25, 2026 07:22 PM",
+    },
+  },
+  {
+    id: "reorder-reminder",
+    href: "/journeys/reorder-reminder",
+    cells: {
+      name: "Reorder Reminder",
+      status: { label: "Running", tone: "green" },
+      sent: "267",
+      opens: { value: "231", subValue: "86.52%" },
+      clicks: { value: "143", subValue: "53.56%" },
+      replies: { value: "2", subValue: "0.75%" },
+      attributedRevenue: { value: "$7,614.00", subValue: "2.85%" },
+      revenueSent: { value: "$28.52", muted: true },
+      lastUpdated: "May 29, 2026 10:05 AM",
+    },
+  },
+  {
+    id: "price-drop-alert",
+    href: "/journeys/price-drop-alert",
+    cells: {
+      name: "Price Drop Alert",
+      status: { label: "Draft", tone: "gray" },
+      sent: "--",
+      opens: { value: "--", muted: true },
+      clicks: { value: "--", muted: true },
+      replies: { value: "--", muted: true },
+      attributedRevenue: { value: "$0", subValue: "--" },
+      revenueSent: { value: "$0", muted: true },
+      lastUpdated: "Jun 2, 2026 02:30 PM",
+    },
+  },
+  {
+    id: "referral-program",
+    href: "/journeys/referral-program",
+    cells: {
+      name: "Referral Program Journey",
+      status: { label: "Paused", tone: "blue" },
+      sent: "345",
+      opens: { value: "298", subValue: "86.38%" },
+      clicks: { value: "112", subValue: "32.46%" },
+      replies: { value: "5", subValue: "1.45%" },
+      attributedRevenue: { value: "$5,230.00", subValue: "1.52%" },
+      revenueSent: { value: "$15.16", muted: true },
+      lastUpdated: "Mar 30, 2026 04:55 PM",
+    },
+  },
+  {
+    id: "subscription-renewal",
+    href: "/journeys/subscription-renewal",
+    cells: {
+      name: "Subscription Renewal Reminder",
+      status: { label: "Running", tone: "green" },
+      sent: "193",
+      opens: { value: "174", subValue: "90.16%" },
+      clicks: { value: "139", subValue: "72.02%" },
+      replies: { value: "7", subValue: "3.63%" },
+      attributedRevenue: { value: "$31,080.00", subValue: "16.10%" },
+      revenueSent: { value: "$161.04", muted: true },
+      lastUpdated: "May 31, 2026 08:48 AM",
+    },
+  },
+  {
+    id: "flash-sale-sms",
+    href: "/journeys/flash-sale-sms",
+    cells: {
+      name: "Flash Sale SMS Blast",
+      status: { label: "Draft", tone: "gray" },
+      sent: "--",
+      opens: { value: "--", muted: true },
+      clicks: { value: "--", muted: true },
+      replies: { value: "--", muted: true },
+      attributedRevenue: { value: "$0", subValue: "--" },
+      revenueSent: { value: "$0", muted: true },
+      lastUpdated: "Jun 2, 2026 11:10 AM",
+    },
+  },
 ];
 
 export default function JourneysView() {
@@ -119,7 +254,7 @@ export default function JourneysView() {
   const displayRows = rows.map((r) => ({ ...r, menuItems: makeMenu(r) }));
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col overflow-y-auto">
       {/* Topbar */}
       <div className="flex items-center shrink-0 pr-3 pt-3">
         <div className="flex-1"><DateRangePicker /></div>
@@ -141,7 +276,7 @@ export default function JourneysView() {
         />
       </div>
 
-      <div className="flex flex-col min-h-0 px-4 pb-4 animate-fade-up">
+      <div className="sticky top-0 flex flex-col px-4 pb-4" style={{ height: "calc(100vh - 60px)" }}>
         <DashboardTable
           columns={JOURNEY_COLUMNS}
           rows={displayRows}

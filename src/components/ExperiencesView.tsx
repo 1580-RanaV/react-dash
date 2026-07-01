@@ -91,6 +91,114 @@ const EXPERIENCE_ROWS: TableRow[] = [
       createdBy: "Rohan",
     },
   },
+  {
+    id: "checkout-urgency-nudge",
+    href: "/experiences/checkout-urgency-nudge",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Checkout urgency nudge",
+      status: { label: "Running", tone: "green" },
+      type: "Client-side Experiment",
+      duration: "May 10, 2026 - Jun 9, 2026",
+      createdBy: "Somya",
+    },
+  },
+  {
+    id: "mobile-nav-redesign",
+    href: "/experiences/mobile-nav-redesign",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Mobile nav redesign A/B",
+      status: { label: "Running", tone: "green" },
+      type: "Client-side Experiment",
+      duration: "May 20, 2026 - Jun 19, 2026",
+      createdBy: "Aman",
+    },
+  },
+  {
+    id: "geo-based-banner",
+    href: "/experiences/geo-based-banner",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Geo-based homepage banner",
+      status: { label: "Draft", tone: "gray" },
+      type: "Server-side Personalization",
+      duration: "--",
+      createdBy: "Rohan",
+    },
+  },
+  {
+    id: "loyalty-member-upsell",
+    href: "/experiences/loyalty-member-upsell",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Loyalty member upsell widget",
+      status: { label: "Running", tone: "green" },
+      type: "Client-side Personalization",
+      duration: "Apr 15, 2026 - Jun 15, 2026",
+      createdBy: "Somya",
+    },
+  },
+  {
+    id: "search-result-boost",
+    href: "/experiences/search-result-boost",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Search result relevance boost",
+      status: { label: "Paused", tone: "blue" },
+      type: "Server-side Experiment",
+      duration: "Mar 1, 2026 - Apr 30, 2026",
+      createdBy: "Aman",
+    },
+  },
+  {
+    id: "pdp-social-proof",
+    href: "/experiences/pdp-social-proof",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "PDP social proof block",
+      status: { label: "Running", tone: "green" },
+      type: "Client-side Experiment",
+      duration: "May 22, 2026 - Jun 21, 2026",
+      createdBy: "Rohan",
+    },
+  },
+  {
+    id: "abandoned-cart-overlay",
+    href: "/experiences/abandoned-cart-overlay",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Abandoned cart exit overlay",
+      status: { label: "Draft", tone: "gray" },
+      type: "Client-side Personalization",
+      duration: "--",
+      createdBy: "Somya",
+    },
+  },
+  {
+    id: "first-purchase-discount",
+    href: "/experiences/first-purchase-discount",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "First-purchase discount bar",
+      status: { label: "Running", tone: "green" },
+      type: "Server-side Personalization",
+      duration: "Jun 1, 2026 - Jun 30, 2026",
+      createdBy: "Aman",
+    },
+  },
+  {
+    id: "recommended-products-rail",
+    href: "/experiences/recommended-products-rail",
+    menuItems: EXPERIENCE_MENU,
+    cells: {
+      name: "Recommended products rail",
+      status: { label: "Running", tone: "green" },
+      type: "Server-side Experiment",
+      duration: "May 5, 2026 - Jun 4, 2026",
+      createdBy: "Rohan",
+    },
+  },
 ];
 
 const EXPERIENCE_NAMES = [
@@ -169,7 +277,7 @@ export default function ExperiencesView() {
   const displayRows = rows.map((r) => ({ ...r, menuItems: makeMenu(r) }));
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden">
+    <div className="flex-1 flex flex-col overflow-y-auto relative overflow-x-hidden">
       {/* Topbar */}
       <div className="flex items-center shrink-0 pr-3 pt-3 gap-2">
         <div className="flex-1"><DateRangePicker /></div>
@@ -192,7 +300,7 @@ export default function ExperiencesView() {
         />
       </div>
 
-      <div className="flex flex-col min-h-0 px-4 pb-4 animate-fade-up">
+      <div className="sticky top-0 flex flex-col px-4 pb-4" style={{ height: "calc(100vh - 60px)" }}>
         <DashboardTable
           columns={EXPERIENCE_COLUMNS}
           rows={displayRows}
