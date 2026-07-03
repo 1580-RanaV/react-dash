@@ -38,15 +38,30 @@ function AssetCreatorPage() {
   return <AssetCreatorView type={type!} />;
 }
 
+const TABLE_SECTIONS = new Set(["team", "domains", "roles", "auditlog", "projects", "people", "project-users"]);
+
 function SettingsSection() {
   const { section = "about" } = useParams<{ section: string }>();
   const content = contentMap[section] ?? contentMap["about"];
+  if (section === "billing") {
+    return (
+      <div key={section} className="flex-1 min-h-0 flex items-center justify-center animate-fade-up">
+        {content}
+      </div>
+    );
+  }
+  if (TABLE_SECTIONS.has(section)) {
+    return (
+      <div key={section} className="flex-1 flex flex-col min-h-0 animate-fade-up">
+        {content}
+      </div>
+    );
+  }
   return (
-    <div
-      key={section}
-      className="px-4 py-6 sm:px-8 sm:py-8 md:px-12 md:py-8 max-w-2xl w-full mx-auto animate-fade-up"
-    >
-      {content}
+    <div key={section} className="flex-1 min-h-0 w-full overflow-y-auto">
+      <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:px-8 sm:py-8 md:px-10 md:py-8 animate-fade-up">
+        {content}
+      </div>
     </div>
   );
 }

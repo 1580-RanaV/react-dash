@@ -6,8 +6,8 @@ import SubTabCorner from "./SubTabCorner";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  AlertTriangle, Bot, CalendarDays, ChevronLeft, Clock, Copy, Globe,
-  Inbox, Info, Link2, LogOut, MessageSquare, PanelLeftOpen, Plus, Shield, Smartphone, Trash2, User, Users, X,
+  AlertTriangle, Bot, CalendarDays, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FolderOpen, Globe,
+  Download, Eye, Image, Inbox, Info, KeyRound, Link2, LogOut, MessageSquare, PanelLeftOpen, Plus, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
 } from "lucide-react";
 
 type SettingsItem = {
@@ -39,7 +39,13 @@ const settingsNav: SettingsSection[] = [
   {
     heading: "Organization",
     items: [
-      { label: "Domains", icon: <Globe size={14} />, key: "domains" },
+      { label: "Domains",   icon: <Globe size={14} />,         key: "domains" },
+      { label: "Team",      icon: <Users size={14} />,         key: "team" },
+      { label: "Roles",     icon: <ShieldCheck size={14} />,   key: "roles" },
+      { label: "API keys",  icon: <KeyRound size={14} />,      key: "apikeys" },
+      { label: "Audit log", icon: <ClipboardList size={14} />, key: "auditlog" },
+      { label: "Projects",  icon: <FolderOpen size={14} />,    key: "projects" },
+      { label: "Billing",   icon: <CreditCard size={14} />,    key: "billing" },
     ],
   },
   {
@@ -47,6 +53,7 @@ const settingsNav: SettingsSection[] = [
     items: [
       { label: "Basic info", icon: <Info size={14} />, key: "basic" },
       { label: "People", icon: <Users size={14} />, key: "people" },
+      { label: "Users", icon: <User size={14} />, key: "project-users" },
       { label: "Messages", icon: <MessageSquare size={14} />, key: "messages" },
       { label: "Meetings", icon: <CalendarDays size={14} />, key: "meetings" },
     ],
@@ -280,9 +287,8 @@ function DateOverridesSection() {
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+          className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-md border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
         >
-          <Plus size={13} />
           Add Override
         </button>
       </div>
@@ -363,7 +369,7 @@ function DateOverridesSection() {
                 </div>
               ))}
               <button onClick={() => setFormSlots((s) => [...s, { start: "09:00", end: "17:00" }])} className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 w-fit">
-                <Plus size={12} /> Add time slot
+                Add time slot
               </button>
             </div>
           )}
@@ -853,9 +859,8 @@ function InboxSection() {
               />
               <button
                 onClick={addAlias}
-                className="flex items-center gap-1 h-9 px-3.5 rounded-lg border border-stone-200 dark:border-(--border) text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors shrink-0"
+                className="flex items-center gap-1 h-9 px-3.5 rounded-md border border-stone-200 dark:border-(--border) text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors shrink-0"
               >
-                <Plus size={13} />
                 Add
               </button>
             </div>
@@ -932,10 +937,9 @@ function InboxSection() {
               </div>
               <button
                 onClick={addRule}
-                className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
+                className="flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
                 style={{ background: "#0080FF" }}
               >
-                <Plus size={13} />
                 Add Rule
               </button>
             </div>
@@ -949,31 +953,102 @@ function InboxSection() {
 
 
 const ACCESS_LEVELS = ["Super Admin", "Owner", "Admin", "Member", "Read Only", "Inbox Manager", "N/A"];
+const TIMEZONES = [
+  { label: "Eastern Time - New York", zone: "America / New_York", offset: "GMT-4", time: "07:03" },
+  { label: "Central Time - Chicago", zone: "America / Chicago", offset: "GMT-5", time: "06:03" },
+  { label: "Mountain Time - Denver", zone: "America / Denver", offset: "GMT-6", time: "05:03" },
+  { label: "Pacific Time - Los Angeles", zone: "America / Los_Angeles", offset: "GMT-7", time: "04:03" },
+  { label: "London", zone: "Europe / London", offset: "GMT+1", time: "12:03" },
+  { label: "Paris", zone: "Europe / Paris", offset: "GMT+2", time: "13:03" },
+  { label: "Berlin", zone: "Europe / Berlin", offset: "GMT+2", time: "13:03" },
+  { label: "Kyiv", zone: "Europe / Kyiv", offset: "GMT+3", time: "14:03" },
+  { label: "Dubai", zone: "Asia / Dubai", offset: "GMT+4", time: "15:03" },
+  { label: "Kolkata", zone: "Asia / Kolkata", offset: "GMT+5:30", time: "16:33" },
+  { label: "Singapore", zone: "Asia / Singapore", offset: "GMT+8", time: "19:03" },
+  { label: "Tokyo", zone: "Asia / Tokyo", offset: "GMT+9", time: "20:03" },
+];
 
 function BasicInfoSection() {
   const [accessLevel, setAccessLevel] = useState("Member");
+  const [timezone, setTimezone] = useState("Europe / Kyiv");
+  const [timezoneOpen, setTimezoneOpen] = useState(false);
+  const [timezoneSearch, setTimezoneSearch] = useState("");
+  const [companyDomains, setCompanyDomains] = useState(["intempt.com"]);
+  const [domainInput, setDomainInput] = useState("");
+
+  function addCompanyDomain() {
+    const domain = domainInput.trim().toLowerCase();
+    if (!domain || companyDomains.includes(domain)) return;
+    setCompanyDomains((current) => [...current, domain]);
+    setDomainInput("");
+  }
 
   return (
     <div>
-      <SectionHeader title="Basic info" sub="Configure your project name, timezone, and access settings." />
+      <SectionHeader title="Company Settings" sub="Configure company-specific information and preferences" />
       <SettingsRow label="Project name" description="The display name for this project">
         <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Linea" />
       </SettingsRow>
       <SettingsRow label="Timezone" description="Used for scheduling, reminders, and reports">
         <div className="relative">
-          <select className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-52">
-            <option>Europe / Kyiv</option>
-            <option>UTC</option>
-            <option>America / New_York</option>
-            <option>America / Los_Angeles</option>
-            <option>Asia / Kolkata</option>
-          </select>
-          <ChevronLeft size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
+          <button onClick={() => setTimezoneOpen((open) => !open)} className={`flex h-9 w-52 items-center justify-between rounded-md border bg-white pl-3 pr-2.5 text-sm text-stone-700 transition-colors dark:bg-(--input) dark:text-stone-300 ${timezoneOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
+            <span>{timezone}</span>
+            <ChevronLeft size={11} className={`text-stone-400 transition-transform ${timezoneOpen ? "rotate-90" : "-rotate-90"}`} />
+          </button>
+          {timezoneOpen && (
+            <div className="absolute right-0 top-[calc(100%+5px)] z-40 w-112 overflow-hidden rounded-xl animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 10px 30px rgba(0,0,0,0.14)" }}>
+              <div className="border-b border-stone-100 px-4 py-2.5 text-xs text-stone-500 dark:border-(--border)">444 timezones available</div>
+              <div className="px-3 pt-3">
+                <div className="relative">
+                  <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input autoFocus value={timezoneSearch} onChange={(event) => setTimezoneSearch(event.target.value)} placeholder="Search timezones…" className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-700 outline-none placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                </div>
+              </div>
+              <p className="px-4 pt-4 pb-2 text-xs font-semibold text-stone-500 dark:text-stone-400">Popular Timezones</p>
+              <div className="max-h-72 overflow-y-auto px-2 pb-2">
+                {TIMEZONES.filter((item) => `${item.label} ${item.zone} ${item.offset}`.toLowerCase().includes(timezoneSearch.toLowerCase())).map((item) => {
+                  const selected = timezone === item.zone;
+                  return (
+                    <button key={item.zone} onClick={() => { setTimezone(item.zone); setTimezoneOpen(false); setTimezoneSearch(""); }} className={`grid w-full grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${selected ? "bg-blue-50 text-stone-800 dark:bg-blue-500/12 dark:text-stone-100" : "text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"}`}>
+                      <span className="text-sm">{item.label}</span>
+                      <span className="text-xs text-stone-500 dark:text-stone-400">{item.offset}</span>
+                      <span className="font-mono text-sm text-stone-500 dark:text-stone-400">{item.time}</span>
+                      {selected && <span className="absolute right-3 text-blue-500">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </SettingsRow>
-      <SettingsRow label="Company email domain" description="Members with this domain can join automatically">
-        <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" placeholder="e.g. intempt.com" defaultValue="intempt.com" />
-      </SettingsRow>
+      <div className="border-b border-stone-100 py-4 dark:border-(--border)">
+        <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Company email domain</p>
+        <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Specify the email domains that belong to your company's employees and partners. Members with these domains can join automatically.</p>
+        <div className="mt-3 flex gap-2">
+          <input
+            value={domainInput}
+            onChange={(event) => setDomainInput(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addCompanyDomain(); } }}
+            className="h-9 flex-1 rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200"
+            placeholder="e.g. intempt.com"
+          />
+          <button onClick={addCompanyDomain} disabled={!domainInput.trim()} className="flex h-9 items-center gap-1.5 rounded-md bg-blue-500 px-3.5 text-xs font-semibold text-white transition-opacity disabled:opacity-40">
+            Add domain
+          </button>
+        </div>
+        <div className="mt-3 space-y-1">
+          {companyDomains.map((domain) => (
+            <div key={domain} className="flex items-center justify-between gap-3 px-1 py-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-400 dark:bg-(--muted) dark:text-stone-500"><Globe size={13} /></span>
+                <span className="truncate text-sm font-medium text-stone-700 dark:text-stone-200">{domain}</span>
+              </div>
+              <button onClick={() => setCompanyDomains((current) => current.filter((item) => item !== domain))} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"><X size={13} /></button>
+            </div>
+          ))}
+        </div>
+      </div>
       <SettingsRow label="Automatic project access" description="Anyone from these domains can automatically join">
         <div className="relative">
           <select
@@ -1012,10 +1087,10 @@ function RadioGroup({ options, value, onChange }: { options: { value: string; la
   );
 }
 
-function SubSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function SubSection({ title, description, children, titleWeight = "font-semibold" }: { title: string; description?: string; children: React.ReactNode; titleWeight?: string }) {
   return (
     <div className="mb-8">
-      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
+      <p className={`text-sm ${titleWeight} text-stone-800 dark:text-stone-100`}>{title}</p>
       {description && <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-4">{description}</p>}
       {!description && <div className="mt-4" />}
       {children}
@@ -1035,7 +1110,7 @@ function MsgSelect({ value, options }: { value: string; options: string[] }) {
 }
 
 function MessagesSection() {
-  const MSG_TABS = ["Sync", "Records", "Delivery"] as const;
+  const MSG_TABS = ["Sync", "Records", "Delivery", "Appearance"] as const;
   type MsgTab = typeof MSG_TABS[number];
   const [tab, setTab] = useState<MsgTab>("Sync");
 
@@ -1045,6 +1120,20 @@ function MessagesSection() {
   const [internalProcessing, setInternalProcessing] = useState("exclude");
   // Delivery state
   const [smartSending, setSmartSending] = useState(true);
+  const [physicalAddress, setPhysicalAddress] = useState(false);
+  const [emailSettingsTab, setEmailSettingsTab] = useState<"Header Links" | "Social">("Header Links");
+  const [socialLinks, setSocialLinks] = useState([
+    { id: "facebook", name: "Facebook", platform: "Facebook", url: "https://www.facebook.com/..." },
+    { id: "linkedin", name: "LinkedIn", platform: "LinkedIn", url: "https://www.linkedin.com/..." },
+    { id: "social-1", name: "Social", platform: "Platform", url: "" },
+  ]);
+  const [expandedSocial, setExpandedSocial] = useState<string | null>("social-1");
+
+  function addSocialLink() {
+    const id = `social-${Date.now()}`;
+    setSocialLinks((current) => [...current, { id, name: "Social", platform: "Platform", url: "" }]);
+    setExpandedSocial(id);
+  }
 
   return (
     <div>
@@ -1155,6 +1244,134 @@ function MessagesSection() {
                 </div>
               </div>
             )}
+          </SubSection>
+        </div>
+      )}
+
+      {tab === "Appearance" && (
+        <div className="space-y-10">
+          <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-sm font-medium text-stone-800 dark:text-stone-100">Design system</p>
+              <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Choose the design system used to style emails sent from this project.</p>
+            </div>
+            <div className="w-full sm:w-72">
+              <button className="flex h-10 w-full items-center gap-3 rounded-md border border-stone-200 bg-white px-3 text-left transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-(--input) dark:hover:bg-white/5">
+                <span className="flex h-5 w-10 shrink-0 overflow-hidden rounded-sm">
+                  <span className="flex-1 bg-[#6f4a8e]" />
+                  <span className="flex-1 bg-[#d8c9e8]" />
+                  <span className="flex-1 bg-[#3d2658]" />
+                  <span className="flex-1 bg-[#f0eaf5]" />
+                </span>
+                <span className="flex-1 text-sm font-medium text-stone-700 dark:text-stone-200">Alexandria</span>
+                <ChevronLeft size={11} className="-rotate-90 text-stone-400" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-8 flex items-center justify-between gap-6">
+            <div>
+              <p className="text-sm font-medium text-stone-800 dark:text-stone-100">Default email logo</p>
+              <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Upload the logo displayed in email headers and previews.</p>
+            </div>
+            <div className="flex shrink-0 flex-col items-center">
+              <div className="group relative flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-stone-200 bg-stone-50 text-stone-400 dark:border-(--border) dark:bg-(--muted)">
+                <Image size={22} />
+                <span className="pointer-events-none absolute bottom-[calc(100%+7px)] right-0 z-30 w-max max-w-52 rounded-lg px-2.5 py-1.5 text-xs leading-5 text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100" style={{ background: "rgba(24,24,27,0.93)" }}>
+                  JPG, PNG, GIF, WebP or SVG. Max 5MB.
+                  <span className="absolute right-6 top-full border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+                </span>
+              </div>
+              <button className="mt-2 text-xs font-medium text-blue-500 transition-colors hover:text-blue-600">Upload</button>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <SettingsRow label="Add physical address to email" description="Include a compliant mailing address in email footers. Required by CAN-SPAM and similar regulations in other regions and helps your emails comply with regional anti-spam regulations.">
+              <button onClick={() => setPhysicalAddress((value) => !value)}>
+                <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${physicalAddress ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}><span className={`h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${physicalAddress ? "translate-x-4.5" : "translate-x-0.5"}`} /></span>
+              </button>
+            </SettingsRow>
+            {physicalAddress && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-stone-700 dark:text-stone-200">Country</label>
+                  <div className="mt-1.5"><FakeSelect value="United States" /></div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-700 dark:text-stone-200">Street address <span className="text-rose-500">*</span></label>
+                  <input defaultValue="123 Main Street" className="mt-1.5 h-9 w-full rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-700 dark:text-stone-200">Street address line 2</label>
+                  <input defaultValue="Suite 100" className="mt-1.5 h-9 w-full rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {[['ZIP / Postal code', '94105'], ['City', 'San Francisco'], ['State / Province', 'CA']].map(([label, value]) => (
+                    <div key={label}><label className="text-sm font-medium text-stone-700 dark:text-stone-200">{label} <span className="text-rose-500">*</span></label><input defaultValue={value} className="mt-1.5 h-9 w-full rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" /></div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <SubSection title="Email settings" description="Configure reusable navigation and social links for email footers." titleWeight="font-medium">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <SubTabCorner tabs={[{ key: "Header Links", label: "Header Links" }, { key: "Social", label: "Social" }]} active={emailSettingsTab} onChange={(key) => setEmailSettingsTab(key as "Header Links" | "Social")} />
+              <button onClick={() => emailSettingsTab === "Social" && addSocialLink()} className="h-9 shrink-0 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90">{emailSettingsTab === "Header Links" ? "Add link" : "Add social link"}</button>
+            </div>
+            {emailSettingsTab === "Header Links" ? (
+              <div className="space-y-2">
+                <div className="rounded-lg border border-stone-100 p-4 dark:border-(--border)">
+                  <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Link 1</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2"><input placeholder="Link text" className="h-9 rounded-md border border-stone-200 px-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" /><input defaultValue="https://fieldsusa.com" className="h-9 rounded-md border border-stone-200 px-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" /></div>
+                </div>
+                {[2, 3].map((number) => <button key={number} className="flex h-11 w-full items-center rounded-lg border border-stone-100 px-4 text-sm font-medium text-stone-600 dark:border-(--border) dark:text-stone-300">Link {number}</button>)}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {socialLinks.map((link) => {
+                  const expanded = expandedSocial === link.id;
+                  return (
+                    <div key={link.id} className="overflow-hidden rounded-lg border border-stone-100 dark:border-(--border)">
+                      <div className={`flex h-12 items-center gap-3 px-4 ${expanded ? "border-b border-stone-100 dark:border-(--border)" : ""}`}>
+                        <button onClick={() => setExpandedSocial(expanded ? null : link.id)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5">
+                          <ChevronLeft size={12} className={`transition-transform ${expanded ? "rotate-90" : "rotate-180"}`} />
+                        </button>
+                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${expanded ? "bg-blue-50 text-blue-500 dark:bg-blue-500/10" : "bg-stone-100 text-stone-500 dark:bg-(--muted) dark:text-stone-400"}`}>{link.name[0]}</span>
+                        <button onClick={() => setExpandedSocial(expanded ? null : link.id)} className="flex-1 text-left text-sm font-medium text-stone-700 dark:text-stone-200">{link.name}</button>
+                        <button onClick={() => { setSocialLinks((current) => current.filter((item) => item.id !== link.id)); if (expanded) setExpandedSocial(null); }} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10"><Trash2 size={13} /></button>
+                      </div>
+                      {expanded && (
+                        <div className="grid gap-4 bg-stone-50/50 p-4 sm:grid-cols-2 dark:bg-white/2">
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Platform</label>
+                            <div className="mt-1.5"><FakeSelect value={link.platform} /></div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 dark:text-stone-400">URL</label>
+                            <input value={link.url} onChange={(event) => setSocialLinks((current) => current.map((item) => item.id === link.id ? { ...item, url: event.target.value } : item))} placeholder="https://www.facebook.com/..." className="mt-1.5 h-9 w-full rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </SubSection>
+
+          <SubSection title="Email preview" description="Preview how the selected appearance settings will look in an email." titleWeight="font-medium">
+            <div className="rounded-xl border border-stone-200 p-6 dark:border-(--border)">
+              <div className="mx-auto max-w-xl">
+                <div className="mb-8 flex justify-center"><span className="flex h-12 w-16 items-center justify-center rounded-lg bg-stone-100 text-stone-400 dark:bg-(--muted)"><Eye size={18} /></span></div>
+                <div className="mb-8 flex justify-center gap-5 text-xs font-medium text-blue-500"><span>Claim 50% off</span><span>Browse products</span></div>
+                <h3 className="text-base font-semibold text-stone-800 dark:text-stone-100">Welcome to Your Newsletter</h3>
+                <p className="mt-4 text-sm leading-6 text-stone-500 dark:text-stone-400">This is a preview of how your email content will appear. Your selected colors and styles will be applied throughout your emails.</p>
+                <button className="mt-5 h-10 rounded-md bg-blue-500 px-4 text-sm font-semibold text-white">Call to action</button>
+                <div className="mt-9 border-t border-stone-100 pt-5 text-center text-xs text-stone-400 dark:border-(--border)">© 2026 Your Company. All rights reserved.</div>
+              </div>
+            </div>
           </SubSection>
         </div>
       )}
@@ -1463,6 +1680,21 @@ function MobileNav({ selected, onBack, onNav }: { selected: string; onBack: () =
   );
 }
 
+// ── SettingsTable — wider table wrapper for settings pages ────────────────────
+
+function SettingsTable({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex-1 min-h-0 w-full max-w-4xl mx-auto overflow-hidden rounded-xl flex flex-col mb-4 md:mb-6"
+      style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
+    >
+      <div className="flex-1 min-h-0 overflow-auto">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ── Domains ──────────────────────────────────────────────────────────────────
 
 type Capability = "Booking" | "Click tracking" | "Privacy center" | "Email sending";
@@ -1482,6 +1714,21 @@ const INITIAL_DOMAINS: DomainRow[] = [
   { id: "d1", domain: "preferences-prod.tryintempt.com", capabilities: ["Privacy center"], status: "Failed" },
   { id: "d2", domain: "tracking-prod.tryintempt.com",   capabilities: ["Click tracking"],  status: "Failed" },
   { id: "d3", domain: "prod.tryintempt.com",            capabilities: ["Email sending"],   status: "Verified" },
+  { id: "d4", domain: "bookings.intempt-demo.com", capabilities: ["Booking"], status: "Verified" },
+  { id: "d5", domain: "links.intempt-demo.com", capabilities: ["Click tracking", "Privacy center"], status: "Verified" },
+  { id: "d6", domain: "mail.intempt-demo.com", capabilities: ["Email sending"], status: "Pending" },
+  { id: "d7", domain: "calendar.acme-example.com", capabilities: ["Booking"], status: "Verified" },
+  { id: "d8", domain: "engage.acme-example.com", capabilities: ["Email sending", "Click tracking"], status: "Verified" },
+  { id: "d9", domain: "privacy.acme-example.com", capabilities: ["Privacy center"], status: "Pending" },
+  { id: "d10", domain: "meet.northstar-demo.com", capabilities: ["Booking"], status: "Failed" },
+  { id: "d11", domain: "clicks.northstar-demo.com", capabilities: ["Click tracking"], status: "Verified" },
+  { id: "d12", domain: "messages.northstar-demo.com", capabilities: ["Email sending"], status: "Verified" },
+  { id: "d13", domain: "consent.northstar-demo.com", capabilities: ["Privacy center"], status: "Verified" },
+  { id: "d14", domain: "schedule.orbit-example.com", capabilities: ["Booking", "Email sending"], status: "Pending" },
+  { id: "d15", domain: "go.orbit-example.com", capabilities: ["Click tracking"], status: "Verified" },
+  { id: "d16", domain: "preferences.orbit-example.com", capabilities: ["Privacy center"], status: "Verified" },
+  { id: "d17", domain: "appointments.vertex-demo.com", capabilities: ["Booking"], status: "Verified" },
+  { id: "d18", domain: "email.vertex-demo.com", capabilities: ["Email sending", "Click tracking"], status: "Failed" },
 ];
 
 function CapBadge({ cap }: { cap: Capability }) {
@@ -1518,29 +1765,31 @@ function DomainsSection() {
   }
 
   return (
-    <div>
-      <SectionHeader title="Domains" sub="Verify once at the org level, then assign to projects for booking, click tracking, privacy center, and email sending." />
+    <div className="flex-1 flex flex-col min-h-0 w-full max-w-4xl mx-auto px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader title="Domains" sub="Verify once at the org level, then assign to projects for booking, click tracking, privacy center, and email sending." />
 
-      {/* Connected domains header */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div>
+        {/* Connected domains header */}
+        <div className="mb-4">
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Connected domains</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Enable each domain for one or more capabilities. DNS verified once per domain.</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Enable each domain for one or more capabilities — DNS verified once. Assign via <span className="font-medium text-stone-500 dark:text-stone-400">Project → Connectors → Domains</span>; per-project addresses (e.g. hello@yourdomain.com) are set in the project.</p>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: "#0080FF" }}
+            >
+              Add domain
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex shrink-0 items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ background: "#0080FF" }}
-        >
-          <Plus size={13} />
-          Add domain
-        </button>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-stone-100 dark:border-(--border) overflow-hidden">
+      <SettingsTable>
+      <div className="min-w-[760px]">
         {/* Header */}
-        <div className="grid grid-cols-[2fr_1.4fr_90px_80px] gap-4 px-4 py-2.5 border-b border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-white/2">
+        <div className="sticky top-0 z-10 grid grid-cols-[2fr_1.4fr_90px_80px] gap-4 px-4 py-2.5 border-b border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted)">
           {["Domain","Capabilities","Status","Used by"].map((h) => (
             <span key={h} className="text-xs font-semibold text-stone-400 dark:text-stone-500">{h}</span>
           ))}
@@ -1556,7 +1805,7 @@ function DomainsSection() {
                 <span className="absolute top-full left-4 border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
               </span>
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-col items-start gap-2">
               {row.capabilities.map((c) => <CapBadge key={c} cap={c} />)}
             </div>
             <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${row.status === "Verified" ? "text-emerald-500" : row.status === "Failed" ? "text-rose-500" : "text-stone-400"}`}>
@@ -1567,11 +1816,7 @@ function DomainsSection() {
           </div>
         ))}
       </div>
-
-      {/* Footer note */}
-      <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
-        Assign verified domains via <span className="font-medium text-stone-500 dark:text-stone-400">Project → Connectors → Domains</span>. Per-project addresses (e.g. hello@yourdomain.com) are set in the project.
-      </p>
+      </SettingsTable>
 
       {/* Add domain modal */}
       {modalOpen && createPortal(
@@ -1642,7 +1887,7 @@ function DomainsSection() {
               </button>
               <button
                 onClick={handleAdd}
-                className="h-9 px-4 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                className="h-9 px-4 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ background: "#0080FF" }}
               >
                 Add domain
@@ -1699,10 +1944,9 @@ function SecuritySection() {
         <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Sign in without a password using your device's built-in security.</p>
         <div className="flex justify-end mt-4">
           <button
-            className="flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: "#0080FF" }}
           >
-            <Plus size={13} />
             Add passkey
           </button>
         </div>
@@ -1803,6 +2047,638 @@ function AvailabilitySection() {
   );
 }
 
+// ── Team ─────────────────────────────────────────────────────────────────────
+
+type MemberRole = "Owner" | "Admin" | "Billing Admin" | "Member";
+
+const ROLE_STYLE: Record<MemberRole, string> = {
+  "Owner":         "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+  "Admin":         "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+  "Billing Admin": "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+  "Member":        "bg-stone-100 text-stone-500 border-stone-200 dark:bg-white/8 dark:text-stone-400 dark:border-(--border)",
+};
+
+const TEAM_MEMBERS = [
+  { name: "Roman Bohdan",        email: "roman@intempt.com",           role: "Owner" as MemberRole,         color: "#0080FF" },
+  { name: "Sid Chaudhary",       email: "sid@intempt.com",             role: "Owner" as MemberRole,         color: "#8B5CF6" },
+  { name: "Titas Kumpys",        email: "titas@intempt.com",           role: "Admin" as MemberRole,         color: "#0D9488" },
+  { name: "Koray",               email: "koray@intempt.com",           role: "Owner" as MemberRole,         color: "#F59E0B" },
+  { name: "Yaroslav Bezruchenko",email: "yaroslav@intempt.com",        role: "Admin" as MemberRole,         color: "#6366F1" },
+  { name: "Hennadii Asmolov",    email: "hennadii@intempt.com",        role: "Admin" as MemberRole,         color: "#EC4899" },
+  { name: "Daniil Zinoveev",     email: "daniil@intempt.com",          role: "Billing Admin" as MemberRole, color: "#F97316" },
+  { name: "Somya Nayak",         email: "somya@intempt.com",           role: "Owner" as MemberRole,         color: "#0D9488" },
+  { name: "Trishik Shrestha",    email: "trishik@intempt.com",         role: "Member" as MemberRole,        color: "#F59E0B" },
+  { name: "Yaroslav Bezruchenko",email: "bezruchenko.y.v@gmail.com",   role: "Member" as MemberRole,        color: "#6366F1" },
+  { name: "Beso Gugushvili",     email: "beso@intempt.com",            role: "Billing Admin" as MemberRole, color: "#0080FF" },
+  { name: "nandini",             email: "nandini@intempt.com",         role: "Member" as MemberRole,        color: "#EC4899" },
+  { name: "Hardik Sharma",       email: "hardik@intempt.com",          role: "Member" as MemberRole,        color: "#10B981" },
+  { name: "sandip",              email: "sandip@intempt.com",          role: "Member" as MemberRole,        color: "#8B5CF6" },
+  { name: "Rana Vivyanu",        email: "rana@intempt.com",            role: "Member" as MemberRole,        color: "#0080FF" },
+  { name: "Aarav Mehta",         email: "aarav@intempt.com",           role: "Member" as MemberRole,        color: "#14B8A6" },
+  { name: "Maya Thompson",       email: "maya@intempt.com",            role: "Admin" as MemberRole,         color: "#F43F5E" },
+  { name: "Noah Williams",       email: "noah@intempt.com",            role: "Member" as MemberRole,        color: "#3B82F6" },
+  { name: "Olivia Martin",       email: "olivia@intempt.com",          role: "Billing Admin" as MemberRole, color: "#A855F7" },
+  { name: "Ethan Walker",        email: "ethan@intempt.com",           role: "Member" as MemberRole,        color: "#22C55E" },
+  { name: "Sophia Chen",         email: "sophia@intempt.com",          role: "Admin" as MemberRole,         color: "#EAB308" },
+  { name: "Liam Anderson",       email: "liam@intempt.com",            role: "Member" as MemberRole,        color: "#06B6D4" },
+  { name: "Emma Wilson",         email: "emma@intempt.com",            role: "Member" as MemberRole,        color: "#F97316" },
+  { name: "Lucas Brown",         email: "lucas@intempt.com",           role: "Member" as MemberRole,        color: "#6366F1" },
+  { name: "Isabella Garcia",     email: "isabella@intempt.com",        role: "Admin" as MemberRole,         color: "#EC4899" },
+];
+
+function TeamSection() {
+  return (
+    <div className="flex-1 flex flex-col min-h-0 w-full max-w-4xl mx-auto px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader title="Team" sub="Manage your organization's team members of Intempt Internal Use Only." />
+        <div className="mb-4">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Organization members</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
+            Invite people to your organization, assign roles, and manage their access across projects and shared resources.
+          </p>
+          <div className="flex justify-end mt-3">
+            <button
+              className="flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: "#0080FF" }}
+            >
+              Invite member
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsTable>
+      <div className="min-w-[900px]">
+        {/* Header */}
+        <div className="sticky top-0 z-10 grid grid-cols-[2fr_2fr_1.2fr_1fr_80px] px-4 py-2.5 border-b border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted)">
+          {["Name", "Email", "Role", "Status", "Actions"].map((h) => (
+            <span key={h} className="text-xs font-semibold text-stone-400 dark:text-stone-500">{h}</span>
+          ))}
+        </div>
+        {/* Rows */}
+        {TEAM_MEMBERS.map((m, i) => (
+          <div key={`${m.email}-${i}`} className={`grid grid-cols-[2fr_2fr_1.2fr_1fr_80px] items-center px-4 py-3 ${i > 0 ? "border-t border-stone-100 dark:border-(--border)" : ""}`}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                style={{ background: m.color }}
+              >
+                {m.name[0].toUpperCase()}
+              </span>
+              <span className="text-sm font-medium text-stone-700 dark:text-stone-200 truncate">{m.name}</span>
+            </div>
+            <span className="text-sm text-stone-500 dark:text-stone-400 truncate pr-4">{m.email}</span>
+            <span className={`inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium ${ROLE_STYLE[m.role]}`}>
+              {m.role}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Active
+            </span>
+            <span className="text-sm text-stone-300 dark:text-stone-600">—</span>
+          </div>
+        ))}
+      </div>
+      </SettingsTable>
+    </div>
+  );
+}
+
+type RoleTab = "Org roles (0)" | "Project roles (0)" | "Custom (0)";
+type RoleRow = { name: string; description: string; scope: string; members: number };
+
+const ORG_ROLES: RoleRow[] = [
+  { name: "Organization owner", description: "Full organization access, including billing and security settings.", scope: "Organization", members: 2 },
+  { name: "Organization admin", description: "Manage members, projects, domains, and organization settings.", scope: "Organization", members: 4 },
+  { name: "Billing admin", description: "Manage subscriptions, invoices, and organization billing details.", scope: "Billing", members: 2 },
+  { name: "Organization member", description: "View organization resources and access assigned projects.", scope: "Organization", members: 18 },
+];
+
+const PROJECT_ROLES: RoleRow[] = [
+  { name: "Project owner", description: "Full control over a project, its settings, and member access.", scope: "Project", members: 5 },
+  { name: "Project admin", description: "Manage project resources, integrations, and team members.", scope: "Project", members: 9 },
+  { name: "Editor", description: "Create and update project content, journeys, and experiences.", scope: "Content", members: 14 },
+  { name: "Analyst", description: "View analytics, dashboards, and reports without editing content.", scope: "Analytics", members: 7 },
+  { name: "Viewer", description: "Read-only access to assigned project resources.", scope: "Read only", members: 11 },
+];
+
+function RolesTable({ rows }: { rows: RoleRow[] }) {
+  return (
+    <SettingsTable>
+      <div className="min-w-[760px]">
+        <div className="sticky top-0 z-10 grid grid-cols-[1.2fr_2fr_1fr_90px] gap-4 border-b border-stone-100 bg-stone-50 px-4 py-2.5 dark:border-(--border) dark:bg-(--muted)">
+          {["Role", "Description", "Scope", "Members"].map((heading) => (
+            <span key={heading} className="text-xs font-semibold text-stone-400 dark:text-stone-500">{heading}</span>
+          ))}
+        </div>
+        {rows.map((role, index) => (
+          <div key={role.name} className={`grid grid-cols-[1.2fr_2fr_1fr_90px] items-center gap-4 px-4 py-3 ${index ? "border-t border-stone-100 dark:border-(--border)" : ""}`}>
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{role.name}</span>
+            <span className="text-xs leading-5 text-stone-400 dark:text-stone-500">{role.description}</span>
+            <span className="w-fit rounded-md border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs font-medium text-stone-500 dark:border-(--border) dark:bg-white/8 dark:text-stone-400">{role.scope}</span>
+            <span className="text-sm text-stone-500 dark:text-stone-400">{role.members}</span>
+          </div>
+        ))}
+      </div>
+    </SettingsTable>
+  );
+}
+
+function RolesSection() {
+  const tabs: RoleTab[] = ["Org roles (0)", "Project roles (0)", "Custom (0)"];
+  const [tab, setTab] = useState<RoleTab>(tabs[0]);
+
+  return (
+    <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader
+          title="Roles & Permissions"
+          sub="The single source of truth for every role in your organization. Standard and custom roles defined here are available to assign in every project."
+        />
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <SubTabCorner
+            tabs={tabs.map((item) => ({ key: item, label: item }))}
+            active={tab}
+            onChange={(key) => setTab(key as RoleTab)}
+          />
+          <button className="flex h-9 shrink-0 items-center rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+            Create custom role
+          </button>
+        </div>
+      </div>
+
+      {tab === "Org roles (0)" && <RolesTable rows={ORG_ROLES} />}
+      {tab === "Project roles (0)" && <RolesTable rows={PROJECT_ROLES} />}
+      {tab === "Custom (0)" && (
+        <div className="flex flex-1 min-h-40 items-center justify-center rounded-xl border border-dashed border-stone-200 mb-6 dark:border-(--border)">
+          <div className="text-center">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">No custom roles</p>
+            <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Create a custom role to define a tailored set of permissions.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApiKeysSection() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [keyName, setKeyName] = useState("");
+  const [keyType, setKeyType] = useState<"Public" | "Private" | "Admin">("Public");
+  const [projectSearch, setProjectSearch] = useState("");
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const projects = ["Dev Playground", "Linea"];
+  const canCreate = keyName.trim().length > 0 && (keyType === "Admin" || selectedProjects.length > 0);
+
+  function closeModal() {
+    setModalOpen(false);
+    setKeyName("");
+    setKeyType("Public");
+    setProjectSearch("");
+    setSelectedProjects([]);
+  }
+
+  function toggleProject(project: string) {
+    setSelectedProjects((current) => current.includes(project)
+      ? current.filter((item) => item !== project)
+      : [...current, project]);
+  }
+
+  return (
+    <div>
+      <SectionHeader
+        title="API keys"
+        sub="Manage API credentials and control programmatic access across your organization."
+      />
+      <div className="mb-8 border-b border-stone-100 pb-6 dark:border-(--border)">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">API keys</p>
+            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-stone-100 px-1.5 py-0.5 text-xs font-semibold text-stone-500 dark:bg-white/8 dark:text-stone-400">0</span>
+          </div>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Create public, private, and admin keys across any of your projects from one place.</p>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button onClick={() => setModalOpen(true)} className="flex h-9 shrink-0 items-center gap-1.5 rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+            Create Key
+          </button>
+        </div>
+      </div>
+      <div className="flex min-h-48 items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-stone-100 text-stone-400 dark:bg-(--muted) dark:text-stone-500">
+            <KeyRound size={16} />
+          </div>
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">No API keys</p>
+          <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Create a key to start authenticating API requests.</p>
+        </div>
+      </div>
+
+      {modalOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.35)" }} onClick={closeModal}>
+          <div
+            className="relative flex max-h-[calc(100vh-32px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl shadow-2xl"
+            style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-5">
+              <button onClick={closeModal} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8">
+                <X size={15} />
+              </button>
+              <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create API key</h2>
+              <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">Generate a public, private, or admin key for your organization.</p>
+
+              <div className="mt-6">
+                <label className="text-sm font-medium text-stone-700 dark:text-stone-200">Name <span className="text-rose-500">*</span></label>
+                <input value={keyName} onChange={(event) => setKeyName(event.target.value)} placeholder="e.g. server-sync" className="mt-2 h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none placeholder:text-stone-400 focus:border-blue-500 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                {!keyName.trim() && <p className="mt-1.5 text-xs text-rose-500">Name is required</p>}
+              </div>
+
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-medium text-stone-700 dark:text-stone-200">Type</p>
+                <div className="space-y-2">
+                  {([
+                    ["Public", "Client-side key, safe to expose in the browser."],
+                    ["Private", "Server-side secret. Keep it confidential."],
+                    ["Admin", "Organization-wide management key. Not tied to a project."],
+                  ] as const).map(([type, description]) => (
+                    <button key={type} onClick={() => setKeyType(type)} className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${keyType === type ? "border-blue-500 bg-blue-50/70 dark:bg-blue-500/10" : "border-stone-200 hover:bg-stone-50 dark:border-(--border) dark:hover:bg-white/5"}`}>
+                      <div className="flex gap-3">
+                        <Shield size={14} className={keyType === type ? "mt-0.5 text-blue-500" : "mt-0.5 text-stone-400"} />
+                        <div>
+                          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{type}</p>
+                          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">{description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {keyType !== "Admin" && <div className="mt-5">
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Projects <span className="text-rose-500">*</span></p>
+                <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">Assign this key to one or more projects.</p>
+                <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder="Search projects…" className="mt-2 h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-700 outline-none placeholder:text-stone-400 focus:border-blue-500 dark:border-(--border) dark:bg-(--input) dark:text-stone-200" />
+                <div className="mt-2 overflow-hidden rounded-lg border border-stone-200 dark:border-(--border)">
+                  {projects.filter((project) => project.toLowerCase().includes(projectSearch.toLowerCase())).map((project, index) => {
+                    const selected = selectedProjects.includes(project);
+                    return (
+                      <button key={project} onClick={() => toggleProject(project)} className={`flex h-10 w-full items-center gap-2 px-3 text-left text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5 ${index ? "border-t border-stone-200 dark:border-(--border)" : ""}`}>
+                        <span className={`flex h-4 w-4 items-center justify-center rounded border ${selected ? "border-blue-500 bg-blue-500 text-white" : "border-stone-200 dark:border-stone-600"}`}>
+                          {selected && <span className="text-xs leading-none">✓</span>}
+                        </span>
+                        {project}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedProjects.length === 0 && <p className="mt-1.5 text-xs text-rose-500">Select at least one project</p>}
+              </div>}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-stone-100 px-6 py-4 dark:border-(--border)">
+              <button onClick={closeModal} className="h-9 rounded-lg border border-stone-200 px-4 text-sm font-medium text-stone-600 hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5">Cancel</button>
+              <button disabled={!canCreate} onClick={closeModal} className="h-9 rounded-md bg-blue-500 px-4 text-sm font-semibold text-white transition-opacity disabled:opacity-45">Create key</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+const AUDIT_ROWS = [
+  ["51m ago", "Aman Tiwari", "updated", "experience", "Test ABC", "Linea"],
+  ["51m ago", "Aman Tiwari", "updated", "experience", "July 3rd", "Linea"],
+  ["20h ago", "Roman Bohdan", "updated", "attribute", "Lifetime Revenue", "Dev Playground"],
+  ["20h ago", "Roman Bohdan", "created", "attribute", "test_123", "Dev Playground"],
+  ["22h ago", "Roman Bohdan", "updated", "attribute", "Test 2", "Dev Playground"],
+  ["22h ago", "Roman Bohdan", "created", "attribute", "Test 2", "Dev Playground"],
+  ["22h ago", "Roman Bohdan", "updated", "attribute", "test date", "Dev Playground"],
+  ["22h ago", "Roman Bohdan", "created", "attribute", "test num", "Dev Playground"],
+  ["1d ago", "Somya Nayak", "invited", "member", "Harish Kumar", "Linea"],
+  ["1d ago", "Rana Vivyanu", "created", "API key", "Server sync", "Dev Playground"],
+  ["2d ago", "Titas Kumpys", "updated", "role", "Project admin", "Linea"],
+  ["2d ago", "Sid Chaudhary", "verified", "domain", "mail.intempt.com", "Dev Playground"],
+  ["3d ago", "Somya Nayak", "updated", "member", "Aman Tiwari", "Linea"],
+  ["3d ago", "Roman Bohdan", "created", "project", "Growth Sandbox", "Dev Playground"],
+  ["4d ago", "Hennadii Asmolov", "revoked", "API key", "Legacy integration", "Linea"],
+  ["4d ago", "Yaroslav Bezruchenko", "updated", "domain", "tracking.intempt.com", "Dev Playground"],
+  ["5d ago", "Rana Vivyanu", "created", "role", "Campaign analyst", "Linea"],
+  ["5d ago", "Sid Chaudhary", "removed", "member", "External contractor", "Dev Playground"],
+  ["6d ago", "Titas Kumpys", "updated", "billing", "Payment method", "Linea"],
+  ["6d ago", "Somya Nayak", "enabled", "SSO", "Google Workspace", "Dev Playground"],
+  ["7d ago", "Roman Bohdan", "archived", "project", "Q2 Experiments", "Linea"],
+  ["7d ago", "Aman Tiwari", "rotated", "API key", "Production server", "Dev Playground"],
+  ["8d ago", "Hennadii Asmolov", "updated", "role", "Billing admin", "Linea"],
+  ["9d ago", "Rana Vivyanu", "verified", "domain", "bookings.intempt.com", "Dev Playground"],
+];
+
+const LOGIN_ROWS = [
+  ["04:13:02 PM", "ved@intempt.com", "GOOGLE", "210.79.133.26", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["03:26:26 PM", "markiian@intempt.com", "GOOGLE", "91.246.66.170", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["02:46:55 PM", "roman@intempt.com", "EMAIL CODE", "31.133.116.176", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["02:42:29 PM", "somya@intempt.com", "GOOGLE", "117.199.226.23", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["02:31:44 PM", "harish@intempt.com", "GOOGLE", "104.28.155.2", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["01:16:28 PM", "beso@intempt.com", "GOOGLE", "176.221.142.193", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+  ["12:32:25 PM", "aman@intempt.com", "GOOGLE", "49.37.43.109", "IntemptApp/167 CFNetwork/3860.600.12 Darwin"],
+  ["12:19:54 PM", "yaroslav@intempt.com", "GOOGLE", "31.183.149.68", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+  ["11:45:05 AM", "hennadii@intempt.com", "GOOGLE", "46.33.33.89", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:152.0)"],
+  ["11:42:34 AM", "rana@intempt.com", "GOOGLE", "104.28.155.52", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"],
+  ["10:11:03 PM", "koray@intempt.com", "GOOGLE", "151.250.149.51", "IntemptApp/1 CFNetwork/3860.600.12 Darwin"],
+  ["08:22:40 PM", "beso@intempt.com", "GOOGLE", "176.221.142.193", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+  ["07:46:52 PM", "matvey@intempt.com", "GOOGLE", "31.133.116.176", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["06:21:36 PM", "hennadii@intempt.com", "GOOGLE", "46.33.33.89", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:152.0)"],
+  ["05:42:16 PM", "aman@intempt.com", "GOOGLE", "49.37.43.109", "IntemptApp/167 CFNetwork/3860.600.12 Darwin"],
+  ["05:16:29 PM", "koray@intempt.com", "GOOGLE", "151.250.149.51", "Bun/1.2.23"],
+  ["04:54:08 PM", "rana@intempt.com", "GOOGLE", "157.50.148.175", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"],
+  ["03:38:41 PM", "sid@intempt.com", "EMAIL CODE", "103.86.71.44", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"],
+  ["02:17:09 PM", "titas@intempt.com", "GOOGLE", "78.62.114.20", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+  ["01:03:57 PM", "nandini@intempt.com", "GOOGLE", "122.161.55.91", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["11:49:22 AM", "hardik@intempt.com", "EMAIL CODE", "49.36.220.18", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+  ["09:28:14 AM", "somya@intempt.com", "GOOGLE", "117.199.226.23", "IntemptApp/167 CFNetwork/3860.600.12 Darwin"],
+  ["08:12:33 AM", "roman@intempt.com", "GOOGLE", "31.133.116.176", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"],
+  ["07:05:48 AM", "yaroslav@intempt.com", "GOOGLE", "31.183.149.68", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+];
+
+function AuditLogSection() {
+  const [tab, setTab] = useState<"Audit log" | "Login history">("Audit log");
+  const [actorOpen, setActorOpen] = useState(false);
+  const [selectedActor, setSelectedActor] = useState("");
+  const filters = ["Last 7 days", "All actors", "All targets", "All actions", "Any outcome", "Any severity"];
+  const actors = Array.from(new Set(AUDIT_ROWS.map((row) => row[1])));
+
+  return (
+    <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader
+          title="Audit log"
+          sub="Org-level events — SSO, RBAC, billing, members, API keys, project lifecycle. For project events (agents, journeys, CRM) see the project's audit log."
+        />
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <SubTabCorner
+            tabs={[{ key: "Audit log", label: "Audit log" }, { key: "Login history", label: "Login history" }]}
+            active={tab}
+            onChange={(key) => setTab(key as "Audit log" | "Login history")}
+          />
+          <button className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"><Download size={13} />Export CSV</button>
+        </div>
+      </div>
+
+      {tab === "Audit log" ? (
+        <>
+          <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <div className="relative min-w-56 flex-1 max-w-72">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input placeholder="Search action, target, request id" className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" />
+              </div>
+              {filters.map((filter) => filter === "All actors" ? (
+              <div key={filter} className="relative">
+                <button onClick={() => setActorOpen((open) => !open)} className={`flex h-9 min-w-36 items-center justify-between gap-3 rounded-md border bg-white px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:bg-(--input) dark:text-stone-200 dark:hover:bg-white/8 ${actorOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
+                  <span className="truncate">{selectedActor || "All actors"}</span>
+                  <ChevronLeft size={11} className={`shrink-0 text-stone-400 transition-transform ${actorOpen ? "rotate-90" : "-rotate-90"}`} />
+                </button>
+                {actorOpen && (
+                  <div className="absolute left-0 top-[calc(100%+5px)] z-40 min-w-52 overflow-hidden rounded-lg py-1 animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+                    {["", ...actors].map((actor) => (
+                      <button key={actor || "all"} onClick={() => { setSelectedActor(actor); setActorOpen(false); }} className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/6 ${selectedActor === actor ? "font-semibold text-blue-600 dark:text-blue-400" : "text-stone-600 dark:text-stone-300"}`}>
+                        {actor || "All actors"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              ) : <FakeSelect key={filter} value={filter} />)}
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+              <span className="text-xs whitespace-nowrap text-stone-400">◷ Retained 90 days</span>
+            </div>
+          </div>
+          <SettingsTable>
+            <div className="min-w-[920px]">
+              <div className="sticky top-0 z-10 grid grid-cols-[130px_220px_minmax(110px,1fr)_120px_minmax(150px,1.2fr)_120px] bg-stone-50 dark:bg-(--muted)">
+                {["When", "Actor", "Action", "Target", "Project", "Outcome"].map((heading) => <span key={heading} className="border-b border-r border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-500 last:border-r-0 dark:border-(--border)">{heading}</span>)}
+              </div>
+              {AUDIT_ROWS.map((row, index) => (
+                <div key={index} className="grid grid-cols-[130px_220px_minmax(110px,1fr)_120px_minmax(150px,1.2fr)_120px]">
+                  <span className="border-b border-r border-stone-200 px-3 py-2 text-sm text-stone-500 dark:border-(--border)">{row[0]}</span>
+                  <span className="flex items-center gap-2 border-b border-r border-stone-200 px-3 py-2 text-sm text-stone-700 dark:border-(--border) dark:text-stone-200">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-500 dark:bg-blue-500/10 dark:text-blue-400">
+                      {row[1].split(" ").map((part) => part[0]).join("").slice(0, 2)}
+                    </span>
+                    <span className="truncate">{row[1]}</span>
+                  </span>
+                  <span className="capitalize border-b border-r border-stone-200 px-3 py-2 text-sm text-stone-700 dark:border-(--border) dark:text-stone-200">{row[2]}</span>
+                  <span className="group relative flex items-center border-b border-r border-stone-200 px-3 py-2 text-sm text-stone-700 dark:border-(--border) dark:text-stone-200">
+                    <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-400">{row[3]}</span>
+                    <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-3 z-30 max-w-60 rounded-lg px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100" style={{ background: "rgba(24,24,27,0.93)" }}>
+                      <span className="block truncate whitespace-nowrap">{row[4]}</span>
+                      <span className="absolute left-4 top-full border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+                    </span>
+                  </span>
+                  <span className="border-b border-r border-stone-200 px-3 py-2 text-sm text-stone-700 dark:border-(--border) dark:text-stone-200">{row[5]}</span>
+                  <span className="border-b border-stone-200 px-3 py-2 text-sm text-emerald-600 dark:border-(--border)">✓ Success</span>
+                </div>
+              ))}
+            </div>
+          </SettingsTable>
+        </>
+      ) : (
+        <>
+          <p className="mb-4 text-xs text-stone-500 dark:text-stone-400">ⓘ Sign-in attempts across SSO and password methods. Open a row for IP, device and details.</p>
+          <SettingsTable>
+            <div className="min-w-[920px]">
+              <div className="sticky top-0 z-10 grid grid-cols-[120px_200px_110px_140px_1fr_120px] bg-stone-50 dark:bg-(--muted)">
+                {["Time", "User", "Method", "IP address", "Device / agent", "Status"].map((heading) => <span key={heading} className="border-b border-r border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-500 last:border-r-0 dark:border-(--border)">{heading}</span>)}
+              </div>
+              {LOGIN_ROWS.map((row, index) => (
+                <div key={index} className="grid grid-cols-[120px_200px_110px_140px_1fr_120px]">
+                  {row.map((cell, cellIndex) => <span key={cellIndex} className={`truncate border-b border-r border-stone-200 px-3 py-2 text-sm last:border-r-0 dark:border-(--border) ${cellIndex === 5 ? "text-emerald-600" : "text-stone-600 dark:text-stone-300"}`}>{cellIndex === 2 ? <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs dark:border-(--border)">{cell}</span> : cell}</span>)}
+                  <span className="border-b border-stone-200 px-3 py-2 text-sm text-emerald-600 dark:border-(--border)">✓ Success</span>
+                </div>
+              ))}
+            </div>
+          </SettingsTable>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProjectsSection() {
+  return (
+    <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader title="Projects" sub="Manage your organization's projects." />
+        <div className="mb-4">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Organization projects</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">View and manage every project available in your organization.</p>
+        </div>
+      </div>
+
+      <SettingsTable>
+        <div className="flex min-h-full min-w-[640px] flex-col">
+          <div className="sticky top-0 z-10 grid grid-cols-[2fr_1fr_1.2fr] bg-stone-50 dark:bg-(--muted)">
+            {["Name", "Created at", "Created by"].map((heading) => (
+              <span key={heading} className="border-b border-r border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-500 last:border-r-0 dark:border-(--border)">{heading}</span>
+            ))}
+          </div>
+          <div className="flex min-h-40 flex-1 items-center justify-center text-sm text-stone-400 dark:text-stone-500">
+            No projects available
+          </div>
+        </div>
+      </SettingsTable>
+    </div>
+  );
+}
+
+const PROJECT_MEMBERS = [
+  ["Roman Bohdan", "roman@intempt.com", "Project Owner"],
+  ["Sid Chaudhary", "sid@intempt.com", "Project Owner"],
+  ["Koray", "koray@intempt.com", "Project Admin"],
+  ["Yaroslav Bezruchenko", "yaroslav@intempt.com", "Project Admin"],
+  ["Hennadii Asmolov", "hennadii@intempt.com", "Project Admin"],
+  ["Trishik Shrestha", "trishik@intempt.com", "Project Admin"],
+  ["Beso Gugushvili", "beso@intempt.com", "Project Admin"],
+  ["Rana Vivyanu", "rana@intempt.com", "Project Admin"],
+  ["Markiian Holets", "markiian@intempt.com", "Project Admin"],
+  ["Pavlo Hrabovets", "pavlo@intempt.com", "Project Member"],
+  ["Aman Tiwari", "aman@intempt.com", "Project Admin"],
+  ["Somya Nayak", "somya@intempt.com", "Project Member"],
+];
+const PROJECT_TEAMS = [
+  ["Example", "1", "Jul 3, 2026, 04:49 PM", "Intempt"],
+  ["Team45", "0", "Jul 3, 2026, 04:49 PM", "Intempt"],
+  ["Test Team2", "0", "Jul 3, 2026, 04:49 PM", "Intempt"],
+  ["Test Team23", "2", "Jul 3, 2026, 04:49 PM", "Intempt"],
+  ["Test Team", "0", "Jul 3, 2026, 04:49 PM", "Intemp"],
+];
+
+function PeopleSection() {
+  const [tab, setTab] = useState<"Members" | "Teams">("Members");
+  return (
+    <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader title="People" sub="Manage members and teams of Dev Playground." />
+        <div className="mb-4">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Project access</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Control who can access this project and how members are organized.</p>
+        </div>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <SubTabCorner tabs={[{ key: "Members", label: "Members" }, { key: "Teams", label: "Teams" }]} active={tab} onChange={(key) => setTab(key as "Members" | "Teams")} />
+          <button className="h-9 shrink-0 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90">{tab === "Members" ? "Invite member" : "Create team"}</button>
+        </div>
+      </div>
+
+      {tab === "Members" ? (
+        <SettingsTable>
+          <div className="min-w-[860px]">
+            <div className="sticky top-0 z-10 grid grid-cols-[1.4fr_1.4fr_1.35fr_1fr_80px] border-b border-stone-200 bg-stone-50 dark:border-(--border) dark:bg-(--muted)">
+              {["Name", "Email", "Role", "Status", "Actions"].map((heading) => <span key={heading} className="px-4 py-2.5 text-xs font-semibold text-stone-500">{heading}</span>)}
+            </div>
+            {PROJECT_MEMBERS.map((member) => (
+              <div key={member[1]} className="grid min-h-12 grid-cols-[1.4fr_1.4fr_1.35fr_1fr_80px] items-center border-b border-stone-200 dark:border-(--border)">
+                <span className="px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-200">{member[0]}</span>
+                <span className="truncate px-3 py-2.5 text-sm text-stone-500 dark:text-stone-400">{member[1]}</span>
+                <span className="px-3 py-2">
+                  <span className={`rounded-md px-2 py-1 text-xs font-medium ${member[2] === "Project Owner" ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" : "bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400"}`}>{member[2]}</span>
+                </span>
+                <span className="px-3 py-2.5"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">Active</span></span>
+                <span className="px-3 py-2.5 text-sm text-stone-400">—</span>
+              </div>
+            ))}
+          </div>
+        </SettingsTable>
+      ) : (
+        <SettingsTable>
+          <div className="flex min-h-full min-w-[760px] flex-col">
+            <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_1fr_1.5fr_1fr] border-b border-stone-200 bg-stone-50 dark:border-(--border) dark:bg-(--muted)">
+              {["Name", "Users in team", "Last modified", "Created by"].map((heading) => <span key={heading} className="px-4 py-2.5 text-xs font-semibold text-stone-500">{heading}</span>)}
+            </div>
+            {PROJECT_TEAMS.map((team) => (
+              <div key={team[0]} className="grid min-h-12 grid-cols-[1.5fr_1fr_1.5fr_1fr] items-center border-b border-stone-200 dark:border-(--border)">
+                <span className="px-4 py-3 text-sm font-medium text-stone-700 dark:text-stone-200">{team[0]}</span>
+                <span className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">{team[1]}</span>
+                <span className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">{team[2]}</span>
+                <span className="flex items-center gap-2 px-4 py-3 text-sm text-stone-600 dark:text-stone-300"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-500 dark:bg-blue-500/10">I</span>{team[3]}</span>
+              </div>
+            ))}
+          </div>
+        </SettingsTable>
+      )}
+    </div>
+  );
+}
+
+const LIFECYCLE_STAGES = ["Subscriber", "Lead", "Marketing Qualified Lead", "Product Qualified Lead", "Sales Qualified Lead", "Opportunity", "Customer", "Evangelist"];
+const DEAL_STAGES = [
+  ["Product Signup / Self-Serve", "10%"],
+  ["Activation / First Value", "25%"],
+  ["Team Adoption / Expansion Signal", "40%"],
+  ["Sales-Assisted Discovery", "60%"],
+  ["Proposal / Procurement", "80%"],
+  ["Negotiation / Commitment", "90%"],
+  ["Closed Lost", "Lost (0%)"],
+  ["Closed Won", "Won (100%)"],
+];
+
+function ProjectUsersSection() {
+  const [tab, setTab] = useState<"Lifecycle" | "Deals">("Lifecycle");
+  return (
+    <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
+      <div className="w-full max-w-4xl mx-auto">
+        <SectionHeader title="Data Model" sub="Configure lifecycle stages, deal pipelines, and scoring models" />
+        <div className="mb-4">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{tab === "Lifecycle" ? "Lifecycle stages" : "Deal stages"}</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
+            {tab === "Lifecycle"
+              ? "List the stages a user moves through. The order defines how progression between stages is tracked."
+              : "Customize deal pipeline to manage the way you track revenue opportunities from the first to the last step."}
+          </p>
+        </div>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <SubTabCorner tabs={[{ key: "Lifecycle", label: "Lifecycle" }, { key: "Deals", label: "Deals" }]} active={tab} onChange={(key) => setTab(key as "Lifecycle" | "Deals")} />
+          <button className="h-9 shrink-0 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90">{tab === "Lifecycle" ? "Add stage" : "Add deal"}</button>
+        </div>
+      </div>
+
+      <SettingsTable>
+        <div className="flex min-h-full min-w-[720px] flex-col">
+          {tab === "Lifecycle" ? (
+            <>
+              <div className="sticky top-0 z-10 grid grid-cols-[1fr_120px] border-b border-stone-200 bg-stone-50 dark:border-(--border) dark:bg-(--muted)">
+                <span className="px-4 py-3 text-xs font-semibold text-stone-500">Stage name</span>
+                <span className="px-4 py-3 text-xs font-semibold text-stone-500">Used in</span>
+              </div>
+              {LIFECYCLE_STAGES.map((stage) => (
+                <div key={stage} className="grid min-h-12 grid-cols-[1fr_120px] items-center border-b border-stone-200 dark:border-(--border)">
+                  <span className="flex items-center gap-4 px-5 py-3 text-sm font-medium text-stone-700 dark:text-stone-200"><span className="text-base leading-none text-stone-400">⠿</span>{stage}</span>
+                  <span className="px-4 py-3 text-sm text-stone-600 dark:text-stone-300">0</span>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="sticky top-0 z-10 grid grid-cols-[1fr_220px_100px] border-b border-stone-200 bg-stone-50 dark:border-(--border) dark:bg-(--muted)">
+                {["Stage name", "Probability", "Used in"].map((heading) => <span key={heading} className="px-4 py-3 text-xs font-semibold text-stone-500">{heading}</span>)}
+              </div>
+              {DEAL_STAGES.map(([stage, probability]) => (
+                <div key={stage} className="grid min-h-14 grid-cols-[1fr_220px_100px] items-center border-b border-stone-200 dark:border-(--border)">
+                  <span className="flex items-center gap-4 px-5 py-3 text-sm font-medium text-stone-700 dark:text-stone-200"><span className="text-base leading-none text-stone-400">⠿</span>{stage}</span>
+                  <span className="px-3 py-2"><FakeSelect value={probability} /></span>
+                  <span className="px-4 py-3 text-sm text-stone-600 dark:text-stone-300">0</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </SettingsTable>
+    </div>
+  );
+}
+
 export const contentMap: Record<string, React.ReactNode> = {
   about: (
     <div>
@@ -1863,35 +2739,22 @@ export const contentMap: Record<string, React.ReactNode> = {
   inbox: <InboxSection />,
   security: <SecuritySection />,
   domains: <DomainsSection />,
+  team: <TeamSection />,
+  roles: <RolesSection />,
+  apikeys: <ApiKeysSection />,
+  auditlog: <AuditLogSection />,
+  projects: <ProjectsSection />,
+  billing: (
+    <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Billing coming soon</p>
+  ),
   basic: (
     <div>
       <BasicInfoSection />
       <DeleteRow target="project" label="Delete project" desc="Permanently delete this project along with all its assets, journeys, and member access." />
     </div>
   ),
-  people: (
-    <div>
-      <SectionHeader title="People" sub="Manage team members, invite new ones, and control their roles and access." />
-      {[
-        { name: "Rana V", email: "rana@intempt.com", role: "Admin", color: "#0080FF" },
-        { name: "Beso", email: "beso@intempt.com", role: "Member", color: "#0080FF" },
-        { name: "Roman", email: "roman@intempt.com", role: "Member", color: "#10b981" },
-        { name: "Markiian", email: "markiian@intempt.com", role: "Member", color: "#8b5cf6" },
-      ].map((p) => (
-        <div key={p.email} className="flex items-center gap-3 py-2.5 border-b border-stone-100 dark:border-(--border) last:border-0">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0" style={{ background: p.color }}>
-            {p.name[0]}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{p.name}</p>
-            <p className="text-xs text-stone-400">{p.email}</p>
-          </div>
-          <FakeSelect value={p.role} />
-        </div>
-      ))}
-      <button className="mt-4 inline-flex h-9 items-center rounded-md px-4 bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors">Invite member</button>
-    </div>
-  ),
+  people: <PeopleSection />,
+  "project-users": <ProjectUsersSection />,
   messages: <MessagesSection />,
   meetings: (
     <div>
@@ -1981,7 +2844,7 @@ export default function SettingsLayout({ onBack, children }: { onBack: () => voi
         <MobileNav selected={selected} onBack={onBack} onNav={(key) => navigate(`/settings/${key}`)} />
 
         <div
-          className="flex-1 flex flex-col rounded-xl overflow-y-auto mx-3 mb-3 md:mx-0 md:mb-0"
+          className="flex-1 flex flex-col rounded-xl overflow-hidden mx-3 mb-3 md:mx-0 md:mb-0"
           style={{
             background: "var(--content-bg)",
             border: "1px solid var(--border)",
