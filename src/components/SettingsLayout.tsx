@@ -1,12 +1,13 @@
 
 
 import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { createPortal } from "react-dom";
 import SubTabCorner from "./SubTabCorner";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  AlertTriangle, CalendarDays, ChevronLeft, Clock, Copy, Globe,
-  Inbox, Info, Link2, MessageSquare, PanelLeftOpen, Plus, Trash2, User, Users, X,
+  AlertTriangle, Bot, CalendarDays, ChevronLeft, Clock, Copy, Globe,
+  Inbox, Info, Link2, LogOut, MessageSquare, PanelLeftOpen, Plus, Shield, Smartphone, Trash2, User, Users, X,
 } from "lucide-react";
 
 type SettingsItem = {
@@ -32,6 +33,7 @@ const settingsNav: SettingsSection[] = [
       { label: "My availability", icon: <Clock size={14} />, key: "availability" },
       { label: "Connections", icon: <Link2 size={14} />, key: "connections" },
       { label: "Inbox", icon: <Inbox size={14} />, key: "inbox" },
+      { label: "Security", icon: <Shield size={14} />, key: "security" },
     ],
   },
   {
@@ -113,19 +115,19 @@ function FakeToggle({ on = false }: { on?: boolean }) {
 
 // ── Weekly Hours ─────────────────────────────────────────────────────────────
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 type Day = typeof DAYS[number];
 type Slot = { start: string; end: string };
 type Schedule = Record<Day, { active: boolean; slots: Slot[] }>;
 
 const DEFAULT_SCHEDULE: Schedule = {
-  Sun: { active: false, slots: [{ start: "09:00", end: "17:00" }] },
-  Mon: { active: false, slots: [{ start: "09:00", end: "17:00" }] },
-  Tue: { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
-  Wed: { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
-  Thu: { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
-  Fri: { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
-  Sat: { active: false, slots: [{ start: "09:00", end: "17:00" }] },
+  Sunday:    { active: false, slots: [{ start: "09:00", end: "17:00" }] },
+  Monday:    { active: false, slots: [{ start: "09:00", end: "17:00" }] },
+  Tuesday:   { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
+  Wednesday: { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
+  Thursday:  { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
+  Friday:    { active: true,  slots: [{ start: "09:00", end: "17:00" }] },
+  Saturday:  { active: false, slots: [{ start: "09:00", end: "17:00" }] },
 };
 
 function fmt24to12(t: string) {
@@ -172,7 +174,7 @@ function WeeklyHours() {
     });
   }
 
-  const firstActiveDay = DAYS.find((d) => schedule[d].active);
+  const [hoveredDay, setHoveredDay] = useState<Day | null>(null);
 
   return (
     <div>
@@ -182,11 +184,11 @@ function WeeklyHours() {
         {DAYS.map((day) => {
           const { active, slots } = schedule[day];
           return (
-            <div key={day} className="flex items-start gap-3">
+            <div key={day} className="flex items-start gap-3" onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)}>
               {/* Day pill */}
               <button
                 onClick={() => toggleDay(day)}
-                className={`w-12 h-9 shrink-0 rounded-lg text-xs font-semibold transition-colors ${
+                className={`w-24 h-9 shrink-0 rounded-lg text-xs font-semibold transition-colors ${
                   active
                     ? "bg-blue-500 text-white"
                     : "border border-stone-200 dark:border-(--border) text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5"
@@ -196,43 +198,44 @@ function WeeklyHours() {
               </button>
 
               {active ? (
-                <div className="flex flex-col gap-2 flex-1">
-                  {slots.map((slot, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      {/* Start time */}
-                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
-                        <span className="flex-1">{fmt24to12(slot.start)}</span>
+                <div className="flex flex-1 items-start gap-3">
+                  {/* Slots column */}
+                  <div className="flex flex-col gap-2 flex-1">
+                    {slots.map((slot, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
                         <Clock size={12} className="text-stone-300 shrink-0" />
-                        <input type="time" value={slot.start} onChange={(e) => updateSlot(day, idx, "start", e.target.value)} className="sr-only" tabIndex={-1} />
+                        {/* Start time */}
+                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-32">
+                          <span>{fmt24to12(slot.start)}</span>
+                          <input type="time" value={slot.start} onChange={(e) => updateSlot(day, idx, "start", e.target.value)} className="sr-only" tabIndex={-1} />
+                        </div>
+                        <span className="text-xs text-stone-400">to</span>
+                        {/* End time */}
+                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-32">
+                          <span>{fmt24to12(slot.end)}</span>
+                          <input type="time" value={slot.end} onChange={(e) => updateSlot(day, idx, "end", e.target.value)} className="sr-only" tabIndex={-1} />
+                        </div>
+                        {/* Remove slot */}
+                        {slots.length > 1 && (
+                          <button onClick={() => removeSlot(day, idx)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 hover:text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+                            <X size={13} />
+                          </button>
+                        )}
                       </div>
-                      <span className="text-xs text-stone-400">to</span>
-                      {/* End time */}
-                      <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
-                        <span className="flex-1">{fmt24to12(slot.end)}</span>
-                        <Clock size={12} className="text-stone-300 shrink-0" />
-                        <input type="time" value={slot.end} onChange={(e) => updateSlot(day, idx, "end", e.target.value)} className="sr-only" tabIndex={-1} />
-                      </div>
-                      {/* Remove slot */}
-                      {slots.length > 1 && (
-                        <button onClick={() => removeSlot(day, idx)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 hover:text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
-                          <X size={13} />
-                        </button>
-                      )}
-                      {/* Add slot — on last row */}
-                      {idx === slots.length - 1 && (
-                        <button onClick={() => addSlot(day)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
-                          <Plus size={14} />
-                        </button>
-                      )}
-                      {/* Copy to all — only on first active day, first slot */}
-                      {day === firstActiveDay && idx === 0 && (
-                        <button onClick={() => copyToAll(day)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
-                          <Copy size={12} />
-                          Copy to all
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {/* Right-side actions */}
+                  <div className="flex items-center gap-1 shrink-0 mt-1">
+                    {hoveredDay === day && (
+                      <button onClick={() => copyToAll(day)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                        <Copy size={12} />
+                        Copy to all
+                      </button>
+                    )}
+                    <button onClick={() => addSlot(day)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors" title="Add time slot">
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <span className="flex h-9 items-center text-xs text-stone-400 dark:text-stone-500">Unavailable</span>
@@ -245,6 +248,139 @@ function WeeklyHours() {
   );
 }
 
+// ── Date Overrides ────────────────────────────────────────────────────────────
+
+type DateOverride = { id: string; date: string; type: "unavailable" | "available"; slots: Slot[] };
+
+function DateOverridesSection() {
+  const [overrides, setOverrides] = useState<DateOverride[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [formDate, setFormDate] = useState("2026-07-04");
+  const [formType, setFormType] = useState<"unavailable" | "available">("unavailable");
+  const [formSlots, setFormSlots] = useState<Slot[]>([{ start: "09:00", end: "17:00" }]);
+
+  function addOverride() {
+    if (!formDate) return;
+    setOverrides((prev) => [
+      ...prev,
+      { id: String(Date.now()), date: formDate, type: formType, slots: formType === "unavailable" ? [] : formSlots },
+    ]);
+    setShowForm(false);
+    setFormDate("2026-07-04");
+    setFormType("unavailable");
+    setFormSlots([{ start: "09:00", end: "17:00" }]);
+  }
+
+  return (
+    <div className="border-t border-stone-100 dark:border-(--border) pt-6 mt-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Date Overrides</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Set specific dates when your availability differs from your weekly schedule</p>
+        </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+        >
+          <Plus size={13} />
+          Add Override
+        </button>
+      </div>
+
+      {/* Existing overrides */}
+      {overrides.length > 0 && (
+        <div className="mt-4 flex flex-col gap-2">
+          {overrides.map((ov) => (
+            <div key={ov.id} className="flex items-center justify-between gap-3 rounded-xl border border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${ov.type === "unavailable" ? "bg-rose-400" : "bg-emerald-400"}`} />
+                <span className="text-sm font-medium text-stone-700 dark:text-stone-300">{fmtDate(ov.date)}</span>
+                <span className="text-xs text-stone-400 dark:text-stone-500">
+                  {ov.type === "unavailable" ? "Unavailable" : ov.slots.map((s) => `${fmt24to12(s.start)} – ${fmt24to12(s.end)}`).join(", ")}
+                </span>
+              </div>
+              <button
+                onClick={() => setOverrides((prev) => prev.filter((o) => o.id !== ov.id))}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 hover:text-rose-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors shrink-0"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add form */}
+      {showForm && (
+        <div className="mt-4 rounded-xl border border-stone-200 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-4 py-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Date</label>
+            <input
+              type="date"
+              value={formDate}
+              onChange={(e) => setFormDate(e.target.value)}
+              className="h-9 w-44 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 transition"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Availability</label>
+            <div className="flex gap-2">
+              {(["unavailable", "available"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFormType(t)}
+                  className={`h-8 px-3 rounded-lg border text-xs font-medium transition-colors capitalize ${
+                    formType === t
+                      ? "border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400 dark:border-blue-500/40"
+                      : "border-stone-200 dark:border-(--border) text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-white/6"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          {formType === "available" && (
+            <div className="flex flex-col gap-2">
+              {formSlots.map((slot, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
+                    <span className="flex-1">{fmt24to12(slot.start)}</span>
+                    <Clock size={12} className="text-stone-300 shrink-0" />
+                    <input type="time" value={slot.start} onChange={(e) => setFormSlots((s) => s.map((sl, i) => i === idx ? { ...sl, start: e.target.value } : sl))} className="sr-only" tabIndex={-1} />
+                  </div>
+                  <span className="text-xs text-stone-400">to</span>
+                  <div className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-xs text-stone-700 dark:text-stone-200 w-32">
+                    <span className="flex-1">{fmt24to12(slot.end)}</span>
+                    <Clock size={12} className="text-stone-300 shrink-0" />
+                    <input type="time" value={slot.end} onChange={(e) => setFormSlots((s) => s.map((sl, i) => i === idx ? { ...sl, end: e.target.value } : sl))} className="sr-only" tabIndex={-1} />
+                  </div>
+                  {formSlots.length > 1 && (
+                    <button onClick={() => setFormSlots((s) => s.filter((_, i) => i !== idx))} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 hover:text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => setFormSlots((s) => [...s, { start: "09:00", end: "17:00" }])} className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 w-fit">
+                <Plus size={12} /> Add time slot
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={addOverride} className="h-9 px-4 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+              Save Override
+            </button>
+            <button onClick={() => setShowForm(false)} className="h-9 px-4 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type OOOEntry = { id: string; startDate: string; endDate: string; reason: string };
 
 function fmtDate(d: string) {
@@ -252,6 +388,87 @@ function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${months[parseInt(m) - 1]} ${parseInt(day)}, ${y}`;
+}
+
+function BluPreferencesSection() {
+  const [autoDetect, setAutoDetect] = useState(true);
+  const [notifyBooked, setNotifyBooked] = useState(true);
+  const [duration, setDuration] = useState("30 min");
+  const [slots, setSlots] = useState("3 slots");
+
+  return (
+    <div className="border-t border-stone-100 dark:border-(--border) pt-6 mt-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/12">
+          <Bot size={15} className="text-blue-500 dark:text-blue-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Blu Preferences</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500">How Blu handles scheduling on your behalf</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between py-3.5 border-b border-stone-100 dark:border-(--border)">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-stone-700 dark:text-stone-200">Auto-detect scheduling discussions</span>
+            <span className="relative group">
+              <Info size={13} className="text-stone-300 dark:text-stone-600 cursor-default" />
+              <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ background: "rgba(24,24,27,0.93)" }}>
+                Blu scans messages for scheduling intent
+                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+              </span>
+            </span>
+          </div>
+          <button onClick={() => setAutoDetect((v) => !v)} aria-pressed={autoDetect}>
+            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${autoDetect ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${autoDetect ? "translate-x-4.5" : "translate-x-0.5"}`} />
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between py-3.5 border-b border-stone-100 dark:border-(--border)">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Default meeting duration</span>
+          <div className="relative">
+            <select value={duration} onChange={(e) => setDuration(e.target.value)}
+              className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer">
+              {["15 min","20 min","30 min","45 min","60 min"].map((o) => <option key={o}>{o}</option>)}
+            </select>
+            <ChevronLeft size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between py-3.5 border-b border-stone-100 dark:border-(--border)">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Time slots to suggest</span>
+          <div className="relative">
+            <select value={slots} onChange={(e) => setSlots(e.target.value)}
+              className="h-9 appearance-none pl-3 pr-8 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer">
+              {["1 slot","2 slots","3 slots","4 slots","5 slots"].map((o) => <option key={o}>{o}</option>)}
+            </select>
+            <ChevronLeft size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between py-3.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-stone-700 dark:text-stone-200">Notify me when meetings are booked</span>
+            <span className="relative group">
+              <Info size={13} className="text-stone-300 dark:text-stone-600 cursor-default" />
+              <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ background: "rgba(24,24,27,0.93)" }}>
+                Get notified each time Blu books a meeting
+                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+              </span>
+            </span>
+          </div>
+          <button onClick={() => setNotifyBooked((v) => !v)} aria-pressed={notifyBooked}>
+            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${notifyBooked ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${notifyBooked ? "translate-x-4.5" : "translate-x-0.5"}`} />
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function OOOSection() {
@@ -510,9 +727,51 @@ function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
   );
 }
 
+const MARKETING_OPTIONS = [
+  { value: "light",      label: "Light",      desc: "Cold emails & unknown senders only" },
+  { value: "aggressive", label: "Aggressive", desc: "All promotional emails" },
+  { value: "off",        label: "Off",        desc: "Don't filter marketing" },
+];
+
 function InboxSection() {
   const [enabled, setEnabled] = useState(false);
   const [respectLabels, setRespectLabels] = useState(true);
+  const [marketingStrength, setMarketingStrength] = useState("light");
+  const [marketingOpen, setMarketingOpen] = useState(false);
+  const [aliasInput, setAliasInput] = useState("");
+  const [aliases, setAliases] = useState<string[]>([]);
+  const [ruleInput, setRuleInput] = useState("");
+  const [ruleCategory, setRuleCategory] = useState("notification");
+  const [ruleCategoryOpen, setRuleCategoryOpen] = useState(false);
+  const [customRules, setCustomRules] = useState<{ id: string; pattern: string; category: string }[]>([]);
+  const marketingRef = useRef<HTMLDivElement>(null);
+  const ruleCatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (marketingRef.current && !marketingRef.current.contains(e.target as Node)) setMarketingOpen(false);
+      if (ruleCatRef.current && !ruleCatRef.current.contains(e.target as Node)) setRuleCategoryOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function addRule() {
+    const trimmed = ruleInput.trim();
+    if (!trimmed) return;
+    setCustomRules((prev) => [...prev, { id: String(Date.now()), pattern: trimmed, category: ruleCategory }]);
+    setRuleInput("");
+  }
+
+  function addAlias() {
+    const trimmed = aliasInput.trim();
+    if (trimmed && !aliases.includes(trimmed)) {
+      setAliases((prev) => [...prev, trimmed]);
+    }
+    setAliasInput("");
+  }
+
+  const selectedMarketing = MARKETING_OPTIONS.find((o) => o.value === marketingStrength)!;
 
   return (
     <div>
@@ -540,13 +799,147 @@ function InboxSection() {
           </div>
 
           {/* Respect labels */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between py-3 border-b border-stone-100 dark:border-(--border)">
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Respect my existing labels</p>
             <button onClick={() => setRespectLabels((v) => !v)} aria-pressed={respectLabels}>
               <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${respectLabels ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${respectLabels ? "translate-x-4.5" : "translate-x-0.5"}`} />
               </span>
             </button>
+          </div>
+
+          {/* Marketing filter strength */}
+          <div className="py-4 border-b border-stone-100 dark:border-(--border)">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-2">Marketing filter strength</p>
+            <div ref={marketingRef} className="relative">
+              <button
+                onClick={() => setMarketingOpen((o) => !o)}
+                className="flex w-full items-center justify-between h-10 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+              >
+                <span>{selectedMarketing.label} — {selectedMarketing.desc}</span>
+                <ChevronLeft size={12} className={`text-stone-400 transition-transform duration-150 ${marketingOpen ? "rotate-90" : "-rotate-90"}`} />
+              </button>
+              {marketingOpen && (
+                <div
+                  className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 overflow-hidden rounded-lg py-1 animate-card-in"
+                  style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+                >
+                  {MARKETING_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setMarketingStrength(opt.value); setMarketingOpen(false); }}
+                      className={`flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${marketingStrength === opt.value ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
+                    >
+                      {opt.label} — {opt.desc}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Other email addresses */}
+          <div className="py-4">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Your other email addresses</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-3">Add aliases so we recognize when you're CC'd on your own threads</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addAlias()}
+                placeholder="Add email address..."
+                className="flex-1 h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition"
+              />
+              <button
+                onClick={addAlias}
+                className="flex items-center gap-1 h-9 px-3.5 rounded-lg border border-stone-200 dark:border-(--border) text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors shrink-0"
+              >
+                <Plus size={13} />
+                Add
+              </button>
+            </div>
+            {aliases.length > 0 && (
+              <div className="mt-2 flex flex-col gap-1">
+                {aliases.map((email) => (
+                  <div key={email} className="flex items-center justify-between rounded-lg border border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-3 py-2">
+                    <span className="text-sm text-stone-700 dark:text-stone-300">{email}</span>
+                    <button onClick={() => setAliases((prev) => prev.filter((a) => a !== email))} className="flex h-6 w-6 items-center justify-center rounded-md text-stone-300 hover:text-rose-400 transition-colors">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Custom rules */}
+          <div className="py-4 border-t border-stone-100 dark:border-(--border)">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Custom rules</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-4">Override AI decisions for specific senders, domains, or subjects</p>
+
+            {/* Existing rules */}
+            {customRules.length > 0 && (
+              <div className="mb-3 flex flex-col gap-1.5">
+                {customRules.map((rule) => {
+                  const cat = CATEGORIES.find((c) => c.key === rule.category);
+                  return (
+                    <div key={rule.id} className="flex items-center gap-3 rounded-lg border border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-3 py-2">
+                      <span className="flex-1 text-sm text-stone-700 dark:text-stone-300 truncate">{rule.pattern}</span>
+                      <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold shrink-0 ${cat?.badge ?? ""}`}>{cat?.label ?? rule.category}</span>
+                      <button onClick={() => setCustomRules((prev) => prev.filter((r) => r.id !== rule.id))} className="flex h-6 w-6 items-center justify-center rounded-md text-stone-300 hover:text-rose-400 transition-colors shrink-0">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Add rule form */}
+            <div className="flex items-center gap-2">
+              <input
+                value={ruleInput}
+                onChange={(e) => setRuleInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addRule()}
+                placeholder="e.g. ceo@company.com or @github.com"
+                className="flex-1 h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition"
+              />
+              <div ref={ruleCatRef} className="relative shrink-0">
+                <button
+                  onClick={() => setRuleCategoryOpen((o) => !o)}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <span>{CATEGORIES.find((c) => c.key === ruleCategory)?.label ?? ruleCategory}</span>
+                  <ChevronLeft size={11} className={`text-stone-400 transition-transform duration-150 ${ruleCategoryOpen ? "rotate-90" : "-rotate-90"}`} />
+                </button>
+                {ruleCategoryOpen && (
+                  <div
+                    className="absolute right-0 top-[calc(100%+4px)] z-20 w-52 overflow-hidden rounded-lg py-1 animate-card-in"
+                    style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.key}
+                        onClick={() => { setRuleCategory(cat.key); setRuleCategoryOpen(false); }}
+                        className={`flex w-full items-center px-3.5 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${ruleCategory === cat.key ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={addRule}
+                className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
+                style={{ background: "#0080FF" }}
+              >
+                <Plus size={13} />
+                Add Rule
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-stone-400 dark:text-stone-500">Accepts: email addresses, @domain.com, or text that appears in subject lines</p>
           </div>
         </div>
       )}
@@ -1070,6 +1463,346 @@ function MobileNav({ selected, onBack, onNav }: { selected: string; onBack: () =
   );
 }
 
+// ── Domains ──────────────────────────────────────────────────────────────────
+
+type Capability = "Booking" | "Click tracking" | "Privacy center" | "Email sending";
+
+const CAPABILITY_COLORS: Record<Capability, string> = {
+  "Booking":        "bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20",
+  "Click tracking": "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+  "Privacy center": "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+  "Email sending":  "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+};
+
+const ALL_CAPABILITIES: Capability[] = ["Booking", "Click tracking", "Privacy center", "Email sending"];
+
+interface DomainRow { id: string; domain: string; capabilities: Capability[]; status: "Verified" | "Failed" | "Pending"; }
+
+const INITIAL_DOMAINS: DomainRow[] = [
+  { id: "d1", domain: "preferences-prod.tryintempt.com", capabilities: ["Privacy center"], status: "Failed" },
+  { id: "d2", domain: "tracking-prod.tryintempt.com",   capabilities: ["Click tracking"],  status: "Failed" },
+  { id: "d3", domain: "prod.tryintempt.com",            capabilities: ["Email sending"],   status: "Verified" },
+];
+
+function CapBadge({ cap }: { cap: Capability }) {
+  return (
+    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${CAPABILITY_COLORS[cap]}`}>
+      {cap}
+    </span>
+  );
+}
+
+function DomainsSection() {
+  const [domains, setDomains] = useState<DomainRow[]>(INITIAL_DOMAINS);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // form state
+  const [domainName, setDomainName] = useState("");
+  const [selectedCaps, setSelectedCaps] = useState<Capability[]>(["Email sending"]);
+  const [mailFrom, setMailFrom] = useState("mail");
+
+  function toggleCap(c: Capability) {
+    setSelectedCaps((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+  }
+
+  function handleAdd() {
+    if (!domainName.trim() || selectedCaps.length === 0) return;
+    setDomains((prev) => [...prev, {
+      id: `d${Date.now()}`,
+      domain: domainName.trim(),
+      capabilities: selectedCaps,
+      status: "Pending",
+    }]);
+    setDomainName(""); setSelectedCaps(["Email sending"]); setMailFrom("mail");
+    setModalOpen(false);
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Domains" sub="Verify once at the org level, then assign to projects for booking, click tracking, privacy center, and email sending." />
+
+      {/* Connected domains header */}
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Connected domains</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Enable each domain for one or more capabilities. DNS verified once per domain.</p>
+        </div>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex shrink-0 items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "#0080FF" }}
+        >
+          <Plus size={13} />
+          Add domain
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-stone-100 dark:border-(--border) overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-[2fr_1.4fr_90px_80px] gap-4 px-4 py-2.5 border-b border-stone-100 dark:border-(--border) bg-stone-50 dark:bg-white/2">
+          {["Domain","Capabilities","Status","Used by"].map((h) => (
+            <span key={h} className="text-xs font-semibold text-stone-400 dark:text-stone-500">{h}</span>
+          ))}
+        </div>
+        {/* Rows */}
+        {domains.map((row, i) => (
+          <div key={row.id} className={`grid grid-cols-[2fr_1.4fr_90px_80px] gap-4 items-center px-4 py-3 ${i > 0 ? "border-t border-stone-100 dark:border-(--border)" : ""}`}>
+            <div className="relative group min-w-0">
+              <span className="text-sm font-medium text-stone-700 dark:text-stone-200 truncate block">{row.domain}</span>
+              <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-0 rounded-lg px-2.5 py-1.5 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                style={{ background: "rgba(24,24,27,0.93)" }}>
+                {row.domain}
+                <span className="absolute top-full left-4 border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {row.capabilities.map((c) => <CapBadge key={c} cap={c} />)}
+            </div>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${row.status === "Verified" ? "text-emerald-500" : row.status === "Failed" ? "text-rose-500" : "text-stone-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${row.status === "Verified" ? "bg-emerald-400" : row.status === "Failed" ? "bg-rose-400" : "bg-stone-300"}`} />
+              {row.status}
+            </span>
+            <button className="text-xs font-medium text-blue-500 hover:underline text-left">Projects</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer note */}
+      <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
+        Assign verified domains via <span className="font-medium text-stone-500 dark:text-stone-400">Project → Connectors → Domains</span>. Per-project addresses (e.g. hello@yourdomain.com) are set in the project.
+      </p>
+
+      {/* Add domain modal */}
+      {modalOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.35)" }} onClick={() => setModalOpen(false)}>
+          <div
+            className="relative w-full max-w-sm rounded-2xl p-6 shadow-2xl"
+            style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button onClick={() => setModalOpen(false)} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+              <X size={15} />
+            </button>
+
+            <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100 mb-1">Add a domain</h2>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-5">Enter a domain you own. You'll get DNS records to verify ownership.</p>
+
+            {/* Domain name */}
+            <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">Domain name</label>
+            <input
+              type="text"
+              value={domainName}
+              onChange={(e) => setDomainName(e.target.value)}
+              placeholder="book.yourcompany.com"
+              className="w-full rounded-lg border border-stone-200 dark:border-(--border) bg-transparent px-3 py-2 text-sm text-stone-700 dark:text-stone-200 placeholder-stone-300 dark:placeholder-stone-600 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors mb-4"
+            />
+
+            {/* Capability */}
+            <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-2">Capability</label>
+            <div className="flex flex-col gap-2 mb-4">
+              {ALL_CAPABILITIES.map((cap) => {
+                const checked = selectedCaps.includes(cap);
+                return (
+                  <label key={cap} className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <span
+                      onClick={() => toggleCap(cap)}
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors cursor-pointer ${checked ? "bg-blue-500 border-blue-500" : "border-stone-300 dark:border-stone-600"}`}
+                    >
+                      {checked && (
+                        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                          <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </span>
+                    <span className="text-sm text-stone-700 dark:text-stone-200">{cap}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Mail-from subdomain */}
+            <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1.5">
+              Mail-from subdomain <span className="text-stone-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={mailFrom}
+              onChange={(e) => setMailFrom(e.target.value)}
+              placeholder="mail"
+              className="w-full rounded-lg border border-stone-200 dark:border-(--border) bg-transparent px-3 py-2 text-sm text-stone-700 dark:text-stone-200 placeholder-stone-300 dark:placeholder-stone-600 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors mb-1.5"
+            />
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-6">Used as the MAIL FROM address (e.g. "mail" → mail.yourcompany.com)</p>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={() => setModalOpen(false)} className="h-9 px-4 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                className="h-9 px-4 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                Add domain
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+    </div>
+  );
+}
+
+function SubSectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-1">{children}</p>;
+}
+
+function SecuritySection() {
+  const [mfaOn, setMfaOn] = useState(false);
+  const [passkeys] = useState<string[]>([]);
+
+  const SESSIONS = [
+    { id: "s1", name: "intempt-console", lastActive: "about 3 hours ago", isCurrentDevice: false },
+    { id: "s2", name: "intempt-console", lastActive: "about 21 hours ago", isCurrentDevice: true },
+  ];
+
+  return (
+    <div>
+      <SectionHeader title="Security" sub="Manage your authentication methods, passkeys, and active sessions." />
+
+      {/* MFA */}
+      <div className="mb-8">
+        <SubSectionLabel>Multi-factor authentication (MFA)</SubSectionLabel>
+        <div className="mt-3">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-(--muted)">
+              <Smartphone size={15} className="text-stone-400 dark:text-stone-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Authenticator app</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Use one-time codes from an authenticator app.</p>
+            </div>
+            <button onClick={() => setMfaOn((v) => !v)} aria-pressed={mfaOn} className="shrink-0">
+              <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${mfaOn ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${mfaOn ? "translate-x-4.5" : "translate-x-0.5"}`} />
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Passkeys */}
+      <div className="mb-8">
+        <SubSectionLabel>Passkeys</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Sign in without a password using your device's built-in security.</p>
+        <div className="flex justify-end mt-4">
+          <button
+            className="flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: "#0080FF" }}
+          >
+            <Plus size={13} />
+            Add passkey
+          </button>
+        </div>
+        {passkeys.length === 0 ? (
+          <p className="mt-4 text-xs text-stone-400 dark:text-stone-500 text-center">No passkeys yet.</p>
+        ) : null}
+      </div>
+
+      {/* Active sessions */}
+      <div className="mb-8">
+        <SubSectionLabel>Active sessions</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-3 -mt-1">Devices and browsers currently signed in to your account. Revoke any you don't recognize.</p>
+        <div className="flex flex-col gap-1 mt-3">
+          {SESSIONS.map((session) => (
+            <div key={session.id} className="flex items-center gap-3.5 py-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-(--muted)">
+                <Globe size={15} className="text-stone-400 dark:text-stone-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{session.name}</p>
+                  {session.isCurrentDevice && (
+                    <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                      This device
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Last active {session.lastActive}</p>
+              </div>
+              {!session.isCurrentDevice && (
+                <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-stone-300 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/8 transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Logout actions */}
+      <div className="flex flex-col border-t border-stone-100 dark:border-(--border)">
+        <div className="flex items-center justify-between gap-6 py-4 border-b border-stone-100 dark:border-(--border)">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Log out of this device</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Sign out from your current session.</p>
+          </div>
+          <button className="flex shrink-0 items-center gap-1.5 h-9 px-4 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+            <LogOut size={13} />
+            Log out
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-6 py-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Log out of all devices</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Log out of all active sessions across all devices, including your current session.</p>
+          </div>
+          <button className="flex shrink-0 items-center gap-1.5 h-9 px-4 rounded-lg border border-rose-200 dark:border-rose-500/30 text-xs font-medium text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/8 transition-colors">
+            <LogOut size={13} />
+            Log out all
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AvailabilitySection() {
+  const [useProjectDefaults, setUseProjectDefaults] = useState(false);
+
+  return (
+    <div>
+      <SectionHeader title="My availability" sub="Configure your working hours and out-of-office periods so teammates and AI know when you're around." />
+
+      {/* Use project defaults toggle */}
+      <div className="flex items-start justify-between gap-4 py-3 mb-4">
+        <div className="min-w-0">
+          <p className={`text-sm font-medium transition-colors ${useProjectDefaults ? "text-stone-700 dark:text-stone-200" : "text-stone-400 dark:text-stone-500"}`}>Use project defaults</p>
+          <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Inherit availability settings from your project</p>
+        </div>
+        <button onClick={() => setUseProjectDefaults((v) => !v)} className="shrink-0 mt-0.5" aria-pressed={useProjectDefaults}>
+          <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${useProjectDefaults ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
+            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${useProjectDefaults ? "translate-x-4.5" : "translate-x-0.5"}`} />
+          </span>
+        </button>
+      </div>
+
+      {!useProjectDefaults && (
+        <>
+          <WeeklyHours />
+          <DateOverridesSection />
+          <BookingPreferences />
+        </>
+      )}
+
+      <BluPreferencesSection />
+      <OOOSection />
+    </div>
+  );
+}
+
 export const contentMap: Record<string, React.ReactNode> = {
   about: (
     <div>
@@ -1090,12 +1823,28 @@ export const contentMap: Record<string, React.ReactNode> = {
         </div>
       </div>
       <div>
-        <SettingsRow label="Full name" description="Your display name across the workspace">
+        <SettingsRow label="Your name" description="What should we call you">
           <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Rana V" />
         </SettingsRow>
         <SettingsRow label="Email address" description="Used for login and notifications">
-          <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-400 w-48 outline-none" defaultValue="rana@intempt.com" disabled />
+          <div className="relative group">
+            <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-400 w-48 outline-none cursor-not-allowed" defaultValue="rana@intempt.com" disabled />
+            <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ background: "rgba(24,24,27,0.93)" }}>
+              Email cannot be changed
+              <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "rgba(24,24,27,0.93)" }} />
+            </span>
+          </div>
         </SettingsRow>
+        <div className="py-4 border-b border-stone-100 dark:border-(--border)">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Welcome message</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-3">Your personalized greeting for visitors</p>
+          <textarea
+            className="w-full rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 py-2.5 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition resize-none"
+            rows={3}
+            placeholder="e.g. Welcome to the team! Feel free to reach out if you have any questions."
+            defaultValue=""
+          />
+        </div>
         <SettingsRow label="Display name" description="Short name shown in conversations">
           <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="rana" />
         </SettingsRow>
@@ -1109,34 +1858,11 @@ export const contentMap: Record<string, React.ReactNode> = {
       <DeleteRow target="account" label="Delete account" desc="Permanently delete your personal account and remove all your data from the platform." />
     </div>
   ),
-  availability: (
-    <div>
-      <SectionHeader title="My availability" sub="Configure your working hours and out-of-office periods so teammates and AI know when you're around." />
-      <WeeklyHours />
-      <BookingPreferences />
-      <OOOSection />
-    </div>
-  ),
+  availability: <AvailabilitySection />,
   connections: <ConnectionsSettingsView />,
   inbox: <InboxSection />,
-  domains: (
-    <div>
-      <SectionHeader title="Domains" sub="Verified domains allow members to join your organization automatically." />
-      <div className="rounded-xl border border-stone-100 dark:border-(--border) overflow-hidden mb-4">
-        {["intempt.com", "intempt.io"].map((domain, i) => (
-          <div key={domain} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-stone-100 dark:border-(--border)" : ""}`}>
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-              <span className="text-sm text-stone-700 dark:text-stone-300">{domain}</span>
-            </div>
-            <span className="text-xs text-emerald-500 font-medium">Verified</span>
-          </div>
-        ))}
-      </div>
-      <button className="inline-flex h-9 items-center rounded-md px-4 bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors">Add domain</button>
-      <DeleteRow target="organization" label="Delete organization" desc="Permanently delete the organization, all projects within it, and every member's access." />
-    </div>
-  ),
+  security: <SecuritySection />,
+  domains: <DomainsSection />,
   basic: (
     <div>
       <BasicInfoSection />
