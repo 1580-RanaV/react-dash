@@ -978,6 +978,9 @@ function BasicInfoSection() {
   const [timezoneSearch, setTimezoneSearch] = useState("");
   const [companyDomains, setCompanyDomains] = useState(["intempt.com"]);
   const [domainInput, setDomainInput] = useState("");
+  const [projectLogo, setProjectLogo] = useState<string | null>(null);
+  const [projectName] = useState("Linea");
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   function addCompanyDomain() {
     const domain = domainInput.trim().toLowerCase();
@@ -986,9 +989,46 @@ function BasicInfoSection() {
     setDomainInput("");
   }
 
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setProjectLogo(url);
+  }
+
   return (
     <div>
       <SectionHeader title="Company Settings" sub="Configure company-specific information and preferences" />
+
+      {/* Project DP */}
+      <div className="flex items-center gap-5 mb-8 pb-6 border-b border-stone-100 dark:border-(--border)">
+        <button
+          onClick={() => logoInputRef.current?.click()}
+          className="group relative w-20 h-20 rounded-full overflow-hidden shrink-0"
+        >
+          {projectLogo ? (
+            <img src={projectLogo} alt="Project logo" className="w-full h-full object-cover" />
+          ) : (
+            <span className="flex w-full h-full items-center justify-center bg-blue-50 dark:bg-blue-500/12 text-2xl font-semibold text-blue-500 select-none">
+              {projectName[0].toUpperCase()}
+            </span>
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </span>
+        </button>
+        <div className="flex flex-1 items-center justify-between">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{projectName}</p>
+          <button onClick={() => logoInputRef.current?.click()} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
+            {projectLogo ? "Change" : "Upload"}
+          </button>
+        </div>
+        <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+      </div>
+
       <SettingsRow label="Project name" description="The display name for this project">
         <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="Linea" />
       </SettingsRow>
@@ -2817,6 +2857,361 @@ function OrgSecuritySection() {
   );
 }
 
+// ── Meetings ──────────────────────────────────────────────────────────────────
+
+const MEETING_TABS = ["Join", "Recording", "Privacy", "AI", "Automation", "Booking", "Appearance"] as const;
+type MeetingTab = typeof MEETING_TABS[number];
+
+function MeetingJoinTab() {
+  const [bluJoin, setBluJoin] = useState(true);
+  const [barKeywords, setBarKeywords] = useState<string[]>([]);
+  const [joinKeywords, setJoinKeywords] = useState<string[]>([]);
+  const [barInput, setBarInput] = useState("");
+  const [joinInput, setJoinInput] = useState("");
+
+  function addKeyword(
+    list: string[], setList: (v: string[]) => void,
+    input: string, setInput: (v: string) => void
+  ) {
+    const val = input.trim();
+    if (val && !list.includes(val)) setList([...list, val]);
+    setInput("");
+  }
+
+  return (
+    <div>
+      {/* Meeting Language */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Meeting Language</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Language used to transcribe your meetings</p>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Language</span>
+          <FakeSelect value="English" />
+        </div>
+      </div>
+
+      {/* Meeting Rules */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Meeting Rules</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Configure which meetings to automatically join</p>
+
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Meetings Intempt Blu will join</p>
+          <button
+            onClick={() => setBluJoin(v => !v)}
+            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${bluJoin ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
+          >
+            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${bluJoin ? "translate-x-5.5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-2">Auto-join calendar events</p>
+        <div className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-(--border) px-4 py-2.5 cursor-pointer hover:bg-stone-50 dark:hover:bg-white/3 transition-colors">
+          <span className="text-sm text-stone-700 dark:text-stone-200">All meetings</span>
+          <ChevronLeft size={13} className="text-stone-400 -rotate-90" />
+        </div>
+      </div>
+
+      {/* Bar Rules */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Bar Rules (Don't Join)</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Notetaker will NOT join if title contains these words</p>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {barKeywords.map((kw) => (
+            <span key={kw} className="inline-flex items-center gap-1 rounded-md bg-stone-100 dark:bg-white/8 px-2.5 py-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+              {kw}
+              <button onClick={() => setBarKeywords(barKeywords.filter(k => k !== kw))} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={barInput}
+          onChange={e => setBarInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && addKeyword(barKeywords, setBarKeywords, barInput, setBarInput)}
+          placeholder="Type keyword and press Enter"
+          className="w-full rounded-xl border border-stone-200 dark:border-(--border) bg-transparent px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+        />
+      </div>
+
+      {/* Join Rules */}
+      <div>
+        <SubSectionLabel>Join Rules (Always Join)</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Notetaker will join if title contains these words</p>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {joinKeywords.map((kw) => (
+            <span key={kw} className="inline-flex items-center gap-1 rounded-md bg-stone-100 dark:bg-white/8 px-2.5 py-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+              {kw}
+              <button onClick={() => setJoinKeywords(joinKeywords.filter(k => k !== kw))} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={joinInput}
+          onChange={e => setJoinInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && addKeyword(joinKeywords, setJoinKeywords, joinInput, setJoinInput)}
+          placeholder="Type keyword and press Enter"
+          className="w-full rounded-xl border border-stone-200 dark:border-(--border) bg-transparent px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MeetingRecordingTab() {
+  const [autoDelete, setAutoDelete] = useState(true);
+  return (
+    <div>
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Meeting Recordings</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Configure video recording preferences</p>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Record</span>
+          <FakeSelect value="Video and Audio" />
+        </div>
+      </div>
+      <div>
+        <SubSectionLabel>Auto Delete Meetings</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Automatically delete meetings after a set retention period</p>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Auto Delete Meeting</span>
+          <button
+            onClick={() => setAutoDelete(v => !v)}
+            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${autoDelete ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
+          >
+            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${autoDelete ? "translate-x-5.5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Retention Period</span>
+          <FakeSelect value="After 1 month" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeetingPrivacyTab() {
+  const [guestAccess, setGuestAccess] = useState(true);
+  return (
+    <div>
+      {/* Who Can View */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Who can view</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-5">Controls access to recaps in the dashboard and via shared links</p>
+
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Meeting recap visibility</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Affects dashboard and link access, not emails</p>
+          </div>
+          <FakeSelect value="Anyone with link (public)" />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Allow guest access to public meetings</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-sm">Let people without a Blu account view public recaps using just their email — no sign-up required</p>
+          </div>
+          <button
+            onClick={() => setGuestAccess(v => !v)}
+            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 mt-0.5 ${guestAccess ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
+          >
+            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${guestAccess ? "translate-x-5.5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Who Gets Notified */}
+      <div>
+        <SubSectionLabel>Who gets notified</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-5">Controls who receives email notifications after meetings</p>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Email recap recipients</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Recipients still need view access to see the full recap</p>
+          </div>
+          <FakeSelect value="Only participants" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${on ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
+    >
+      <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${on ? "translate-x-5.5" : "translate-x-0.5"}`} />
+    </button>
+  );
+}
+
+function MeetingAITab() {
+  const [talkToBlu, setTalkToBlu] = useState(true);
+  const [voiceTrigger, setVoiceTrigger] = useState(false);
+  const [chatMessage, setChatMessage] = useState(true);
+  const [messageText, setMessageText] = useState("Some kind of message!");
+  const [keyTakeaways, setKeyTakeaways] = useState(true);
+  const [vocabTags, setVocabTags] = useState(["dfgdfg", "add", "tag for vocab", "zzz", "ff"]);
+  const [vocabInput, setVocabInput] = useState("");
+
+  function addVocab(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    const val = vocabInput.trim();
+    if (val && !vocabTags.includes(val)) setVocabTags([...vocabTags, val]);
+    setVocabInput("");
+  }
+
+  return (
+    <div>
+      {/* Live Meetings */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Live Meetings</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Interact with Blu during live meetings</p>
+
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Talk to Blu</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-md">Interact with Blu in live meeting &amp; send intro message in chat. Ask questions about the current meeting or ask the web.</p>
+          </div>
+          <Toggle on={talkToBlu} onClick={() => setTalkToBlu(v => !v)} />
+        </div>
+
+        {talkToBlu && <div className="pl-4 border-l-2 border-stone-100 dark:border-(--border) flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Voice Trigger</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-md">Say "Hey Blu" to activate and ask questions about the current meeting or ask the web. Blu will respond via chat.</p>
+            </div>
+            <Toggle on={voiceTrigger} onClick={() => setVoiceTrigger(v => !v)} />
+          </div>
+
+          <div>
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Meeting Chat Message</p>
+                <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Send Blu notification message in meeting chat</p>
+              </div>
+              <Toggle on={chatMessage} onClick={() => setChatMessage(v => !v)} />
+            </div>
+            <textarea
+              value={messageText}
+              onChange={e => setMessageText(e.target.value)}
+              maxLength={300}
+              rows={4}
+              className="w-full rounded-xl border border-stone-200 dark:border-(--border) bg-transparent px-4 py-3 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors resize-none"
+            />
+            <p className="text-xs text-stone-400 dark:text-stone-500 text-right mt-1">{messageText.length}/300 characters</p>
+          </div>
+        </div>}
+      </div>
+
+      {/* Chat Settings */}
+      <div className="pb-6 mb-6 border-b border-stone-100 dark:border-(--border)">
+        <SubSectionLabel>Chat Settings</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Configure real-time notifications during meetings</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Key Takeaways on Chat</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Send action items 5 mins before call ends</p>
+          </div>
+          <Toggle on={keyTakeaways} onClick={() => setKeyTakeaways(v => !v)} />
+        </div>
+      </div>
+
+      {/* AI Customization */}
+      <div>
+        <SubSectionLabel>AI Customization</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Optimize AI for your industry and custom vocabulary</p>
+
+        <div className="flex items-center justify-between gap-4 mb-5">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Industry</span>
+          <FakeSelect value="Recruiting" />
+        </div>
+
+        <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-0.5">Custom Vocabulary</p>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Enter proper nouns and phrases you commonly discuss</p>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {vocabTags.map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-stone-100 dark:bg-white/8 px-2.5 py-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+              {tag}
+              <button onClick={() => setVocabTags(vocabTags.filter(t => t !== tag))} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={vocabInput}
+          onChange={e => setVocabInput(e.target.value)}
+          onKeyDown={addVocab}
+          placeholder="Type word and press Enter"
+          className="w-full rounded-xl border border-stone-200 dark:border-(--border) bg-transparent px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MeetingAutomationTab() {
+  return (
+    <div>
+      <SubSectionLabel>Creation Settings</SubSectionLabel>
+      <p className="text-xs text-stone-400 dark:text-stone-500 mb-5">Control how users and accounts are created from meeting interactions</p>
+
+      <div className="flex items-start justify-between gap-4 pb-4 mb-4 border-b border-stone-100 dark:border-(--border)">
+        <div>
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">User Creation Mode</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">New users will be created automatically when processing meetings</p>
+        </div>
+        <FakeSelect value="Create users automatically" />
+      </div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Account Creation Mode</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Only process meetings from existing accounts</p>
+        </div>
+        <FakeSelect value="Don't create new accounts" />
+      </div>
+    </div>
+  );
+}
+
+function MeetingsSection() {
+  const [tab, setTab] = useState<MeetingTab>("Join");
+  return (
+    <div>
+      <SectionHeader title="Meeting Settings" sub="Configure meeting types, availability, and recording preferences." />
+      <SubTabCorner
+        tabs={MEETING_TABS.map(t => ({ key: t, label: t }))}
+        active={tab}
+        onChange={key => setTab(key as MeetingTab)}
+      />
+      <div className="mt-6">
+        {tab === "Join" && <MeetingJoinTab />}
+        {tab === "Recording" && <MeetingRecordingTab />}
+        {tab === "Privacy" && <MeetingPrivacyTab />}
+        {tab === "AI" && <MeetingAITab />}
+        {tab === "Automation" && <MeetingAutomationTab />}
+        {tab !== "Join" && tab !== "Recording" && tab !== "Privacy" && tab !== "AI" && tab !== "Automation" && (
+          <p className="text-sm text-stone-400 dark:text-stone-500">{tab} settings coming soon.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export const contentMap: Record<string, React.ReactNode> = {
   about: (
     <div>
@@ -2895,23 +3290,7 @@ export const contentMap: Record<string, React.ReactNode> = {
   people: <PeopleSection />,
   "project-users": <ProjectUsersSection />,
   messages: <MessagesSection />,
-  meetings: (
-    <div>
-      <SectionHeader title="Meetings" sub="Set defaults for meeting duration, video conferencing, and attendee reminders." />
-      <SettingsRow label="Default meeting duration" description="Default length when creating a new meeting">
-        <FakeSelect value="30 minutes" />
-      </SettingsRow>
-      <SettingsRow label="Video provider" description="Default video conferencing tool">
-        <FakeSelect value="Google Meet" />
-      </SettingsRow>
-      <SettingsRow label="Send reminders" description="Automatically notify attendees before meetings">
-        <FakeToggle on />
-      </SettingsRow>
-      <SettingsRow label="Reminder timing" description="How far in advance to send a reminder">
-        <FakeSelect value="15 min before" />
-      </SettingsRow>
-    </div>
-  ),
+  meetings: <MeetingsSection />,
 };
 
 export default function SettingsLayout({ onBack, children }: { onBack: () => void; children?: React.ReactNode }) {
