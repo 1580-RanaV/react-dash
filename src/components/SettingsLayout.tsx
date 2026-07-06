@@ -7,7 +7,7 @@ import SubTabCorner from "./SubTabCorner";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   AlertTriangle, Bot, CalendarDays, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FolderOpen, Globe,
-  Download, Eye, Image, Inbox, Info, KeyRound, Link2, LogOut, MessageSquare, PanelLeftOpen, Plus, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
+  Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
 } from "lucide-react";
 
 type SettingsItem = {
@@ -43,6 +43,7 @@ const settingsNav: SettingsSection[] = [
       { label: "Team",      icon: <Users size={14} />,         key: "team" },
       { label: "Roles",     icon: <ShieldCheck size={14} />,   key: "roles" },
       { label: "API keys",  icon: <KeyRound size={14} />,      key: "apikeys" },
+      { label: "Security",  icon: <Lock size={14} />,          key: "org-security" },
       { label: "Audit log", icon: <ClipboardList size={14} />, key: "auditlog" },
       { label: "Projects",  icon: <FolderOpen size={14} />,    key: "projects" },
       { label: "Billing",   icon: <CreditCard size={14} />,    key: "billing" },
@@ -73,13 +74,15 @@ function SettingsRow({
   label,
   description,
   children,
+  noBorder,
 }: {
   label: string;
   description?: string;
   children?: React.ReactNode;
+  noBorder?: boolean;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-stone-100 dark:border-(--border) last:border-0">
+    <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 ${noBorder ? "" : "border-b border-stone-100 dark:border-(--border) last:border-0"}`}>
       <div className="flex-1 min-w-0 sm:pr-8">
         <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{label}</p>
         {description && (
@@ -2679,6 +2682,141 @@ function ProjectUsersSection() {
   );
 }
 
+// ── Org Security ─────────────────────────────────────────────────────────────
+
+type TwoStepPolicy = "optional" | "non-sso" | "all";
+
+function InfoCallout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2.5 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-300" style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.18)" }}>
+      <Info size={14} className="shrink-0 mt-0.5 text-blue-500" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function IconBadge({ icon }: { icon: React.ReactNode }) {
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(59,130,246,0.10)" }}>
+      <span className="text-blue-500">{icon}</span>
+    </div>
+  );
+}
+
+function OrgSecuritySection() {
+  const [policy, setPolicy] = useState<TwoStepPolicy>("optional");
+  const [gracePeriod] = useState("30 days");
+  const [sessionLength] = useState("24 hours");
+
+  const POLICY_OPTIONS: { value: TwoStepPolicy; label: string; desc: string }[] = [
+    { value: "optional",  label: "Optional",                  desc: "Members can enroll if they want. Recommended for trial accounts only." },
+    { value: "non-sso",   label: "Required for non-SSO members", desc: "SSO users inherit verification from your IdP; everyone else must enroll." },
+    { value: "all",       label: "Required for all members",  desc: "Every member must enroll, including those signing in via SSO." },
+  ];
+
+  return (
+    <div>
+      <SectionHeader title="Security" sub="Enforce two-step verification, manage sessions, and audit member enrollment." />
+
+      {/* ── Section 1: Two-step verification policy ── */}
+      <div className="pb-8">
+        <div className="flex items-start gap-3 mb-5">
+          <IconBadge icon={<Shield size={16} />} />
+          <div>
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Two-step verification policy</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Decide who must verify with a second factor at sign-in.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-5">
+          {POLICY_OPTIONS.map((opt) => {
+            const checked = policy === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => setPolicy(opt.value)}
+                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${checked ? "border-blue-400 dark:border-blue-500" : "border-stone-100 dark:border-(--border) hover:border-stone-200 dark:hover:border-stone-600"}`}
+                style={checked ? { background: "rgba(59,130,246,0.04)" } : {}}
+              >
+                <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${checked ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
+                  {checked && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+                </span>
+                <div>
+                  <p className={`text-sm font-medium ${checked ? "text-stone-800 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}>{opt.label}</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{opt.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <SettingsRow label="Enrollment grace period" description="How long members have after the policy turns on (or after they join) before they're blocked from signing in." noBorder>
+          <FakeSelect value={gracePeriod} />
+        </SettingsRow>
+
+        <div className="border-t border-stone-100 dark:border-(--border) pt-5 mt-1">
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-0.5">Allowed factors</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Members can enroll any allowed factor. Disabling a factor doesn't unenroll existing members.</p>
+          <SettingsRow label="Email code" description=""><FakeToggle on /></SettingsRow>
+          <SettingsRow label="Passkey" description=""><FakeToggle on /></SettingsRow>
+        </div>
+
+        <div className="mt-5">
+          <InfoCallout>
+            Project-level Security can require step-up reauth for sensitive actions (delete project, rotate API keys). Project policy can only tighten this org policy.
+          </InfoCallout>
+        </div>
+      </div>
+
+      {/* ── Section 2: Require passkey ── */}
+      <div className="border-t border-stone-100 dark:border-(--border) pt-8 pb-8">
+        <SettingsRow label="Require passkey" description="Members not signing in via SSO must enroll a passkey. Email sign-in codes alone won't be accepted on next sign-in." noBorder>
+          <FakeToggle />
+        </SettingsRow>
+        <div className="mt-4">
+          <InfoCallout>
+            SSO users inherit verification from your identity provider — Intempt won't double-prompt them. Members without a passkey will be guided through enrollment on next sign-in.
+          </InfoCallout>
+        </div>
+      </div>
+
+      {/* ── Section 3: Maximum session length ── */}
+      <div className="border-t border-stone-100 dark:border-(--border) pt-8 pb-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <IconBadge icon={<Clock size={16} />} />
+            <div>
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Maximum session length</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Members are signed out and must reauthenticate after this time, even if active.</p>
+            </div>
+          </div>
+          <FakeSelect value={sessionLength} />
+        </div>
+      </div>
+
+      {/* ── Section 4: Enrollment status ── */}
+      <div className="border-t border-stone-100 dark:border-(--border) pt-8">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-start gap-3">
+            <IconBadge icon={<Users size={16} />} />
+            <div>
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Enrollment status</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Track who has enrolled and nudge anyone still pending.</p>
+            </div>
+          </div>
+          <button className="flex shrink-0 items-center gap-1.5 h-8 px-3.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+            <MessageSquare size={12} />
+            Send reminder
+          </button>
+        </div>
+        <div className="flex items-center justify-center rounded-xl border border-dashed border-stone-200 dark:border-(--border) py-10">
+          <p className="text-sm text-stone-400 dark:text-stone-500">No members yet.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const contentMap: Record<string, React.ReactNode> = {
   about: (
     <div>
@@ -2742,6 +2880,7 @@ export const contentMap: Record<string, React.ReactNode> = {
   team: <TeamSection />,
   roles: <RolesSection />,
   apikeys: <ApiKeysSection />,
+  "org-security": <OrgSecuritySection />,
   auditlog: <AuditLogSection />,
   projects: <ProjectsSection />,
   billing: (
