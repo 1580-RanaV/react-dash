@@ -6,8 +6,8 @@ import SubTabCorner from "./SubTabCorner";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  AlertTriangle, Bot, CalendarDays, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FolderOpen, Globe,
-  Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
+  AlertTriangle, Bot, CalendarDays, ChevronDown, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FileText, FolderOpen, Globe,
+  Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, RotateCcw, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
 } from "lucide-react";
 
 type SettingsItem = {
@@ -34,6 +34,7 @@ const settingsNav: SettingsSection[] = [
       { label: "Connections", icon: <Link2 size={14} />, key: "connections" },
       { label: "Inbox", icon: <Inbox size={14} />, key: "inbox" },
       { label: "Security", icon: <Shield size={14} />, key: "security" },
+      { label: "Blu", icon: <img src="/mascot.png" alt="Blu" className="w-3.5 h-3.5 object-contain" />, key: "blu" },
     ],
   },
   {
@@ -1435,84 +1436,73 @@ function BookingPreferences() {
   return (
     <div className="border-t border-stone-100 dark:border-(--border) pt-6 mt-6">
       <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Booking Preferences</p>
-      <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 mb-6">Personal buffer times and booking limits</p>
+      <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 mb-2">Personal buffer times and booking limits</p>
 
-      <div className="flex flex-col gap-5">
-        {/* Minimum notice */}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm text-stone-700 dark:text-stone-300">Minimum notice</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500">How far in advance someone can book time with you</p>
-          <div className="flex items-center gap-2 mt-1">
-            <input
-              type="number"
-              min={0}
-              value={noticeValue}
-              onChange={(e) => setNoticeValue(e.target.value)}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
-            />
+      <SettingsRow label="Minimum notice" description="The minimum advance notice required before someone can book you">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            value={noticeValue}
+            onChange={(e) => setNoticeValue(e.target.value)}
+            className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+          />
+          <div className="relative">
+            <select
+              value={noticeUnit}
+              onChange={(e) => setNoticeUnit(e.target.value)}
+              className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+            >
+              {["Minutes", "Hours", "Days"].map((u) => <option key={u}>{u}</option>)}
+            </select>
+            <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+          </div>
+        </div>
+      </SettingsRow>
+
+      <SettingsRow label="Buffer time" description="Padding before and after each meeting">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-stone-400 dark:text-stone-500">Before</span>
             <div className="relative">
               <select
-                value={noticeUnit}
-                onChange={(e) => setNoticeUnit(e.target.value)}
-                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+                value={bufferBefore}
+                onChange={(e) => setBufferBefore(e.target.value)}
+                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
               >
-                {["Minutes", "Hours", "Days"].map((u) => <option key={u}>{u}</option>)}
+                {bufferOptions.map((o) => <option key={o}>{o}</option>)}
               </select>
-              <ChevronLeft size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
+              <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-stone-400 dark:text-stone-500">After</span>
+            <div className="relative">
+              <select
+                value={bufferAfter}
+                onChange={(e) => setBufferAfter(e.target.value)}
+                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
+              >
+                {bufferOptions.map((o) => <option key={o}>{o}</option>)}
+              </select>
+              <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
             </div>
           </div>
         </div>
+      </SettingsRow>
 
-        {/* Buffer time */}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm text-stone-700 dark:text-stone-300">Buffer time</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500">Padding before and after each meeting</p>
-          <div className="flex items-center gap-3 mt-1">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-stone-400 dark:text-stone-500">Before</span>
-              <div className="relative">
-                <select
-                  value={bufferBefore}
-                  onChange={(e) => setBufferBefore(e.target.value)}
-                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
-                >
-                  {bufferOptions.map((o) => <option key={o}>{o}</option>)}
-                </select>
-                <ChevronLeft size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-stone-400 dark:text-stone-500">After</span>
-              <div className="relative">
-                <select
-                  value={bufferAfter}
-                  onChange={(e) => setBufferAfter(e.target.value)}
-                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
-                >
-                  {bufferOptions.map((o) => <option key={o}>{o}</option>)}
-                </select>
-                <ChevronLeft size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
-              </div>
-            </div>
-          </div>
+      <SettingsRow label="Max meetings per day" description="Limit how many bookings you accept in a single day">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={1}
+            value={maxMeetings}
+            onChange={(e) => setMaxMeetings(e.target.value)}
+            className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+          />
+          <span className="text-sm text-stone-400 dark:text-stone-500">meetings</span>
         </div>
-
-        {/* Max meetings */}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm text-stone-700 dark:text-stone-300">Max meetings per day</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500">Limit how many bookings you accept in a single day</p>
-          <div className="flex items-center gap-2 mt-1">
-            <input
-              type="number"
-              min={1}
-              value={maxMeetings}
-              onChange={(e) => setMaxMeetings(e.target.value)}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
-            />
-            <span className="text-sm text-stone-400 dark:text-stone-500">meetings</span>
-          </div>
-        </div>
-      </div>
+      </SettingsRow>
     </div>
   );
 }
@@ -2777,11 +2767,14 @@ function OrgSecuritySection() {
               <button
                 key={opt.value}
                 onClick={() => setPolicy(opt.value)}
-                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${checked ? "border-blue-400 dark:border-blue-500" : "border-stone-100 dark:border-(--border) hover:border-stone-200 dark:hover:border-stone-600"}`}
-                style={checked ? { background: "rgba(59,130,246,0.04)" } : {}}
+                className="flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                style={{ background: checked ? "rgba(0,128,255,0.06)" : "transparent" }}
               >
-                <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${checked ? "border-blue-500" : "border-stone-300 dark:border-stone-600"}`}>
-                  {checked && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+                <span
+                  className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                  style={{ borderColor: checked ? "#0080FF" : "var(--border)", background: checked ? "#0080FF" : "transparent" }}
+                >
+                  {checked && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                 </span>
                 <div>
                   <p className={`text-sm font-medium ${checked ? "text-stone-800 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}>{opt.label}</p>
@@ -3091,7 +3084,10 @@ function MeetingAITab() {
         {talkToBlu && <div className="pl-4 border-l-2 border-stone-100 dark:border-(--border) flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Voice Trigger</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Voice Trigger</p>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>Beta</span>
+              </div>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-md">Say "Hey Blu" to activate and ask questions about the current meeting or ask the web. Blu will respond via chat.</p>
             </div>
             <Toggle on={voiceTrigger} onClick={() => setVoiceTrigger(v => !v)} />
@@ -3190,6 +3186,387 @@ function MeetingAutomationTab() {
   );
 }
 
+function MeetingBookingTab() {
+  const [noticeValue, setNoticeValue] = useState("1");
+  const [noticeUnit, setNoticeUnit] = useState("Hours");
+  const [bufferBefore, setBufferBefore] = useState("No buffer");
+  const [bufferAfter, setBufferAfter] = useState("No buffer");
+  const [maxMeetings, setMaxMeetings] = useState("10");
+  const [limitFrequency, setLimitFrequency] = useState(false);
+  const [firstSlotOnly, setFirstSlotOnly] = useState(false);
+  const [limitDuration, setLimitDuration] = useState(false);
+  const [bookerLimit, setBookerLimit] = useState(false);
+  const [limitFuture, setLimitFuture] = useState(false);
+  const [holidayCountry, setHolidayCountry] = useState("United States");
+  const bufferOptions = ["No buffer", "5 minutes", "10 minutes", "15 minutes", "30 minutes", "1 hour"];
+
+  const HOLIDAY_DATA: Record<string, { name: string; date: string }[]> = {
+    "United States": [
+      { name: "New Year's Day", date: "Jan 1, 2026" },
+      { name: "Martin Luther King, Jr. Day", date: "Jan 19, 2026" },
+      { name: "Lincoln's Birthday", date: "Feb 12, 2026" },
+      { name: "Presidents Day", date: "Feb 16, 2026" },
+      { name: "Good Friday", date: "Apr 3, 2026" },
+      { name: "Truman Day", date: "May 8, 2026" },
+      { name: "Memorial Day", date: "May 25, 2026" },
+      { name: "Juneteenth National Independence Day", date: "Jun 19, 2026" },
+      { name: "Independence Day", date: "Jul 4, 2026" },
+      { name: "Labor Day", date: "Sep 7, 2026" },
+      { name: "Columbus Day", date: "Oct 12, 2026" },
+      { name: "Veterans Day", date: "Nov 11, 2026" },
+      { name: "Thanksgiving Day", date: "Nov 26, 2026" },
+      { name: "Christmas Day", date: "Dec 25, 2026" },
+    ],
+    "United Kingdom": [
+      { name: "New Year's Day", date: "Jan 1, 2026" },
+      { name: "Good Friday", date: "Apr 3, 2026" },
+      { name: "Easter Monday", date: "Apr 6, 2026" },
+      { name: "Early May Bank Holiday", date: "May 4, 2026" },
+      { name: "Spring Bank Holiday", date: "May 25, 2026" },
+      { name: "Summer Bank Holiday", date: "Aug 31, 2026" },
+      { name: "Christmas Day", date: "Dec 25, 2026" },
+      { name: "Boxing Day", date: "Dec 26, 2026" },
+    ],
+    "Canada": [
+      { name: "New Year's Day", date: "Jan 1, 2026" },
+      { name: "Family Day", date: "Feb 16, 2026" },
+      { name: "Good Friday", date: "Apr 3, 2026" },
+      { name: "Victoria Day", date: "May 18, 2026" },
+      { name: "Canada Day", date: "Jul 1, 2026" },
+      { name: "Labour Day", date: "Sep 7, 2026" },
+      { name: "Thanksgiving Day", date: "Oct 12, 2026" },
+      { name: "Remembrance Day", date: "Nov 11, 2026" },
+      { name: "Christmas Day", date: "Dec 25, 2026" },
+      { name: "Boxing Day", date: "Dec 26, 2026" },
+    ],
+    "Australia": [
+      { name: "New Year's Day", date: "Jan 1, 2026" },
+      { name: "Australia Day", date: "Jan 26, 2026" },
+      { name: "Good Friday", date: "Apr 3, 2026" },
+      { name: "Easter Monday", date: "Apr 6, 2026" },
+      { name: "Anzac Day", date: "Apr 25, 2026" },
+      { name: "Queen's Birthday", date: "Jun 8, 2026" },
+      { name: "Labour Day", date: "Oct 5, 2026" },
+      { name: "Christmas Day", date: "Dec 25, 2026" },
+      { name: "Boxing Day", date: "Dec 26, 2026" },
+    ],
+    "India": [
+      { name: "Republic Day", date: "Jan 26, 2026" },
+      { name: "Holi", date: "Mar 3, 2026" },
+      { name: "Good Friday", date: "Apr 3, 2026" },
+      { name: "Eid ul-Fitr", date: "Mar 31, 2026" },
+      { name: "Independence Day", date: "Aug 15, 2026" },
+      { name: "Gandhi Jayanti", date: "Oct 2, 2026" },
+      { name: "Diwali", date: "Nov 8, 2026" },
+      { name: "Christmas Day", date: "Dec 25, 2026" },
+    ],
+  };
+
+  const currentHolidays = HOLIDAY_DATA[holidayCountry] ?? [];
+  const [holidayToggles, setHolidayToggles] = useState<Record<string, boolean>>({});
+  function toggleHoliday(name: string) {
+    setHolidayToggles(prev => ({ ...prev, [name]: !prev[name] }));
+  }
+
+  return (
+    <div className="flex flex-col gap-10">
+
+      {/* Schedules */}
+      <div>
+        <SubSectionLabel>Schedules</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-1 mb-5">Set your weekly availability and date overrides</p>
+        <WeeklyHours />
+        <DateOverridesSection />
+      </div>
+
+      {/* Advanced Settings */}
+      <div>
+        <SubSectionLabel>Advanced Settings</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-1 mb-2">Buffer times, booking limits, and other advanced options</p>
+
+        <SettingsRow label="Minimum notice" description="The minimum advance notice required before someone can book you">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              value={noticeValue}
+              onChange={e => setNoticeValue(e.target.value)}
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+            />
+            <div className="relative">
+              <select
+                value={noticeUnit}
+                onChange={e => setNoticeUnit(e.target.value)}
+                className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
+              >
+                {["Minutes", "Hours", "Days"].map(u => <option key={u}>{u}</option>)}
+              </select>
+              <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+            </div>
+          </div>
+        </SettingsRow>
+
+        <SettingsRow label="Buffer time" description="Padding before and after each meeting">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-stone-400 dark:text-stone-500">Before</span>
+              <div className="relative">
+                <select
+                  value={bufferBefore}
+                  onChange={e => setBufferBefore(e.target.value)}
+                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
+                >
+                  {bufferOptions.map(o => <option key={o}>{o}</option>)}
+                </select>
+                <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-stone-400 dark:text-stone-500">After</span>
+              <div className="relative">
+                <select
+                  value={bufferAfter}
+                  onChange={e => setBufferAfter(e.target.value)}
+                  className="h-9 appearance-none pl-3 pr-7 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer w-36"
+                >
+                  {bufferOptions.map(o => <option key={o}>{o}</option>)}
+                </select>
+                <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-400" />
+              </div>
+            </div>
+          </div>
+        </SettingsRow>
+
+        <SettingsRow label="Max meetings per day" description="Limit how many bookings you accept in a single day">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              value={maxMeetings}
+              onChange={e => setMaxMeetings(e.target.value)}
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+            />
+            <span className="text-sm text-stone-400 dark:text-stone-500">meetings</span>
+          </div>
+        </SettingsRow>
+        <SettingsRow label="Limit booking frequency" description="Prevent users from booking multiple times within a period">
+          <Toggle on={limitFrequency} onClick={() => setLimitFrequency(v => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Only show first slot per day" description="Display only the earliest available time slot each day">
+          <Toggle on={firstSlotOnly} onClick={() => setFirstSlotOnly(v => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Limit total booking duration" description="Cap total meeting time per user within a period">
+          <Toggle on={limitDuration} onClick={() => setLimitDuration(v => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Booker active booking limit" description="Limit how many upcoming meetings a user can have scheduled">
+          <Toggle on={bookerLimit} onClick={() => setBookerLimit(v => !v)} />
+        </SettingsRow>
+        <SettingsRow label="Limit future bookings" description="Restrict how far in advance users can schedule">
+          <Toggle on={limitFuture} onClick={() => setLimitFuture(v => !v)} />
+        </SettingsRow>
+      </div>
+
+      {/* Holidays */}
+      <div>
+        <SubSectionLabel>Holidays</SubSectionLabel>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-1 mb-3">Block time on specific holidays</p>
+        <div className="relative mb-1">
+          <select
+            value={holidayCountry}
+            onChange={e => setHolidayCountry(e.target.value)}
+            className="w-full h-9 appearance-none rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) pl-3 pr-8 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 cursor-pointer"
+          >
+            {Object.keys(HOLIDAY_DATA).map(c => <option key={c}>{c}</option>)}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+        </div>
+        <div>
+          {currentHolidays.map(({ name, date }) => (
+            <SettingsRow key={name} label={name} description={date}>
+              <Toggle on={!!holidayToggles[name]} onClick={() => toggleHoliday(name)} />
+            </SettingsRow>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+function MeetingAppearanceTab() {
+  const [theme, setTheme] = useState<"Auto" | "Light" | "Dark">("Auto");
+  const [embedType, setEmbedType] = useState<"Inline" | "Floating" | "Element Click" | "Email">("Inline");
+  const [hidePoweredBy, setHidePoweredBy] = useState(false);
+  const THEMES = [
+    { key: "Auto",  icon: "◑" },
+    { key: "Light", icon: "◐" },
+    { key: "Dark",  icon: "●" },
+  ] as const;
+
+  const EMBED_TYPES: { key: "Inline" | "Floating" | "Element Click" | "Email"; label: string; desc: string; preview: React.ReactNode }[] = [
+    {
+      key: "Inline",
+      label: "Inline",
+      desc: "Embed directly into your...",
+      preview: (
+        <div className="w-full h-full flex flex-col gap-1 p-2">
+          <div className="flex gap-1 mb-1"><span className="w-2 h-2 rounded-full bg-red-300" /><span className="w-2 h-2 rounded-full bg-yellow-300" /><span className="w-2 h-2 rounded-full bg-green-300" /></div>
+          <div className="flex flex-col gap-1 flex-1">
+            <div className="h-1.5 rounded bg-stone-200 w-3/4" />
+            <div className="h-1.5 rounded bg-stone-200 w-1/2" />
+            <div className="h-1.5 rounded bg-stone-200 w-5/6 mt-1" />
+            <div className="mt-auto grid grid-cols-5 gap-0.5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="h-2 rounded-sm" style={{ background: i === 2 || i === 7 ? "#0080FF" : "#e5e7eb" }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "Floating",
+      label: "Floating",
+      desc: "Floating button overlay",
+      preview: (
+        <div className="w-full h-full flex flex-col gap-1 p-2 relative">
+          <div className="flex gap-1 mb-1"><span className="w-2 h-2 rounded-full bg-red-300" /><span className="w-2 h-2 rounded-full bg-yellow-300" /><span className="w-2 h-2 rounded-full bg-green-300" /></div>
+          <div className="h-1.5 rounded bg-stone-200 w-3/4" />
+          <div className="h-1.5 rounded bg-stone-200 w-1/2" />
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md px-2 py-1 text-white shadow-sm" style={{ background: "#0080FF", fontSize: 8 }}>
+            <svg width="8" height="8" viewBox="0 0 16 16" fill="white"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+            Book
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "Element Click",
+      label: "Element Click",
+      desc: "Trigger on element click",
+      preview: (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+          <div className="flex gap-1 self-start mb-1"><span className="w-2 h-2 rounded-full bg-red-300" /><span className="w-2 h-2 rounded-full bg-yellow-300" /><span className="w-2 h-2 rounded-full bg-green-300" /></div>
+          <div className="relative mt-1">
+            <div className="rounded-md px-2.5 py-1 text-white shadow-sm relative" style={{ background: "#0080FF", fontSize: 8 }}>Schedule Demo</div>
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-300 border-2 border-white" />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "Email",
+      label: "Email",
+      desc: "Time slots inside emails",
+      preview: (
+        <div className="w-full h-full flex flex-col gap-1 p-2">
+          <div className="flex gap-1 mb-1"><span className="w-2 h-2 rounded-full bg-stone-300" /></div>
+          <div className="h-1.5 rounded bg-stone-200 w-1/3 mb-2" />
+          <div className="flex gap-1 flex-wrap">
+            <div className="rounded px-1.5 py-0.5 text-white shrink-0" style={{ background: "#0080FF", fontSize: 7 }}>Mon 9:00 AM</div>
+            <div className="rounded px-1.5 py-0.5 text-white shrink-0" style={{ background: "#0080FF", fontSize: 7 }}>Tue 2:00 PM</div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+
+      {/* Design System */}
+      <div>
+        <SubSectionLabel>Design System</SubSectionLabel>
+        <SettingsRow label="Design System" description="Controls the visual theme of your booking page">
+          <div className="relative">
+            <select
+              value={theme}
+              onChange={e => setTheme(e.target.value as "Auto" | "Light" | "Dark")}
+              className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 cursor-pointer w-36"
+            >
+              {THEMES.map(t => <option key={t.key} value={t.key}>{t.icon}  {t.key}</option>)}
+            </select>
+            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+          </div>
+        </SettingsRow>
+      </div>
+
+      {/* Embed Configuration */}
+      <div>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <SubSectionLabel>Embed Configuration</SubSectionLabel>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Select an embed type to configure its settings</p>
+          </div>
+          <button
+            onClick={() => setEmbedType("Inline")}
+            className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+          >
+            <RotateCcw size={12} />
+            Reset
+          </button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {EMBED_TYPES.map(({ key, label, desc, preview }) => {
+            const active = embedType === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setEmbedType(key)}
+                className="flex flex-col rounded-xl overflow-hidden text-left transition-all"
+                style={{
+                  border: active ? "2px solid #0080FF" : "1.5px solid var(--border)",
+                  background: "var(--content-bg)",
+                }}
+              >
+                <div className="w-full h-24 bg-stone-50 dark:bg-white/4 overflow-hidden">
+                  {preview}
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">{label}</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">{desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dimensions */}
+      <div>
+        <SubSectionLabel>Dimensions</SubSectionLabel>
+        <SettingsRow label="Width" description="Width of the embedded booking widget">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              defaultValue={100}
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+            />
+            <span className="text-sm text-stone-400 dark:text-stone-500">%</span>
+          </div>
+        </SettingsRow>
+        <SettingsRow label="Height" description="Height of the embedded booking widget">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              defaultValue={100}
+              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
+            />
+            <span className="text-sm text-stone-400 dark:text-stone-500">%</span>
+          </div>
+        </SettingsRow>
+        <SettingsRow label='Hide "Powered by" badge' description="Remove the attribution from your booking page footer">
+          <Toggle on={hidePoweredBy} onClick={() => setHidePoweredBy(v => !v)} />
+        </SettingsRow>
+      </div>
+
+    </div>
+  );
+}
+
 function MeetingsSection() {
   const [tab, setTab] = useState<MeetingTab>("Join");
   return (
@@ -3206,10 +3583,222 @@ function MeetingsSection() {
         {tab === "Privacy" && <MeetingPrivacyTab />}
         {tab === "AI" && <MeetingAITab />}
         {tab === "Automation" && <MeetingAutomationTab />}
-        {tab !== "Join" && tab !== "Recording" && tab !== "Privacy" && tab !== "AI" && tab !== "Automation" && (
+        {tab === "Booking" && <MeetingBookingTab />}
+        {tab === "Appearance" && <MeetingAppearanceTab />}
+        {tab !== "Join" && tab !== "Recording" && tab !== "Privacy" && tab !== "AI" && tab !== "Automation" && tab !== "Booking" && tab !== "Appearance" && (
           <p className="text-sm text-stone-400 dark:text-stone-500">{tab} settings coming soon.</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function BluSection() {
+
+  const [methodology, setMethodology] = useState<"tips" | "pvp" | "pas">("tips");
+  const [tab, setTab] = useState<"Outreach" | "Replies">("Outreach");
+  const [draftReplies, setDraftReplies] = useState(true);
+  const [followUpDrafts, setFollowUpDrafts] = useState(false);
+  const [replyFrequency, setReplyFrequency] = useState("I only reply when necessary");
+  const [gmailOpen, setGmailOpen] = useState(false);
+  const [outlookOpen, setOutlookOpen] = useState(false);
+  const [groundingUrls, setGroundingUrls] = useState({ pricing: "", docs: "", calendar: "", security: "" });
+
+  const configuredCount = Object.values(groundingUrls).filter(v => v.trim()).length;
+
+  function ToggleRow({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
+    return (
+      <div className="flex items-center justify-between py-3 border-b border-stone-100 dark:border-(--border) last:border-0">
+        <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{label}</p>
+        <Toggle on={on} onClick={onToggle} />
+      </div>
+    );
+  }
+
+  const GROUNDING_FIELDS = [
+    { key: "pricing" as const, label: "Pricing Page URL", icon: <Link2 size={14} />, placeholder: "https://yoursite.com/pricing", required: true },
+    { key: "docs" as const, label: "Documentation URL", icon: <FileText size={14} />, placeholder: "https://docs.yoursite.com", required: true },
+    { key: "calendar" as const, label: "Calendar Booking Link", icon: <CalendarDays size={14} />, placeholder: "https://calendly.com/you", required: true },
+    { key: "security" as const, label: "Security/Compliance Docs", icon: <Shield size={14} />, placeholder: "https://yoursite.com/security", required: false },
+  ];
+
+  return (
+    <div>
+      <SectionHeader title="Blu" sub="Configure how your AI assistant handles outreach and replies on your behalf." />
+
+      <div className="mb-6">
+        <SubTabCorner
+          tabs={[
+            { key: "Outreach", label: "Outreach" },
+            { key: "Replies", label: "Replies" },
+          ]}
+          active={tab}
+          onChange={k => setTab(k as "Outreach" | "Replies")}
+        />
+      </div>
+
+      {tab === "Outreach" && (
+        <div className="flex flex-col gap-8">
+          <div>
+            <SubSectionLabel>Outreach Methodology</SubSectionLabel>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 mt-1">How Blu initiates conversations. Choose the methodology and sequence structure for cold outreach emails. Core idea: lead with a real-time reason, add a sharp observation, reduce risk with proof, ask for a tiny next step.</p>
+            <div className="flex flex-col gap-2">
+              {([
+                { key: "tips", acronym: "T.I.P.S.", name: "Triggered Outreach", best: "High relevance + fast replies (esp. B2B SaaS / ABM)" },
+                { key: "pvp",  acronym: "P.V.P.",   name: "Direct Value Pitch",  best: "Broad applicability, fastest to generate, safest tone" },
+                { key: "pas",  acronym: "P.A.S.",   name: "Pain to Fix",          best: "Pain-driven offers (ops, data, revops, infra, security, cost)" },
+              ] as const).map(({ key, acronym, name, best }) => {
+                const active = methodology === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setMethodology(key)}
+                    className="flex items-start gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                    style={{
+                      background: active ? "rgba(0,128,255,0.06)" : "transparent",
+                    }}
+                  >
+                    <span
+                      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                      style={{
+                        borderColor: active ? "#0080FF" : "var(--border)",
+                        background: active ? "#0080FF" : "transparent",
+                      }}
+                    >
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-sm font-semibold ${active ? "text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{acronym}</span>
+                        <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{name}</span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Best for: {best}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "Replies" && (
+        <div className="flex flex-col gap-8">
+
+          {/* Reply Grounding Data */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <SubSectionLabel>Reply Grounding Data</SubSectionLabel>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.1)", color: "#d97706" }}>
+                {configuredCount}/4 configured
+              </span>
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">URLs Blu uses to ground replies with accurate information. Missing required URLs may result in less specific responses.</p>
+            <div className="flex flex-col gap-4">
+              {GROUNDING_FIELDS.map(({ key, label, icon, placeholder, required }) => (
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-200">
+                      <span className="text-stone-400 dark:text-stone-500">{icon}</span>
+                      {label}
+                      {required && <span className="text-red-500 ml-0.5">*</span>}
+                    </div>
+                    {required && !groundingUrls[key] && (
+                      <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+                    )}
+                  </div>
+                  <input
+                    value={groundingUrls[key]}
+                    onChange={e => setGroundingUrls(prev => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Draft Behavior */}
+          <div>
+            <SubSectionLabel>Draft Behavior</SubSectionLabel>
+            <div className="mt-3">
+              <div className="mb-4">
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-1.5">How often do you reply?</p>
+                <div className="relative">
+                  <select
+                    value={replyFrequency}
+                    onChange={e => setReplyFrequency(e.target.value)}
+                    className="w-full h-9 appearance-none rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) pl-3 pr-8 text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 cursor-pointer"
+                  >
+                    {["I only reply when necessary", "I reply to most emails", "I reply to everything"].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                </div>
+              </div>
+              <ToggleRow label="Enable draft replies" on={draftReplies} onToggle={() => setDraftReplies(v => !v)} />
+              <ToggleRow label="Enable follow-up drafts" on={followUpDrafts} onToggle={() => setFollowUpDrafts(v => !v)} />
+
+              <div className="mt-5 rounded-xl bg-stone-50 dark:bg-white/4 px-4 py-3 flex flex-col gap-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info size={13} className="shrink-0 text-stone-400 dark:text-stone-500" />
+                  <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Enable threading in your email client for drafts to work properly</p>
+                </div>
+                <button
+                  onClick={() => setGmailOpen(v => !v)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full text-white font-bold shrink-0" style={{ background: "#EA4335", fontSize: 9 }}>G</span>
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Gmail threading</span>
+                  </div>
+                  <ChevronDown size={13} className={`text-stone-400 transition-transform duration-150 shrink-0 ${gmailOpen ? "rotate-180" : ""}`} />
+                </button>
+                {gmailOpen && (
+                  <ol className="flex flex-col gap-1.5 px-3 pb-2">
+                    {[
+                      "Open Gmail → Settings (gear icon)",
+                      'Click "See all settings"',
+                      'Find "Conversation view" → Select "On"',
+                      'Click "Save Changes"',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-stone-400 dark:text-stone-500">
+                        <span className="font-semibold shrink-0 tabular-nums w-3.5">{i + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <button
+                  onClick={() => setOutlookOpen(v => !v)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full text-white font-bold shrink-0" style={{ background: "#0078D4", fontSize: 9 }}>O</span>
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Outlook threading</span>
+                  </div>
+                  <ChevronDown size={13} className={`text-stone-400 transition-transform duration-150 shrink-0 ${outlookOpen ? "rotate-180" : ""}`} />
+                </button>
+                {outlookOpen && (
+                  <ol className="flex flex-col gap-1.5 px-3 pb-2">
+                    {[
+                      "Open Outlook → View tab",
+                      'Click "Show as Conversations"',
+                      'Select "All Mailboxes" when prompted',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-stone-400 dark:text-stone-500">
+                        <span className="font-semibold shrink-0 tabular-nums w-3.5">{i + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
@@ -3246,7 +3835,7 @@ export const contentMap: Record<string, React.ReactNode> = {
             </span>
           </div>
         </SettingsRow>
-        <div className="py-4 border-b border-stone-100 dark:border-(--border)">
+        {/* <div className="py-4 border-b border-stone-100 dark:border-(--border)">
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Welcome message</p>
           <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-3">Your personalized greeting for visitors</p>
           <textarea
@@ -3255,7 +3844,7 @@ export const contentMap: Record<string, React.ReactNode> = {
             placeholder="e.g. Welcome to the team! Feel free to reach out if you have any questions."
             defaultValue=""
           />
-        </div>
+        </div> */}
         <SettingsRow label="Display name" description="Short name shown in conversations">
           <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="rana" />
         </SettingsRow>
@@ -3273,6 +3862,7 @@ export const contentMap: Record<string, React.ReactNode> = {
   connections: <ConnectionsSettingsView />,
   inbox: <InboxSection />,
   security: <SecuritySection />,
+  blu: <BluSection />,
   domains: <DomainsSection />,
   team: <TeamSection />,
   roles: <RolesSection />,
