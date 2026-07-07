@@ -160,15 +160,15 @@ function ChartTooltip({ active, payload, label }: any) {
 
 function HBar({ name, pct, users, prefix }: { name: string; pct: number; users: number | string; prefix?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <div className="flex items-center gap-2 w-40 shrink-0 min-w-0">
+    <div className="flex items-center gap-2 py-1">
+      <div className="flex items-center gap-1.5 w-28 sm:w-40 shrink-0 min-w-0">
         {prefix}
         <span className="text-xs text-stone-600 dark:text-stone-400 truncate">{name}</span>
       </div>
       <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-2 min-w-0">
         <div className="h-2 rounded-full bg-blue-400" style={{ width: `${Math.max(pct, 0.5)}%` }} />
       </div>
-      <div className="flex items-center gap-2 text-xs font-medium shrink-0 w-15 justify-end">
+      <div className="flex items-center gap-2 text-xs font-medium shrink-0 w-14 sm:w-15 justify-end">
         <span className="text-teal-600 dark:text-teal-400">{typeof users === "number" ? users.toLocaleString() : users}</span>
         <span className="text-stone-400">$0</span>
       </div>
@@ -258,8 +258,8 @@ function TrafficView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex gap-0.5">
               {["Channel", "Referrer", "Campaign"].map((t) => (
                 <button
@@ -291,8 +291,8 @@ function TrafficView() {
           </div>
         </div>
 
-        <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex gap-0.5">
               {["Page", "Entry page"].map((t) => (
                 <button key={t} onClick={() => setPageTab(t.toLowerCase())} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${pageTab === t.toLowerCase() ? "bg-stone-100 dark:bg-white/10 text-stone-900 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"}`}>{t}</button>
@@ -316,8 +316,8 @@ function TrafficView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex gap-0.5">
               {["Country", "Region", "City"].map((t) => (
                 <button key={t} onClick={() => setCountryTab(t.toLowerCase())} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${countryTab === t.toLowerCase() ? "bg-stone-100 dark:bg-white/10 text-stone-900 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"}`}>{t}</button>
@@ -343,8 +343,8 @@ function TrafficView() {
           </div>
         </div>
 
-        <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="flex gap-0.5">
               {["Browser", "OS", "Device"].map((t) => (
                 <button key={t} onClick={() => setBrowserTab(t.toLowerCase())} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${browserTab === t.toLowerCase() ? "bg-stone-100 dark:bg-white/10 text-stone-900 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"}`}>{t}</button>
@@ -375,7 +375,7 @@ function TrafficView() {
 function RevenueView() {
   return (
     <div className="space-y-3">
-      <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+      <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
         <div className="flex items-start gap-2 mb-1">
           <InfoBadge />
           <div>
@@ -408,7 +408,7 @@ function RevenueView() {
           { title: "Purchase Events", sub: "Number of completed purchase transactions", big: "0", bigSub: "total events", change: "+0.0%", data: DAILY_DATA.map((d) => ({ date: d.date, value: 0 })), color: "#00AAFF", yTicks: [0, 1, 2, 3, 4] },
           { title: "Total Purchase Revenue", sub: "Total revenue from completed purchases", big: "$0", bigSub: "total revenue", change: "+0.0%", data: DAILY_DATA.map((d) => ({ date: d.date, value: 0 })), color: "#59B277", yTicks: [0, 1, 2, 3, 4] },
         ].map(({ title, sub, big, bigSub, change, data, color, yTicks }) => (
-          <div key={title} className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div key={title} className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">{title}{" "}<span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span></p>
             <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
             <p className="mt-3 mb-0.5"><span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}<span className="text-xs text-stone-400">{bigSub}</span></p>
@@ -434,7 +434,7 @@ function EngChart({ title, sub, big, bigSub, change, data, color }: {
 }) {
   const isPositive = change.startsWith("+");
   return (
-    <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+    <div className="rounded-xl p-4 sm:p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
       <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">{title}{" "}<span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span></p>
       <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
       <p className="mt-3 mb-0.5"><span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}<span className="text-xs text-stone-400">{bigSub}</span></p>

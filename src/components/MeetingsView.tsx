@@ -189,7 +189,7 @@ export default function MeetingsView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Add to live meeting
+              <span className="hidden sm:inline">Add to live meeting</span>
             </button>
           }
         />

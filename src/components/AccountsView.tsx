@@ -208,7 +208,7 @@ export default function AccountsView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create account
+              <span className="hidden sm:inline">Create account</span>
             </button>
           }
         />

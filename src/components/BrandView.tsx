@@ -420,7 +420,7 @@ function KnowledgeBaseView({ onUpload }: { onUpload: () => void }) {
             style={{ background: "#0080FF" }}
           >
             <Plus size={14} />
-            Upload knowledge
+            <span className="hidden sm:inline">Upload knowledge</span>
           </button>
         }
       />

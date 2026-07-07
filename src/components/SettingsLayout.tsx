@@ -194,7 +194,7 @@ function WeeklyHours() {
         {DAYS.map((day) => {
           const { active, slots } = schedule[day];
           return (
-            <div key={day} className="flex items-start gap-3" onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)}>
+            <div key={day} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3" onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)}>
               {/* Day pill */}
               <button
                 onClick={() => toggleDay(day)}
@@ -208,7 +208,7 @@ function WeeklyHours() {
               </button>
 
               {active ? (
-                <div className="flex flex-1 items-start gap-3">
+                <div className="flex flex-wrap items-start gap-3">
                   {/* Slots column */}
                   <div className="flex flex-col gap-2 flex-1">
                     {slots.map((slot, idx) => (
@@ -1039,7 +1039,7 @@ function BasicInfoSection() {
             <ChevronLeft size={11} className={`text-stone-400 transition-transform ${timezoneOpen ? "rotate-90" : "-rotate-90"}`} />
           </button>
           {timezoneOpen && (
-            <div className="absolute right-0 top-[calc(100%+5px)] z-40 w-112 overflow-hidden rounded-xl animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 10px 30px rgba(0,0,0,0.14)" }}>
+            <div className="absolute right-0 top-[calc(100%+5px)] z-40 w-[calc(100vw-32px)] sm:w-112 overflow-hidden rounded-xl animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 10px 30px rgba(0,0,0,0.14)" }}>
               <div className="border-b border-stone-100 px-4 py-2.5 text-xs text-stone-500 dark:border-(--border)">444 timezones available</div>
               <div className="px-3 pt-3">
                 <div className="relative">
@@ -2471,32 +2471,34 @@ function AuditLogSection() {
 
       {tab === "Audit log" ? (
         <>
-          <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-3">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              <div className="relative min-w-56 flex-1 max-w-72">
+          <div className="mb-4 flex flex-col gap-2 shrink-0">
+            {/* Search + retained */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input placeholder="Search action, target, request id" className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" />
               </div>
-              {filters.map((filter) => filter === "All actors" ? (
-              <div key={filter} className="relative">
-                <button onClick={() => setActorOpen((open) => !open)} className={`flex h-9 min-w-36 items-center justify-between gap-3 rounded-md border bg-white px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:bg-(--input) dark:text-stone-200 dark:hover:bg-white/8 ${actorOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
-                  <span className="truncate">{selectedActor || "All actors"}</span>
-                  <ChevronLeft size={11} className={`shrink-0 text-stone-400 transition-transform ${actorOpen ? "rotate-90" : "-rotate-90"}`} />
-                </button>
-                {actorOpen && (
-                  <div className="absolute left-0 top-[calc(100%+5px)] z-40 min-w-52 overflow-hidden rounded-lg py-1 animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
-                    {["", ...actors].map((actor) => (
-                      <button key={actor || "all"} onClick={() => { setSelectedActor(actor); setActorOpen(false); }} className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/6 ${selectedActor === actor ? "font-semibold text-blue-600 dark:text-blue-400" : "text-stone-600 dark:text-stone-300"}`}>
-                        {actor || "All actors"}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              ) : <FakeSelect key={filter} value={filter} />)}
+              <span className="text-xs whitespace-nowrap text-stone-400 shrink-0">◷ Retained 90 days</span>
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-3">
-              <span className="text-xs whitespace-nowrap text-stone-400">◷ Retained 90 days</span>
+            {/* Filters — scrollable strip */}
+            <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+              {filters.map((filter) => filter === "All actors" ? (
+                <div key={filter} className="relative shrink-0">
+                  <button onClick={() => setActorOpen((open) => !open)} className={`flex h-9 items-center gap-2 rounded-md border bg-white px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:bg-(--input) dark:text-stone-200 dark:hover:bg-white/8 ${actorOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
+                    <span className="whitespace-nowrap">{selectedActor || "All actors"}</span>
+                    <ChevronLeft size={11} className={`shrink-0 text-stone-400 transition-transform ${actorOpen ? "rotate-90" : "-rotate-90"}`} />
+                  </button>
+                  {actorOpen && (
+                    <div className="absolute left-0 top-[calc(100%+5px)] z-40 min-w-52 overflow-hidden rounded-lg py-1 animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+                      {["", ...actors].map((actor) => (
+                        <button key={actor || "all"} onClick={() => { setSelectedActor(actor); setActorOpen(false); }} className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/6 ${selectedActor === actor ? "font-semibold text-blue-600 dark:text-blue-400" : "text-stone-600 dark:text-stone-300"}`}>
+                          {actor || "All actors"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : <div key={filter} className="shrink-0"><FakeSelect value={filter} /></div>)}
             </div>
           </div>
           <SettingsTable>

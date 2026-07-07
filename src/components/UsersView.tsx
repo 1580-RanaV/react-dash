@@ -122,7 +122,7 @@ export default function UsersView() {
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
-                Create user
+                <span className="hidden sm:inline">Create user</span>
               </button>
             }
           />

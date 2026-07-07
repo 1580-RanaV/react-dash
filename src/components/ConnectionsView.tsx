@@ -13,7 +13,6 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 const tabs = [
   { key: "connections", label: "Integrations", icon: <Workflow size={15} /> },
-  { key: "api-keys",    label: "API Keys",    icon: <KeyRound size={15} /> },
   { key: "domains",     label: "Domains",     icon: <Globe size={15} /> },
 ];
 
@@ -411,26 +410,7 @@ export default function ConnectionsView() {
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
-                Add Integration
-              </button>
-            }
-          />
-        ) : tab === "api-keys" ? (
-          <DashboardTable
-            columns={API_KEY_COLUMNS}
-            rows={displayRows}
-            searchPlaceholder="Search API keys..."
-            emptyState={
-              <span>No API keys yet. Create a key to start authenticating requests.</span>
-            }
-            action={
-              <button
-                onClick={() => setCreateKeyOpen(true)}
-                className="flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 h-9 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                style={{ background: "#0080FF" }}
-              >
-                <Plus size={14} />
-                Create key
+                <span className="hidden sm:inline">Add Integration</span>
               </button>
             }
           />

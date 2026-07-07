@@ -267,7 +267,7 @@ export default function AttributesView() {
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
-                Create attribute
+                <span className="hidden sm:inline">Create attribute</span>
               </button>
             }
           />

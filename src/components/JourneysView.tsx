@@ -261,7 +261,7 @@ export default function JourneysView() {
       </div>
 
       {/* Metric cards */}
-      <div className="flex gap-4 px-4 pt-3 pb-4 animate-fade-up">
+      <div className="flex flex-col sm:flex-row gap-4 px-4 pt-3 pb-4 animate-fade-up">
         <MetricCard
           value="$15,047,484.74"
           label="Total revenue"
@@ -287,7 +287,7 @@ export default function JourneysView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create journey
+              <span className="hidden sm:inline">Create journey</span>
             </Link>
           }
         />

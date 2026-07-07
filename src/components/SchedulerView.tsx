@@ -121,7 +121,7 @@ export default function SchedulerView() {
             style={{ background: "#0080FF" }}
           >
             <Plus size={14} />
-            Create a booking
+            <span className="hidden sm:inline">Create a booking</span>
           </button>
         }
       />

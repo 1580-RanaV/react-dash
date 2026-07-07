@@ -627,7 +627,7 @@ export default function EventsView() {
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
-                Create event
+                <span className="hidden sm:inline">Create event</span>
               </button>
             }
           />

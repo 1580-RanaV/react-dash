@@ -43,9 +43,8 @@ export default function SlidingSidebar({
       />
 
       <aside
-        className="absolute bottom-0 right-0 top-0 z-30 flex flex-col"
+        className="absolute bottom-0 right-0 top-0 z-30 flex flex-col w-[70vw] sm:w-[54%] sm:max-w-115"
         style={{
-          width: "min(460px, 54%)",
           background: "var(--content-bg)",
           borderLeft: "1px solid var(--border)",
           boxShadow: "-10px 0 34px rgba(0,0,0,0.1)",

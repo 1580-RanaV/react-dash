@@ -194,7 +194,7 @@ export default function DealsView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create deal
+              <span className="hidden sm:inline">Create deal</span>
             </button>
           }
         />

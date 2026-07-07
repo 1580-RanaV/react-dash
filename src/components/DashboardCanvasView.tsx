@@ -94,9 +94,22 @@ function ChartCard({ card }: { card: CardDef }) {
       setPos({ x: drag.current.px + e.clientX - drag.current.sx, y: drag.current.py + e.clientY - drag.current.sy });
     }
     function onUp() { drag.current = null; }
+    function onTouchMove(e: TouchEvent) {
+      if (!drag.current || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      setPos({ x: drag.current.px + t.clientX - drag.current.sx, y: drag.current.py + t.clientY - drag.current.sy });
+    }
+    function onTouchEnd() { drag.current = null; }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
   }, []);
 
   const gradId = `cg${card.id}`;
@@ -116,6 +129,12 @@ function ChartCard({ card }: { card: CardDef }) {
         onMouseDown={(e) => {
           e.stopPropagation();
           drag.current = { sx: e.clientX, sy: e.clientY, px: pos.x, py: pos.y };
+        }}
+        onTouchStart={(e) => {
+          if (e.touches.length !== 1) return;
+          e.stopPropagation();
+          const t = e.touches[0];
+          drag.current = { sx: t.clientX, sy: t.clientY, px: pos.x, py: pos.y };
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -238,7 +257,7 @@ function AddContentDrawer({
       <div
         className="fixed right-0 top-0 h-full z-50 flex flex-col transition-transform duration-300 ease-out"
         style={{
-          width: 380,
+          width: "min(380px, calc(100vw - 16px))",
           background: "var(--content-bg)",
           borderLeft: "1px solid var(--border)",
           boxShadow: "-8px 0 32px rgba(0,0,0,0.08)",
@@ -412,6 +431,14 @@ export default function DashboardCanvasView({ id }: { id: string }) {
     e.currentTarget.style.cursor = "grabbing";
   }, [offset]);
 
+  const onCanvasTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    if (e.target !== canvasRef.current && !(e.target as HTMLElement).closest("[data-canvas-bg]")) return;
+    const t = e.touches[0];
+    isPanning.current = true;
+    panStart.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
+  }, [offset]);
+
   useEffect(() => {
     function onMove(e: MouseEvent) {
       if (!isPanning.current) return;
@@ -422,42 +449,52 @@ export default function DashboardCanvasView({ id }: { id: string }) {
       isPanning.current = false;
       if (canvasRef.current) canvasRef.current.style.cursor = "grab";
     }
+    function onTouchMove(e: TouchEvent) {
+      if (!isPanning.current || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      setOffset({ x: panStart.current.ox + t.clientX - panStart.current.mx, y: panStart.current.oy + t.clientY - panStart.current.my });
+    }
+    function onTouchEnd() { isPanning.current = false; }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
   }, []);
 
   return (
     <div className="flex flex-col h-full animate-fade-up">
       {/* Header */}
       <div className="shrink-0 px-4 pt-5 pb-1">
+        {/* Title row — Filter/Breakdown live here, icon-only on mobile */}
         <div className="flex items-center gap-2 text-sm mb-1">
           <BackButton href="/boards" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">OrderPage</span>
-        </div>
-
-        {/* Controls — DateRangePicker + Filter/Breakdown on the right */}
-        <div className="flex items-center">
-          <div className="flex-1 min-w-0">
-            <DateRangePicker />
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2.5 shrink-0">
+          <div className="ml-auto flex items-center gap-1.5">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
               style={{ borderColor: "var(--border)" }}
             >
               <Filter size={12} />
-              Filter
+              <span className="hidden sm:inline">Filter</span>
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:text-stone-300 dark:hover:bg-white/5"
               style={{ borderColor: "var(--border)" }}
             >
               <Repeat size={12} />
-              Breakdown
+              <span className="hidden sm:inline">Breakdown</span>
             </button>
           </div>
         </div>
+
+        {/* DateRangePicker — full width, presets row has room to breathe */}
+        <DateRangePicker />
       </div>
 
       {/* Canvas area */}
@@ -467,6 +504,7 @@ export default function DashboardCanvasView({ id }: { id: string }) {
           data-canvas-bg="true"
           className="absolute inset-0 overflow-hidden select-none cursor-grab bg-[#f0f2f5] dark:bg-[#111315] bg-[radial-gradient(circle,#c8cdd6_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#2c2f33_1px,transparent_1px)] bg-size-[22px_22px]"
           onMouseDown={onCanvasMouseDown}
+          onTouchStart={onCanvasTouchStart}
         >
           <div
             style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, position: "absolute", inset: 0, willChange: "transform" }}

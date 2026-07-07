@@ -285,7 +285,7 @@ export default function ExperiencesView() {
       </div>
 
       {/* Metric cards */}
-      <div className="flex gap-4 px-4 pt-3 pb-4 animate-fade-up">
+      <div className="flex flex-col sm:flex-row gap-4 px-4 pt-3 pb-4 animate-fade-up">
         <MetricCard
           value="$15,047,484.74"
           label="Total revenue"
@@ -311,7 +311,7 @@ export default function ExperiencesView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create experience
+              <span className="hidden sm:inline">Create experience</span>
             </button>
           }
         />

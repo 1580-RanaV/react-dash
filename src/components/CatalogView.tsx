@@ -345,7 +345,7 @@ export default function CatalogView() {
                   style={{ background: "#0080FF" }}
                 >
                   <Plus size={13} />
-                  Create catalog source
+                  <span className="hidden sm:inline">Create catalog source</span>
                 </button>
               }
             />

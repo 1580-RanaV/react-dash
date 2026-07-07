@@ -41,13 +41,13 @@ function calDays(year: number, month: number) {
 }
 
 const PRESETS = [
-  { label: "Today",     fn: (t: Date) => ({ start: t,            end: t }) },
-  { label: "Yesterday", fn: (t: Date) => ({ start: addDays(t,-1), end: addDays(t,-1) }) },
-  { label: "7D",        fn: (t: Date) => ({ start: addDays(t,-6), end: t }) },
-  { label: "30D",       fn: (t: Date) => ({ start: addDays(t,-29),end: t }) },
-  { label: "3M",        fn: (t: Date) => ({ start: addDays(t,-89),end: t }) },
-  { label: "6M",        fn: (t: Date) => ({ start: addDays(t,-179),end: t }) },
-  { label: "12M",       fn: (t: Date) => ({ start: addDays(t,-364),end: t }) },
+  { label: "Today",     shortLabel: "1D",   fn: (t: Date) => ({ start: t,            end: t }) },
+  { label: "Yesterday", shortLabel: "Yest", fn: (t: Date) => ({ start: addDays(t,-1), end: addDays(t,-1) }) },
+  { label: "7D",        shortLabel: "7D",   fn: (t: Date) => ({ start: addDays(t,-6), end: t }) },
+  { label: "30D",       shortLabel: "30D",  fn: (t: Date) => ({ start: addDays(t,-29),end: t }) },
+  { label: "3M",        shortLabel: "3M",   fn: (t: Date) => ({ start: addDays(t,-89),end: t }) },
+  { label: "6M",        shortLabel: "6M",   fn: (t: Date) => ({ start: addDays(t,-179),end: t }) },
+  { label: "12M",       shortLabel: "12M",  fn: (t: Date) => ({ start: addDays(t,-364),end: t }) },
 ];
 
 const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -185,13 +185,14 @@ export default function DateRangePicker({ className }: { className?: string }) {
             <button
               key={p.label}
               onClick={() => applyPreset(p)}
-              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+              className={`px-2 sm:px-2.5 py-1 rounded-md text-xs transition-colors ${
                 preset === p.label
                   ? "font-bold text-stone-900 dark:text-stone-100"
                   : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300"
               }`}
             >
-              {p.label}
+              <span className="sm:hidden">{p.shortLabel}</span>
+              <span className="hidden sm:inline">{p.label}</span>
             </button>
           ))}
           <button className="ml-2 flex h-7 items-center gap-1.5 px-2.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
@@ -203,15 +204,26 @@ export default function DateRangePicker({ className }: { className?: string }) {
       {/* Calendar dropdown */}
       {open && (
         <div
-          className="absolute left-3 top-[calc(100%+4px)] z-50 animate-card-in rounded-2xl overflow-hidden"
+          className="absolute left-0 top-[calc(100%+4px)] z-50 animate-card-in rounded-2xl overflow-hidden w-[calc(100vw-24px)] sm:w-auto"
           style={{
             background: "var(--content-bg)",
             border: "1px solid var(--border)",
             boxShadow: "0 12px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-            minWidth: 620,
           }}
         >
-          <div className="flex gap-8 px-7 py-6">
+          {/* Mobile: single month with both arrows */}
+          <div className="sm:hidden px-4 py-5">
+            <MonthGrid
+              base={leftBase}
+              start={start} end={end} hover={hover} picking={picking}
+              onHover={setHover} onPick={handlePick}
+              showPrev onPrev={() => setLeft(addMonths(leftBase, -1))}
+              showNext onNext={() => setLeft(addMonths(leftBase, 1))}
+            />
+          </div>
+
+          {/* Desktop: two months side by side */}
+          <div className="hidden sm:flex gap-8 px-7 py-6" style={{ minWidth: 620 }}>
             <MonthGrid
               base={leftBase}
               start={start} end={end} hover={hover} picking={picking}

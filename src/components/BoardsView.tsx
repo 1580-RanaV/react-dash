@@ -161,21 +161,13 @@ export default function BoardsView() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
-  function startEditing(id: string) {
-    setEditingId(id);
-  }
-
+  function startEditing(id: string) { setEditingId(id); }
   function saveEdit(id: string, newTitle: string) {
     const trimmed = newTitle.trim();
-    if (trimmed) {
-      setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, title: trimmed } : e)));
-    }
+    if (trimmed) setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, title: trimmed } : e)));
     setEditingId(null);
   }
-
-  function cancelEdit() {
-    setEditingId(null);
-  }
+  function cancelEdit() { setEditingId(null); }
 
   function menuItemsFor(entry: BoardEntry): ThreeDotsMenuItem[] {
     return [
@@ -189,16 +181,9 @@ export default function BoardsView() {
     href: entry.type === "dashboard" ? `/dashboards/${entry.id}` : `/boards/${entry.id}`,
     menuItems: menuItemsFor(entry),
     cells: {
-      title:
-        editingId === entry.id ? (
-          <InlineEditor
-            value={entry.title}
-            onSave={(val) => saveEdit(entry.id, val)}
-            onCancel={cancelEdit}
-          />
-        ) : (
-          entry.title
-        ),
+      title: editingId === entry.id
+        ? <InlineEditor value={entry.title} onSave={(val) => saveEdit(entry.id, val)} onCancel={cancelEdit} />
+        : entry.title,
       type: <TypeBadge type={entry.type} />,
       lastUpdated: entry.lastUpdated,
       createdBy: <UserAvatar {...entry.createdBy} />,
@@ -220,7 +205,7 @@ export default function BoardsView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create board
+              <span className="hidden sm:inline">Create board</span>
             </button>
           }
         />

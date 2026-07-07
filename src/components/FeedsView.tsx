@@ -95,7 +95,7 @@ export default function FeedsView() {
             style={{ background: "#0080FF" }}
           >
             <Plus size={14} />
-            Create feed
+            <span className="hidden sm:inline">Create feed</span>
           </button>
         }
       />

@@ -46,7 +46,7 @@ export default function SubscribersView() {
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
-                Create subscriber
+                <span className="hidden sm:inline">Create subscriber</span>
               </button>
             }
           />

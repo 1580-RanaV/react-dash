@@ -63,8 +63,8 @@ export default function GridCardView({
   return (
     <div className="relative flex flex-1 flex-col min-h-0 overflow-y-auto animate-fade-up">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-6 pt-4 pb-4 shrink-0 flex-wrap">
-        <div className="relative w-50">
+      <div className="flex items-center gap-2 px-4 sm:px-6 pt-4 pb-4 shrink-0 flex-wrap">
+        <div className="relative flex-1 min-w-0">
           <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             value={search}
@@ -74,18 +74,18 @@ export default function GridCardView({
           />
         </div>
 
-        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
+        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2.5 sm:px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
           <ListFilter size={13} />
-          Filter
+          <span className="hidden sm:inline">Filter</span>
         </button>
 
         <button
           onClick={() => { setShelfOpen(true); setShelfMethod(null); }}
-          className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 sm:px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
           style={{ background: "#0080FF" }}
         >
           <Plus size={14} />
-          {newLabel}
+          <span className="hidden sm:inline">{newLabel}</span>
         </button>
       </div>
 

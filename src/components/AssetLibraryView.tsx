@@ -267,7 +267,7 @@ export default function AssetLibraryView() {
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />
-              Create asset
+              <span className="hidden sm:inline">Create asset</span>
             </button>
           }
         />

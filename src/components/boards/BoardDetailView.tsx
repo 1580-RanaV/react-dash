@@ -153,17 +153,17 @@ export default function BoardDetailView({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col h-full animate-fade-up">
-      {/* Top bar: breadcrumb left, segmented control pinned right */}
+      {/* Top bar: name row, then tabs below on mobile / same row on desktop */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b"
+        className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between px-4 pt-2.5 pb-2.5 border-b gap-2"
         style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center gap-2 text-sm min-w-0 pr-4">
+        <div className="flex items-center gap-2 text-sm min-w-0">
           <BackButton href="/boards" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{board.title}</span>
         </div>
 
-        {/* Segmented control — always pinned right */}
+        {/* Tabs — below name on mobile, right-aligned on desktop */}
         <div className="shrink-0">
           <SubTabCorner
             tabs={TABS}
@@ -174,15 +174,18 @@ export default function BoardDetailView({ id }: { id: string }) {
       </div>
 
       {/* Main layout */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
 
-        {/* Left: tab content — 70% */}
-        <div className="flex flex-col overflow-hidden" style={{ flex: "0 0 70%" }}>
+        {/* Left: chart / tab content — full width on mobile, 70% on desktop */}
+        <div className="flex flex-col w-full md:overflow-hidden md:basis-[70%] md:shrink-0">
           <InsightsTab />
         </div>
 
-        {/* Right: config panel — 30% */}
-        <aside className="flex flex-col gap-3 overflow-y-auto px-4 pt-3 pb-6" style={{ flex: "0 0 30%" }}>
+        {/* Right: config panel — full width on mobile (top border), 30% on desktop (left border) */}
+        <aside
+          className="flex flex-col gap-3 px-4 pt-3 pb-6 border-t md:border-t-0 md:border-l md:overflow-y-auto w-full md:basis-[30%] md:shrink-0"
+          style={{ borderColor: "var(--border)" }}
+        >
 
           {/* Users / Accounts + Annotations — now at the top */}
               <div className="flex items-center justify-between">

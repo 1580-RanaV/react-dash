@@ -213,9 +213,9 @@ export default function DashboardTable({
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {!hideToolbar && <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="relative w-full max-w-70 min-w-35">
+      {!hideToolbar && <div className="mb-3 flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-1 min-w-0 items-center gap-2">
+          <div className="relative flex-1 min-w-0">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
             <input
               type="search"
@@ -226,7 +226,7 @@ export default function DashboardTable({
           <div ref={filterRef} className="relative">
             <button
               onClick={() => hasFilter && setFilterOpen((o) => !o)}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors
                 ${activeCount > 0
                   ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
                   : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
@@ -234,7 +234,7 @@ export default function DashboardTable({
                 ${!hasFilter ? "opacity-40 cursor-default" : "cursor-pointer"}`}
             >
               <ListFilter size={13} />
-              Filter
+              <span className="hidden sm:inline">Filter</span>
               {activeCount > 0 && (
                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white">
                   {activeCount}
@@ -244,7 +244,7 @@ export default function DashboardTable({
 
             {filterOpen && filterConfig && (
               <div
-                className="absolute left-0 top-[calc(100%+6px)] z-50 w-52 rounded-xl animate-card-in overflow-hidden"
+                className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-xl animate-card-in overflow-hidden"
 
                 style={{
                   background: "var(--content-bg)",
@@ -329,19 +329,20 @@ export default function DashboardTable({
           <div ref={columnsRef} className="relative">
             <button
               onClick={() => setColumnsOpen((o) => !o)}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors
                 ${hiddenCols.size > 0
                   ? "border-stone-200 bg-blue-50 text-blue-600 dark:border-(--border) dark:bg-blue-500/10 dark:text-blue-400"
                   : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
                 }`}
             >
               <LayoutGrid size={13} />
-              Columns ({visibleColumns.length})
+              <span className="hidden sm:inline">Columns ({visibleColumns.length})</span>
+              <span className="sm:hidden text-xs">{visibleColumns.length}</span>
             </button>
 
             {columnsOpen && (
               <div
-                className="absolute left-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl animate-card-in overflow-hidden"
+                className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl animate-card-in overflow-hidden"
                 style={{
                   background: "var(--content-bg)",
                   border: "1px solid var(--border)",
@@ -396,7 +397,7 @@ export default function DashboardTable({
             )}
           </div>
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? <div className="shrink-0 ml-auto">{action}</div> : null}
       </div>}
       {hideToolbar && action && <div className="mb-3 flex justify-end shrink-0">{action}</div>}
       {selectable && selected.size > 0 && (() => {
