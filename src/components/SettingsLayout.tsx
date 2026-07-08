@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import SubTabCorner from "./SubTabCorner";
+import Toggle from "./Toggle";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -77,7 +78,7 @@ function SettingsRow({
   children,
   noBorder,
 }: {
-  label: string;
+  label: React.ReactNode;
   description?: string;
   children?: React.ReactNode;
   noBorder?: boolean;
@@ -104,25 +105,6 @@ function FakeSelect({ value }: { value: string }) {
   );
 }
 
-function FakeToggle({ on = false }: { on?: boolean }) {
-  const [enabled, setEnabled] = useState(on);
-  return (
-    <button
-      onClick={() => setEnabled((v) => !v)}
-      aria-checked={enabled}
-      role="switch"
-      className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-        enabled ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-transform duration-200 ease-in-out ${
-          enabled ? "translate-x-5" : "translate-x-0"
-        }`}
-      />
-    </button>
-  );
-}
 
 // ── Weekly Hours ─────────────────────────────────────────────────────────────
 
@@ -430,11 +412,7 @@ function BluPreferencesSection() {
               </span>
             </span>
           </div>
-          <button onClick={() => setAutoDetect((v) => !v)} aria-pressed={autoDetect}>
-            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${autoDetect ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${autoDetect ? "translate-x-4.5" : "translate-x-0.5"}`} />
-            </span>
-          </button>
+          <Toggle on={autoDetect} onClick={() => setAutoDetect(v => !v)} />
         </div>
 
         <div className="flex items-center justify-between py-3.5 border-b border-stone-100 dark:border-(--border)">
@@ -470,11 +448,7 @@ function BluPreferencesSection() {
               </span>
             </span>
           </div>
-          <button onClick={() => setNotifyBooked((v) => !v)} aria-pressed={notifyBooked}>
-            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${notifyBooked ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${notifyBooked ? "translate-x-4.5" : "translate-x-0.5"}`} />
-            </span>
-          </button>
+          <Toggle on={notifyBooked} onClick={() => setNotifyBooked(v => !v)} />
         </div>
       </div>
     </div>
@@ -503,11 +477,7 @@ function OOOSection() {
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Out of office</p>
           <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Automatically set when you're away</p>
         </div>
-        <button onClick={() => setOn((v) => !v)} className="shrink-0 mt-0.5" aria-pressed={on}>
-          <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${on ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${on ? "translate-x-4.5" : "translate-x-0.5"}`} />
-          </span>
-        </button>
+        <Toggle on={on} onClick={() => setOn(v => !v)} />
       </div>
 
       {on && (
@@ -655,14 +625,14 @@ const CATEGORIES: {
   defaultAction: EmailAction;
   muted?: boolean;
 }[] = [
-  { key: "meeting",   label: "Meeting update",  badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",    desc: "Calendar invites, RSVPs, reschedules",   sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
-  { key: "marketing", label: "Marketing",        badge: "bg-stone-800 text-white border border-stone-700 dark:bg-stone-200 dark:text-stone-900 dark:border-stone-300",         desc: "Newsletters, promos, cold outreach",     sub: "Emails moved to Marketing folder",      defaultAction: "folder" },
-  { key: "respond",   label: "To respond",       badge: "bg-stone-100 text-stone-400 border border-stone-200 dark:bg-white/12 dark:text-stone-500 dark:border-(--border)",    desc: "Emails needing your reply",              sub: "AI will skip this type",                defaultAction: "skip",  muted: true },
-  { key: "fyi",       label: "FYI",              badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-(--muted) dark:text-stone-400 dark:border-(--border)",  desc: "Info only, no action needed",            sub: "Labeled, stays in inbox",               defaultAction: "label"  },
-  { key: "comment",   label: "Comment",          badge: "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20", desc: "Feedback and discussion threads",     sub: "Labeled, stays in inbox",               defaultAction: "label"  },
-  { key: "notif",     label: "Notification",     badge: "bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",     desc: "App alerts, system updates",             sub: "Emails moved to Notification folder",   defaultAction: "folder" },
-  { key: "awaiting",  label: "Awaiting reply",   badge: "bg-stone-50 text-stone-500 border border-stone-200 dark:bg-(--muted) dark:text-stone-400 dark:border-(--border)",  desc: "Sent by you, waiting on them",          sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
-  { key: "actioned",  label: "Actioned",         badge: "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20", desc: "Already handled",              sub: "Labeled, stays in inbox",                  defaultAction: "label"  },
+  { key: "meeting",   label: "Meeting update",  badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Calendar invites, RSVPs, reschedules",  sub: "Labeled, stays in inbox",             defaultAction: "label"  },
+  { key: "marketing", label: "Marketing",        badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Newsletters, promos, cold outreach",    sub: "Emails moved to Marketing folder",    defaultAction: "folder" },
+  { key: "respond",   label: "To respond",       badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Emails needing your reply",             sub: "AI will skip this type",              defaultAction: "skip",  muted: true },
+  { key: "fyi",       label: "FYI",              badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Info only, no action needed",           sub: "Labeled, stays in inbox",             defaultAction: "label"  },
+  { key: "comment",   label: "Comment",          badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Feedback and discussion threads",       sub: "Labeled, stays in inbox",             defaultAction: "label"  },
+  { key: "notif",     label: "Notification",     badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "App alerts, system updates",            sub: "Emails moved to Notification folder", defaultAction: "folder" },
+  { key: "awaiting",  label: "Awaiting reply",   badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Sent by you, waiting on them",          sub: "Labeled, stays in inbox",             defaultAction: "label"  },
+  { key: "actioned",  label: "Actioned",         badge: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20", desc: "Already handled",                       sub: "Labeled, stays in inbox",             defaultAction: "label"  },
 ];
 
 const ACTION_LABELS: Record<EmailAction, string> = {
@@ -671,22 +641,13 @@ const ACTION_LABELS: Record<EmailAction, string> = {
   skip:   "Don't categorize",
 };
 
-const MARKETING_STRENGTH_LABELS: Record<string, string> = {
-  light:      "Light — Cold emails & unknown senders only",
-  aggressive: "Aggressive — All promotional emails",
-  off:        "Off — Don't filter marketing",
-};
-
 function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
   const [action, setAction] = useState<EmailAction>(cat.defaultAction);
-  const [marketingStrength, setMarketingStrength] = useState("light");
 
   const subText =
     action === "label"  ? "Labeled, stays in inbox" :
     action === "folder" ? `Emails moved to ${cat.label} folder` :
                           "AI will skip this type";
-
-  const isMarketing = cat.key === "marketing";
 
   return (
     <div className={`py-4 border-b border-stone-100 dark:border-(--border) last:border-0 ${cat.muted && action === "skip" ? "opacity-50" : ""}`}>
@@ -715,24 +676,6 @@ function CategoryRow({ cat }: { cat: typeof CATEGORIES[number] }) {
         </div>
       </div>
 
-      {/* Marketing filter strength sub-row */}
-      {isMarketing && action !== "skip" && (
-        <div className="flex items-center justify-between mt-3">
-          <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Marketing filter strength</p>
-          <div className="relative">
-            <select
-              value={marketingStrength}
-              onChange={(e) => setMarketingStrength(e.target.value)}
-              className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-600 dark:text-stone-300 outline-none focus:border-blue-400 cursor-pointer"
-            >
-              {Object.entries(MARKETING_STRENGTH_LABELS).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
-            <ChevronLeft size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 -rotate-90 text-stone-400" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -793,11 +736,7 @@ function InboxSection() {
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Enable inbox intelligence</p>
           <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Auto-organize new emails as they arrive</p>
         </div>
-        <button onClick={() => setEnabled((v) => !v)} aria-pressed={enabled}>
-          <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${enabled ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? "translate-x-4.5" : "translate-x-0.5"}`} />
-          </span>
-        </button>
+        <Toggle on={enabled} onClick={() => setEnabled(v => !v)} />
       </div>
 
       {enabled && (
@@ -811,11 +750,7 @@ function InboxSection() {
           {/* Respect labels */}
           <div className="flex items-center justify-between py-3 border-b border-stone-100 dark:border-(--border)">
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Respect my existing labels</p>
-            <button onClick={() => setRespectLabels((v) => !v)} aria-pressed={respectLabels}>
-              <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${respectLabels ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${respectLabels ? "translate-x-4.5" : "translate-x-0.5"}`} />
-              </span>
-            </button>
+            <Toggle on={respectLabels} onClick={() => setRespectLabels(v => !v)} />
           </div>
 
           {/* Marketing filter strength */}
@@ -1162,6 +1097,19 @@ function MessagesSection() {
   const [processingMode, setProcessingMode] = useState("external");
   const [detection, setDetection] = useState("automatic");
   const [internalProcessing, setInternalProcessing] = useState("exclude");
+  const [domainInput, setDomainInput] = useState("");
+  const [domains, setDomains] = useState<string[]>([]);
+
+  function addDomains() {
+    const parts = domainInput.split(",").map(s => s.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setDomains(prev => [...prev, ...parts.filter(p => !prev.includes(p))]);
+    setDomainInput("");
+  }
+
+  function removeDomain(d: string) {
+    setDomains(prev => prev.filter(x => x !== d));
+  }
   // Delivery state
   const [smartSending, setSmartSending] = useState(true);
   const [physicalAddress, setPhysicalAddress] = useState(false);
@@ -1217,6 +1165,40 @@ function MessagesSection() {
                 { value: "manual",    label: "Manual — Specify internal domains" },
               ]}
             />
+
+            {detection === "manual" && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-3">Internal Domains</p>
+                <div className="flex gap-2">
+                  <input
+                    value={domainInput}
+                    onChange={e => setDomainInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addDomains()}
+                    placeholder="@mycompany.com, *@temp-*, email@example.com (patterns separated with commas, can contain regex)"
+                    className="flex-1 h-10 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-600 dark:text-stone-300 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+                  />
+                  <button
+                    onClick={addDomains}
+                    className="h-10 shrink-0 rounded-lg bg-blue-500 px-4 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    Add
+                  </button>
+                </div>
+                {domains.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-stone-200 dark:border-(--border) px-3 py-2.5">
+                    {domains.map(d => (
+                      <span key={d} className="inline-flex items-center gap-1.5 rounded-md bg-stone-100 dark:bg-white/8 px-2.5 py-1 text-xs text-stone-600 dark:text-stone-300">
+                        {d}
+                        <button onClick={() => removeDomain(d)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors leading-none">
+                          <X size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide mt-5 mb-3">Internal Email Processing</p>
             <RadioGroup
               value={internalProcessing}
@@ -1265,11 +1247,7 @@ function MessagesSection() {
         <div>
           <SubSection title="Smart Sending" description="Configure intelligent message delivery timing">
             <SettingsRow label="Enable smart sending" description="">
-              <button onClick={() => setSmartSending((v) => !v)} aria-pressed={smartSending}>
-                <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${smartSending ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${smartSending ? "translate-x-4.5" : "translate-x-0.5"}`} />
-                </span>
-              </button>
+              <Toggle on={smartSending} onClick={() => setSmartSending(v => !v)} />
             </SettingsRow>
 
             {smartSending && (
@@ -1332,9 +1310,7 @@ function MessagesSection() {
 
           <div className="mb-8">
             <SettingsRow label="Add physical address to email" description="Include a compliant mailing address in email footers. Required by CAN-SPAM and similar regulations in other regions and helps your emails comply with regional anti-spam regulations.">
-              <button onClick={() => setPhysicalAddress((value) => !value)}>
-                <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${physicalAddress ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}><span className={`h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${physicalAddress ? "translate-x-4.5" : "translate-x-0.5"}`} /></span>
-              </button>
+              <Toggle on={physicalAddress} onClick={() => setPhysicalAddress(v => !v)} />
             </SettingsRow>
             {physicalAddress && (
               <div className="mt-4 space-y-4">
@@ -1962,11 +1938,7 @@ function SecuritySection() {
               <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Authenticator app</p>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Use one-time codes from an authenticator app.</p>
             </div>
-            <button onClick={() => setMfaOn((v) => !v)} aria-pressed={mfaOn} className="shrink-0">
-              <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${mfaOn ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${mfaOn ? "translate-x-4.5" : "translate-x-0.5"}`} />
-              </span>
-            </button>
+            <Toggle on={mfaOn} onClick={() => setMfaOn(v => !v)} />
           </div>
         </div>
       </div>
@@ -2059,11 +2031,7 @@ function AvailabilitySection() {
           <p className={`text-sm font-medium transition-colors ${useProjectDefaults ? "text-stone-700 dark:text-stone-200" : "text-stone-400 dark:text-stone-500"}`}>Use project defaults</p>
           <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">Inherit availability settings from your project</p>
         </div>
-        <button onClick={() => setUseProjectDefaults((v) => !v)} className="shrink-0 mt-0.5" aria-pressed={useProjectDefaults}>
-          <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${useProjectDefaults ? "bg-blue-500" : "bg-stone-200 dark:bg-stone-600"}`}>
-            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${useProjectDefaults ? "translate-x-4.5" : "translate-x-0.5"}`} />
-          </span>
-        </button>
+        <Toggle on={useProjectDefaults} onClick={() => setUseProjectDefaults(v => !v)} />
       </div>
 
       {!useProjectDefaults && (
@@ -2217,9 +2185,227 @@ function RolesTable({ rows }: { rows: RoleRow[] }) {
   );
 }
 
+type PermLevel = "none" | "view" | "edit" | "full" | "reach";
+
+const PERM_SECTIONS: { section: string; rows: { key: string; label: string; desc: string; req?: string }[] }[] = [
+  {
+    section: "SALES",
+    rows: [
+      { key: "users",       label: "Users",            desc: "People records — covers user segments, buckets, events firing, notes, activities, tags.", req: "Mandatory minimum: View — every active seat sees this." },
+      { key: "accounts",    label: "Accounts",         desc: "Company records — covers account segments and buckets.", req: "Mandatory minimum: View — every active seat sees this." },
+      { key: "deals",       label: "Deals",            desc: "Sales opportunities and pipeline.", req: "Requires Accounts: View, Users: View" },
+      { key: "tasks",       label: "Tasks",            desc: "Follow-ups and to-dos owned by sellers.", req: "Requires Users: View" },
+      { key: "convos",      label: "Conversations",    desc: "Inbox, calls, meetings, chatlogs, messages.", req: "Requires Users: View" },
+      { key: "sdr",         label: "Sales Agent / SDR", desc: "Customer-facing AI that qualifies leads, answers questions, and routes to reps.", req: "Requires Users: View, Attributes & data: View" },
+    ],
+  },
+  {
+    section: "MARKETING",
+    rows: [
+      { key: "journeys",    label: "Journeys",   desc: "Automated, multi-step customer journeys." },
+      { key: "experiences", label: "Experiences", desc: "On-site and in-app experiences." },
+      { key: "workflows",   label: "Workflows",   desc: "Backend automation workflows." },
+      { key: "content",     label: "Content",     desc: "Content blocks, templates, and assets." },
+      { key: "brand",       label: "Brand",       desc: "Brand kit, design system, and guidelines." },
+    ],
+  },
+  {
+    section: "ANALYTICS",
+    rows: [
+      { key: "boards",      label: "Boards",          desc: "Analytics boards and dashboards." },
+      { key: "attributes",  label: "Attributes & data", desc: "Attributes, schema, and data definitions." },
+    ],
+  },
+];
+
+const PRESETS = [
+  { key: "marketer", label: "Marketer", desc: "Owns marketing — journeys, experiences, content, and workflows. Read-only on records." },
+  { key: "seller",   label: "Seller",   desc: "Owns sales — users, accounts, deals, tasks, conversations, and the Sales Agent." },
+  { key: "creative", label: "Creative", desc: "Owns design — content and brand kit. No access to CRM records." },
+  { key: "analyst",  label: "Analyst",  desc: "Owns analytics — boards and attributes. Read-only on records." },
+  { key: "blank",    label: "Blank",    desc: "Empty matrix. Grant only what you explicitly add." },
+];
+
+function CreateCustomRoleModal({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [domain, setDomain] = useState<"org" | "project">("project");
+  const [preset, setPreset] = useState<string | null>(null);
+  const [showNameErr, setShowNameErr] = useState(false);
+  const [perms, setPerms] = useState<Record<string, PermLevel>>({});
+
+  function setLevel(key: string, level: PermLevel) {
+    setPerms(p => ({ ...p, [key]: level }));
+  }
+
+  function handleSave() {
+    if (!name.trim()) { setShowNameErr(true); return; }
+    onClose();
+  }
+
+  const LEVELS: PermLevel[] = ["none", "view", "edit", "full", "reach"];
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div
+        className="relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 shrink-0">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+            <X size={15} />
+          </button>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create custom role</h2>
+          <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">Define exactly what this role can see and do, and where it can be assigned.</p>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-5">
+
+          {/* Name */}
+          <div>
+            <label className="flex items-center gap-1 text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 4h10M3 8h6M3 12h4"/></svg>
+              Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              value={name}
+              onChange={e => { setName(e.target.value); if (e.target.value.trim()) setShowNameErr(false); }}
+              placeholder="e.g. Marketing Manager"
+              className="w-full h-10 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+            />
+            {showNameErr && <p className="mt-1 text-xs text-rose-500">Name is required</p>}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="flex items-center gap-1 text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 4h10M3 8h10M3 12h6"/></svg>
+              Description
+            </label>
+            <input
+              value={desc}
+              onChange={e => setDesc(e.target.value)}
+              placeholder="What this role can do"
+              className="w-full h-10 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+            />
+          </div>
+
+          {/* Domain */}
+          <div>
+            <label className="flex items-center gap-1 text-xs font-medium text-stone-500 dark:text-stone-400 mb-2">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="8" cy="8" r="5"/><path d="M8 3v10M3 8h10"/></svg>
+              Where can this role be assigned?
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: "org",     label: "Organization", desc: "Grants on members, billing, API keys, domains." },
+                { key: "project", label: "Project",       desc: "Grants on records, builders, config (most common)." },
+              ] as const).map(opt => {
+                const active = domain === opt.key;
+                return (
+                  <button key={opt.key} type="button" onClick={() => setDomain(opt.key)}
+                    className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                    style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                  >
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                      style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}>
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </span>
+                    <div>
+                      <p className={`text-sm font-medium ${active ? "text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-300"}`}>{opt.label}</p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Preset */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-stone-400"><path d="M2 4l4 4-4 4M8 12h6"/></svg>
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Start from a preset</p>
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Pre-fill the matrix from a domain role, then tweak. Picking "Blank" leaves every cell at None.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {PRESETS.map(p => {
+                const active = preset === p.key;
+                return (
+                  <button key={p.key} type="button" onClick={() => setPreset(active ? null : p.key)}
+                    className="rounded-xl px-3 py-2.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                    style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                  >
+                    <p className={`text-sm font-semibold ${active ? "text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{p.label}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{p.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Permission matrix */}
+          {PERM_SECTIONS.map(({ section, rows }) => (
+            <div key={section}>
+              <p className="text-xs font-semibold tracking-widest text-stone-400 dark:text-stone-500 mb-2">{section}</p>
+              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                <div className="grid text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wide bg-stone-50 dark:bg-white/4 px-4 py-2" style={{ gridTemplateColumns: "1fr repeat(5, 40px)" }}>
+                  <span>Object</span>
+                  {LEVELS.map(l => <span key={l} className="text-center">{l === "none" ? "None" : l === "view" ? "View" : l === "edit" ? "Edit" : l === "full" ? "Full" : "Reach"}</span>)}
+                </div>
+                {rows.map((row, i) => {
+                  const cur = perms[row.key] ?? "none";
+                  return (
+                    <div key={row.key} className={`grid items-center px-4 py-3 ${i < rows.length - 1 ? "border-b" : ""}`} style={{ gridTemplateColumns: "1fr repeat(5, 40px)", borderColor: "var(--border)" }}>
+                      <div className="pr-3">
+                        <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{row.label}</p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{row.desc}</p>
+                        {row.req && (
+                          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 flex items-center gap-1">
+                            <Info size={10} className="shrink-0" />{row.req}
+                          </p>
+                        )}
+                      </div>
+                      {LEVELS.map(level => (
+                        <div key={level} className="flex justify-center">
+                          {level === "reach" ? (
+                            <span className="text-sm text-stone-300 dark:text-stone-600">—</span>
+                          ) : (
+                            <button type="button" onClick={() => setLevel(row.key, level)}
+                              className="flex h-4 w-4 items-center justify-center rounded-full border-2 transition-colors"
+                              style={{ borderColor: cur === level ? "#0080FF" : "var(--border)", background: cur === level ? "#0080FF" : "transparent" }}
+                            >
+                              {cur === level && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 flex items-center justify-end gap-2 px-6 py-4" style={{ borderTop: "1px solid var(--border)" }}>
+          <button onClick={onClose} className="h-9 px-4 rounded-lg text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">Cancel</button>
+          <button onClick={handleSave} className="h-9 px-5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>Save role</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function RolesSection() {
   const tabs: RoleTab[] = ["Org roles (0)", "Project roles (0)", "Custom (0)"];
   const [tab, setTab] = useState<RoleTab>(tabs[0]);
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
@@ -2234,7 +2420,7 @@ function RolesSection() {
             active={tab}
             onChange={(key) => setTab(key as RoleTab)}
           />
-          <button className="flex h-9 shrink-0 items-center rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+          <button onClick={() => setModalOpen(true)} className="flex h-9 shrink-0 items-center rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
             Create custom role
           </button>
         </div>
@@ -2250,6 +2436,7 @@ function RolesSection() {
           </div>
         </div>
       )}
+      {modalOpen && <CreateCustomRoleModal onClose={() => setModalOpen(false)} />}
     </div>
   );
 }
@@ -2449,34 +2636,34 @@ function AuditLogSection() {
           title="Audit log"
           sub="Org-level events — SSO, RBAC, billing, members, API keys, project lifecycle. For project events (agents, journeys, CRM) see the project's audit log."
         />
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-4 flex items-center justify-between gap-4">
           <SubTabCorner
             tabs={[{ key: "Audit log", label: "Audit log" }, { key: "Login history", label: "Login history" }]}
             active={tab}
             onChange={(key) => setTab(key as "Audit log" | "Login history")}
           />
-          <button className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"><Download size={13} />Export CSV</button>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-xs whitespace-nowrap text-stone-400">◷ Retained 90 days</span>
+            <button className="flex h-9 items-center gap-2 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"><Download size={13} />Export CSV</button>
+          </div>
         </div>
       </div>
 
       {tab === "Audit log" ? (
         <>
-          <div className="mb-4 flex flex-col gap-2 shrink-0">
-            {/* Search + retained */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                <input placeholder="Search action, target, request id" className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" />
-              </div>
-              <span className="text-xs whitespace-nowrap text-stone-400 shrink-0">◷ Retained 90 days</span>
+          <div className="mb-3 flex flex-col gap-2 shrink-0">
+            {/* Search — half width */}
+            <div className="relative w-1/2">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input placeholder="Search action, target, request id" className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input)" />
             </div>
-            {/* Filters — scrollable strip */}
-            <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            {/* Filters — full width row */}
+            <div className="flex gap-2">
               {filters.map((filter) => filter === "All actors" ? (
-                <div key={filter} className="relative shrink-0">
-                  <button onClick={() => setActorOpen((open) => !open)} className={`flex h-9 items-center gap-2 rounded-md border bg-white px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:bg-(--input) dark:text-stone-200 dark:hover:bg-white/8 ${actorOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
+                <div key={filter} className="relative flex-1">
+                  <button onClick={() => setActorOpen((open) => !open)} className={`flex w-full h-9 items-center justify-between gap-2 rounded-md border bg-white px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:bg-(--input) dark:text-stone-200 dark:hover:bg-white/8 ${actorOpen ? "border-blue-400" : "border-stone-200 dark:border-(--border)"}`}>
                     <span className="whitespace-nowrap">{selectedActor || "All actors"}</span>
-                    <ChevronLeft size={11} className={`shrink-0 text-stone-400 transition-transform ${actorOpen ? "rotate-90" : "-rotate-90"}`} />
+                    <ChevronDown size={12} className="shrink-0 text-stone-400" />
                   </button>
                   {actorOpen && (
                     <div className="absolute left-0 top-[calc(100%+5px)] z-40 min-w-52 overflow-hidden rounded-lg py-1 animate-card-in" style={{ background: "var(--raised)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
@@ -2488,7 +2675,14 @@ function AuditLogSection() {
                     </div>
                   )}
                 </div>
-              ) : <div key={filter} className="shrink-0"><FakeSelect value={filter} /></div>)}
+              ) : (
+                <div key={filter} className="flex-1">
+                  <button className="flex w-full h-9 items-center justify-between gap-2 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/8 transition-colors">
+                    <span className="whitespace-nowrap">{filter}</span>
+                    <ChevronDown size={12} className="shrink-0 text-stone-400" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
           <SettingsTable>
@@ -2591,8 +2785,93 @@ const PROJECT_TEAMS = [
   ["Test Team", "0", "Jul 3, 2026, 04:49 PM", "Intemp"],
 ];
 
+function InviteMemberModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "member" | "viewer">("viewer");
+
+  const ROLES = [
+    { key: "admin",  label: "Project admin",  desc: "Have full view and edit access to all features including changing project settings and inviting new team members." },
+    { key: "member", label: "Project member", desc: "Can view and edit the project resources. Does not have access to change the project settings." },
+    { key: "viewer", label: "Project viewer", desc: "Can view project resources but does not have edit rights. Does not have access to change the project settings." },
+  ] as const;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div
+        className="relative flex flex-col w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-5 shrink-0">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+            <X size={15} />
+          </button>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Invite project member</h2>
+          <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">Send an invitation to join this project</p>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-5">
+          {/* Email */}
+          <div>
+            <label className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5 block">Invite by email</label>
+            <div className="flex gap-2">
+              <input
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="colleague@company.com"
+                type="email"
+                className="flex-1 h-10 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+              />
+              <button
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Role */}
+          <div>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-3">Access level for email invites</p>
+            <div className="flex flex-col gap-2">
+              {ROLES.map(r => {
+                const active = role === r.key;
+                return (
+                  <button
+                    key={r.key}
+                    type="button"
+                    onClick={() => setRole(r.key)}
+                    className="flex items-start gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                    style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                  >
+                    <span
+                      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                      style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                    >
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </span>
+                    <div>
+                      <p className={`text-sm font-medium ${active ? "text-stone-800 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}>{r.label}</p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{r.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function PeopleSection() {
   const [tab, setTab] = useState<"Members" | "Teams">("Members");
+  const [inviteOpen, setInviteOpen] = useState(false);
   return (
     <div className="flex-1 flex min-h-0 w-full max-w-4xl mx-auto flex-col px-4 pt-6 md:px-10 md:pt-8">
       <div className="w-full max-w-4xl mx-auto">
@@ -2603,9 +2882,10 @@ function PeopleSection() {
         </div>
         <div className="mb-6 flex items-center justify-between gap-4">
           <SubTabCorner tabs={[{ key: "Members", label: "Members" }, { key: "Teams", label: "Teams" }]} active={tab} onChange={(key) => setTab(key as "Members" | "Teams")} />
-          <button className="h-9 shrink-0 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90">{tab === "Members" ? "Invite member" : "Create team"}</button>
+          <button onClick={() => setInviteOpen(true)} className="h-9 shrink-0 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90">{tab === "Members" ? "Invite member" : "Create team"}</button>
         </div>
       </div>
+      {inviteOpen && <InviteMemberModal onClose={() => setInviteOpen(false)} />}
 
       {tab === "Members" ? (
         <SettingsTable>
@@ -2792,8 +3072,8 @@ function OrgSecuritySection() {
         <div className="border-t border-stone-100 dark:border-(--border) pt-5 mt-1">
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-0.5">Allowed factors</p>
           <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Members can enroll any allowed factor. Disabling a factor doesn't unenroll existing members.</p>
-          <SettingsRow label="Email code" description=""><FakeToggle on /></SettingsRow>
-          <SettingsRow label="Passkey" description=""><FakeToggle on /></SettingsRow>
+          <SettingsRow label="Email code" description=""><Toggle fake on size="md" /></SettingsRow>
+          <SettingsRow label="Passkey" description=""><Toggle fake on size="md" /></SettingsRow>
         </div>
 
         <div className="mt-5">
@@ -2806,7 +3086,7 @@ function OrgSecuritySection() {
       {/* ── Section 2: Require passkey ── */}
       <div className="border-t border-stone-100 dark:border-(--border) pt-8 pb-8">
         <SettingsRow label="Require passkey" description="Members not signing in via SSO must enroll a passkey. Email sign-in codes alone won't be accepted on next sign-in." noBorder>
-          <FakeToggle />
+          <Toggle fake size="md" />
         </SettingsRow>
         <div className="mt-4">
           <InfoCallout>
@@ -2892,12 +3172,7 @@ function MeetingJoinTab() {
 
         <div className="flex items-center justify-between gap-4 mb-3">
           <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Meetings Intempt Blu will join</p>
-          <button
-            onClick={() => setBluJoin(v => !v)}
-            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${bluJoin ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
-          >
-            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${bluJoin ? "translate-x-5.5" : "translate-x-0.5"}`} />
-          </button>
+          <Toggle on={bluJoin} onClick={() => setBluJoin(v => !v)} size="md" />
         </div>
 
         <p className="text-xs text-stone-400 dark:text-stone-500 mb-2">Auto-join calendar events</p>
@@ -2975,12 +3250,7 @@ function MeetingRecordingTab() {
         <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Automatically delete meetings after a set retention period</p>
         <div className="flex items-center justify-between gap-4 mb-4">
           <span className="text-sm font-medium text-stone-700 dark:text-stone-200">Auto Delete Meeting</span>
-          <button
-            onClick={() => setAutoDelete(v => !v)}
-            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${autoDelete ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
-          >
-            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${autoDelete ? "translate-x-5.5" : "translate-x-0.5"}`} />
-          </button>
+          <Toggle on={autoDelete} onClick={() => setAutoDelete(v => !v)} size="md" />
         </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-stone-700 dark:text-stone-200">Retention Period</span>
@@ -3013,12 +3283,7 @@ function MeetingPrivacyTab() {
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Allow guest access to public meetings</p>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-sm">Let people without a Blu account view public recaps using just their email — no sign-up required</p>
           </div>
-          <button
-            onClick={() => setGuestAccess(v => !v)}
-            className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 mt-0.5 ${guestAccess ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
-          >
-            <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${guestAccess ? "translate-x-5.5" : "translate-x-0.5"}`} />
-          </button>
+          <Toggle on={guestAccess} onClick={() => setGuestAccess(v => !v)} size="md" />
         </div>
       </div>
 
@@ -3036,17 +3301,6 @@ function MeetingPrivacyTab() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${on ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
-    >
-      <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform duration-200 ${on ? "translate-x-5.5" : "translate-x-0.5"}`} />
-    </button>
   );
 }
 
@@ -3078,7 +3332,7 @@ function MeetingAITab() {
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Talk to Blu</p>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-md">Interact with Blu in live meeting &amp; send intro message in chat. Ask questions about the current meeting or ask the web.</p>
           </div>
-          <Toggle on={talkToBlu} onClick={() => setTalkToBlu(v => !v)} />
+          <Toggle on={talkToBlu} onClick={() => setTalkToBlu(v => !v)} size="md" />
         </div>
 
         {talkToBlu && <div className="pl-4 border-l-2 border-stone-100 dark:border-(--border) flex flex-col gap-4">
@@ -3086,11 +3340,11 @@ function MeetingAITab() {
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Voice Trigger</p>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>Beta</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(0,128,255,0.1)", color: "#0080FF" }}>Beta</span>
               </div>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 max-w-md">Say "Hey Blu" to activate and ask questions about the current meeting or ask the web. Blu will respond via chat.</p>
             </div>
-            <Toggle on={voiceTrigger} onClick={() => setVoiceTrigger(v => !v)} />
+            <Toggle on={voiceTrigger} onClick={() => setVoiceTrigger(v => !v)} size="md" />
           </div>
 
           <div>
@@ -3099,7 +3353,7 @@ function MeetingAITab() {
                 <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Meeting Chat Message</p>
                 <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Send Blu notification message in meeting chat</p>
               </div>
-              <Toggle on={chatMessage} onClick={() => setChatMessage(v => !v)} />
+              <Toggle on={chatMessage} onClick={() => setChatMessage(v => !v)} size="md" />
             </div>
             <textarea
               value={messageText}
@@ -3122,7 +3376,7 @@ function MeetingAITab() {
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Key Takeaways on Chat</p>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Send action items 5 mins before call ends</p>
           </div>
-          <Toggle on={keyTakeaways} onClick={() => setKeyTakeaways(v => !v)} />
+          <Toggle on={keyTakeaways} onClick={() => setKeyTakeaways(v => !v)} size="md" />
         </div>
       </div>
 
@@ -3350,19 +3604,19 @@ function MeetingBookingTab() {
           </div>
         </SettingsRow>
         <SettingsRow label="Limit booking frequency" description="Prevent users from booking multiple times within a period">
-          <Toggle on={limitFrequency} onClick={() => setLimitFrequency(v => !v)} />
+          <Toggle on={limitFrequency} onClick={() => setLimitFrequency(v => !v)} size="md" />
         </SettingsRow>
         <SettingsRow label="Only show first slot per day" description="Display only the earliest available time slot each day">
-          <Toggle on={firstSlotOnly} onClick={() => setFirstSlotOnly(v => !v)} />
+          <Toggle on={firstSlotOnly} onClick={() => setFirstSlotOnly(v => !v)} size="md" />
         </SettingsRow>
         <SettingsRow label="Limit total booking duration" description="Cap total meeting time per user within a period">
-          <Toggle on={limitDuration} onClick={() => setLimitDuration(v => !v)} />
+          <Toggle on={limitDuration} onClick={() => setLimitDuration(v => !v)} size="md" />
         </SettingsRow>
         <SettingsRow label="Booker active booking limit" description="Limit how many upcoming meetings a user can have scheduled">
-          <Toggle on={bookerLimit} onClick={() => setBookerLimit(v => !v)} />
+          <Toggle on={bookerLimit} onClick={() => setBookerLimit(v => !v)} size="md" />
         </SettingsRow>
         <SettingsRow label="Limit future bookings" description="Restrict how far in advance users can schedule">
-          <Toggle on={limitFuture} onClick={() => setLimitFuture(v => !v)} />
+          <Toggle on={limitFuture} onClick={() => setLimitFuture(v => !v)} size="md" />
         </SettingsRow>
       </div>
 
@@ -3383,7 +3637,7 @@ function MeetingBookingTab() {
         <div>
           {currentHolidays.map(({ name, date }) => (
             <SettingsRow key={name} label={name} description={date}>
-              <Toggle on={!!holidayToggles[name]} onClick={() => toggleHoliday(name)} />
+              <Toggle on={!!holidayToggles[name]} onClick={() => toggleHoliday(name)} size="md" />
             </SettingsRow>
           ))}
         </div>
@@ -3393,10 +3647,40 @@ function MeetingBookingTab() {
   );
 }
 
+function DimensionInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => onChange(Math.max(1, value - 1))}
+        disabled={value <= 1}
+        className={`flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-base font-medium transition-colors ${value <= 1 ? "opacity-30 cursor-not-allowed" : "text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/8"}`}
+      >−</button>
+      <div className="relative">
+        <input
+          type="number"
+          min={1}
+          max={100}
+          value={value}
+          onChange={e => onChange(Math.min(100, Math.max(1, Number(e.target.value) || 1)))}
+          className="w-20 h-9 pl-3 pr-6 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500">%</span>
+      </div>
+      <button
+        onClick={() => onChange(Math.min(100, value + 1))}
+        disabled={value >= 100}
+        className={`flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-base font-medium transition-colors ${value >= 100 ? "opacity-30 cursor-not-allowed" : "text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/8"}`}
+      >+</button>
+    </div>
+  );
+}
+
 function MeetingAppearanceTab() {
   const [theme, setTheme] = useState<"Auto" | "Light" | "Dark">("Auto");
   const [embedType, setEmbedType] = useState<"Inline" | "Floating" | "Element Click" | "Email">("Inline");
   const [hidePoweredBy, setHidePoweredBy] = useState(false);
+  const [widthVal, setWidthVal] = useState(100);
+  const [heightVal, setHeightVal] = useState(100);
   const THEMES = [
     { key: "Auto",  icon: "◑" },
     { key: "Light", icon: "◐" },
@@ -3516,16 +3800,24 @@ function MeetingAppearanceTab() {
                 onClick={() => setEmbedType(key)}
                 className="flex flex-col rounded-xl overflow-hidden text-left transition-all"
                 style={{
-                  border: active ? "2px solid #0080FF" : "1.5px solid var(--border)",
-                  background: "var(--content-bg)",
+                  border: "1.5px solid var(--border)",
+                  background: active ? "rgba(0,128,255,0.06)" : "var(--content-bg)",
                 }}
               >
                 <div className="w-full h-24 bg-stone-50 dark:bg-white/4 overflow-hidden">
                   {preview}
                 </div>
-                <div className="px-3 py-2.5">
-                  <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">{label}</p>
-                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">{desc}</p>
+                <div className="px-3 py-2.5 flex items-start gap-2">
+                  <span
+                    className="mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                    style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                  >
+                    {active && <span className="h-1 w-1 rounded-full bg-white" />}
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">{label}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">{desc}</p>
+                  </div>
                 </div>
               </button>
             );
@@ -3537,29 +3829,13 @@ function MeetingAppearanceTab() {
       <div>
         <SubSectionLabel>Dimensions</SubSectionLabel>
         <SettingsRow label="Width" description="Width of the embedded booking widget">
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              defaultValue={100}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
-            />
-            <span className="text-sm text-stone-400 dark:text-stone-500">%</span>
-          </div>
+          <DimensionInput value={widthVal} onChange={setWidthVal} />
         </SettingsRow>
         <SettingsRow label="Height" description="Height of the embedded booking widget">
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              defaultValue={100}
-              className="w-16 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 text-center"
-            />
-            <span className="text-sm text-stone-400 dark:text-stone-500">%</span>
-          </div>
+          <DimensionInput value={heightVal} onChange={setHeightVal} />
         </SettingsRow>
-        <SettingsRow label='Hide "Powered by" badge' description="Remove the attribution from your booking page footer">
-          <Toggle on={hidePoweredBy} onClick={() => setHidePoweredBy(v => !v)} />
+        <SettingsRow label={<span className="flex items-center gap-2">Hide "Powered by" badge<span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(0,128,255,0.1)", color: "#0080FF" }}>Beta</span></span>} description="Remove the attribution from your booking page footer">
+          <Toggle on={hidePoweredBy} onClick={() => setHidePoweredBy(v => !v)} size="md" />
         </SettingsRow>
       </div>
 
@@ -3610,7 +3886,7 @@ function BluSection() {
     return (
       <div className="flex items-center justify-between py-3 border-b border-stone-100 dark:border-(--border) last:border-0">
         <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{label}</p>
-        <Toggle on={on} onClick={onToggle} />
+        <Toggle on={on} onClick={onToggle} size="md" />
       </div>
     );
   }
