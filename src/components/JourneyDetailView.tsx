@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
+import Toggle from "./Toggle";
 import SlidingSidebar from "./SlidingSidebar";
 import DateRangePicker from "./DateRangePicker";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
@@ -518,19 +519,6 @@ function JourneyAnalytics() {
 
 // ── Settings tab ───────────────────────────────────────────────────────────────
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"}`}
-    >
-      <span
-        className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? "translate-x-4.5" : "translate-x-0.5"}`}
-      />
-    </button>
-  );
-}
 
 function SettingCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -563,7 +551,7 @@ function JourneySettings() {
         {/* Goal */}
         <SettingCard title="Goal">
           <div className="flex items-center gap-3">
-            <Toggle checked={setGoal} onChange={setSetGoal} />
+            <Toggle on={setGoal} onClick={() => setSetGoal(v => !v)} />
             <span className="text-sm text-stone-600 dark:text-stone-400">Set goal</span>
           </div>
         </SettingCard>
@@ -614,11 +602,11 @@ function JourneySettings() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <span className="text-sm text-stone-700 dark:text-stone-200">Inbox rotation</span>
-              <Toggle checked={inboxRotation} onChange={setInboxRotation} />
+              <Toggle on={inboxRotation} onClick={() => setInboxRotation(v => !v)} />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-stone-700 dark:text-stone-200">Send in recipients timezone</span>
-              <Toggle checked={recipientTz} onChange={setRecipientTz} />
+              <Toggle on={recipientTz} onClick={() => setRecipientTz(v => !v)} />
             </div>
             <div>
               <p className="mb-1.5 text-xs font-medium text-stone-600 dark:text-stone-400">Daily limit</p>

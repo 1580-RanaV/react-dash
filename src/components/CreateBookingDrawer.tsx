@@ -1,6 +1,7 @@
 
 
 import { useEffect, useRef, useState } from "react";
+import Toggle from "./Toggle";
 import { CalendarDays, ChevronDown, Clock3, Shield, Sparkles, Users } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
 
@@ -101,17 +102,6 @@ function Select({
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 rounded-full shadow-sm transition-colors ${checked ? "bg-blue-500" : "bg-stone-300 dark:bg-white/12"}`}
-    >
-      <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
-    </button>
-  );
-}
 
 function Section({
   icon,
@@ -204,7 +194,7 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
               <CalendarDays size={15} className="text-stone-500 dark:text-stone-400" />
               Meeting Confirmation
             </div>
-            <Toggle checked={meetingConfirmation} onChange={setMeetingConfirmation} />
+            <Toggle on={meetingConfirmation} onClick={() => setMeetingConfirmation(v => !v)} size="md" />
           </div>
         </Section>
 
@@ -215,7 +205,7 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
         >
           <div className="mt-4 flex items-center justify-between gap-3">
             <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">Use global hours</span>
-            <Toggle checked={useGlobalHours} onChange={setUseGlobalHours} />
+            <Toggle on={useGlobalHours} onClick={() => setUseGlobalHours(v => !v)} size="md" />
           </div>
         </Section>
 

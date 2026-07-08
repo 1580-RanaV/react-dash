@@ -1,6 +1,7 @@
 
 
 import { useState } from "react";
+import Toggle from "./Toggle";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, BarChart2, Hash, LayoutDashboard, Plus, Search, Table2, Trash2, Users2 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
@@ -12,20 +13,6 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 // ── shared helpers ─────────────────────────────────────────────────────────────
 
-function Toggle({ defaultOn }: { defaultOn: boolean }) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${on ? "bg-blue-500" : "bg-stone-300 dark:bg-stone-600"}`}
-    >
-      <span className={`inline-block h-3.75 w-3.75 transform rounded-full bg-white shadow transition-transform ${on ? "translate-x-4.5" : "translate-x-0.5"}`} />
-    </button>
-  );
-}
 
 function UserAvatar({ initial, color, name }: { initial: string; color: string; name: string }) {
   return (
@@ -361,16 +348,16 @@ const COLUMNS: TableColumn[] = [
 ];
 
 const ROWS: TableRow[] = [
-  { id: "e1",  cells: { event: "free_tool_generated",             type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 0, events: 0, lastUpdated: "Jun 2, 2026 08:33 AM",  createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e2",  cells: { event: "subscribed v2",                   type: TYPE_BADGE, intent: <Toggle defaultOn={true}  />, users: 1, events: 1, lastUpdated: "May 29, 2026 09:10 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e3",  cells: { event: "Team member invited to a project", type: TYPE_BADGE, intent: <Toggle defaultOn={true}  />, users: 1, events: 3, lastUpdated: "May 28, 2026 06:59 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e4",  cells: { event: "free_tool_lead",                  type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 1, events: 1, lastUpdated: "May 22, 2026 04:06 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e5",  cells: { event: "book-a-demo",                     type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e6",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Somya Nayak"   /> } },
-  { id: "e7",  cells: { event: "Newsletter Signup",               type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e8",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e9",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Sid Chaudhary" /> } },
-  { id: "e10", cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle defaultOn={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e1",  cells: { event: "free_tool_generated",             type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "Jun 2, 2026 08:33 AM",  createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e2",  cells: { event: "subscribed v2",                   type: TYPE_BADGE, intent: <Toggle fake on={true} />, users: 1, events: 1, lastUpdated: "May 29, 2026 09:10 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e3",  cells: { event: "Team member invited to a project", type: TYPE_BADGE, intent: <Toggle fake on={true} />, users: 1, events: 3, lastUpdated: "May 28, 2026 06:59 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e4",  cells: { event: "free_tool_lead",                  type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 1, events: 1, lastUpdated: "May 22, 2026 04:06 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e5",  cells: { event: "book-a-demo",                     type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e6",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Somya Nayak"   /> } },
+  { id: "e7",  cells: { event: "Newsletter Signup",               type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e8",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
+  { id: "e9",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Sid Chaudhary" /> } },
+  { id: "e10", cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
 ];
 
 // ── live tab ───────────────────────────────────────────────────────────────────

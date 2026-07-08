@@ -6,6 +6,7 @@ import { Check, CheckCircle2, ChevronDown, Copy, FileText, Globe, Mail, MessageS
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { USERS_DATA } from "./UsersView";
 import BackButton from "./BackButton";
+import Toggle from "./Toggle";
 import CodeBlock from "./CodeBlock";
 import SubTabCorner from "./SubTabCorner";
 import DateRangePicker from "./DateRangePicker";
@@ -780,12 +781,7 @@ function PrivacyTab() {
                   <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{c.description}</p>
                 </div>
               </div>
-              <button
-                onClick={() => toggle(c.key)}
-                className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${toggles[c.key] ? "bg-blue-500" : "bg-stone-200 dark:bg-white/15"}`}
-              >
-                <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${toggles[c.key] ? "translate-x-4.5" : "translate-x-0.5"}`} />
-              </button>
+              <Toggle on={toggles[c.key]} onClick={() => toggle(c.key)} />
             </div>
           ))}
         </div>

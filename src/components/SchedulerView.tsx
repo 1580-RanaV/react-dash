@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import Toggle from "./Toggle";
 import CreateBookingDrawer from "./CreateBookingDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
@@ -45,18 +46,7 @@ function DurationBadge({ value }: { value: string }) {
 }
 
 function VisibilityToggle() {
-  const [on, setOn] = useState(true);
-  return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); setOn((v) => !v); }}
-      className={`relative h-6 w-11 rounded-full shadow-sm transition-colors duration-200 ${on ? "bg-blue-600" : "bg-stone-300 dark:bg-stone-600"}`}
-    >
-      <span
-        className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ${on ? "right-1 left-auto" : "left-1 right-auto"}`}
-      />
-    </button>
-  );
+  return <Toggle fake on size="md" />;
 }
 
 // ── Table config ───────────────────────────────────────────────────────────────

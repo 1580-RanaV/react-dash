@@ -130,7 +130,7 @@ function fmt24to12(t: string) {
   return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${ampm}`;
 }
 
-function WeeklyHours() {
+function WeeklyHours({ hideTitle }: { hideTitle?: boolean } = {}) {
   const [schedule, setSchedule] = useState<Schedule>(DEFAULT_SCHEDULE);
 
   function toggleDay(day: Day) {
@@ -167,27 +167,28 @@ function WeeklyHours() {
     });
   }
 
-  const [hoveredDay, setHoveredDay] = useState<Day | null>(null);
-
   return (
     <div>
-      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">My Weekly Hours</p>
-      <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 mb-5">Set your personal availability for each day of the week</p>
+      {!hideTitle && <>
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">My Weekly Hours</p>
+        <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500 mb-5">Set your personal availability for each day of the week</p>
+      </>}
       <div className="flex flex-col gap-3">
         {DAYS.map((day) => {
           const { active, slots } = schedule[day];
           return (
-            <div key={day} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3" onMouseEnter={() => setHoveredDay(day)} onMouseLeave={() => setHoveredDay(null)}>
+            <div key={day} className="group flex flex-row items-start gap-2 sm:gap-3">
               {/* Day pill */}
               <button
                 onClick={() => toggleDay(day)}
-                className={`w-24 h-9 shrink-0 rounded-lg text-xs font-semibold transition-colors ${
+                className={`w-14 sm:w-24 h-9 shrink-0 rounded-lg text-xs font-semibold transition-colors ${
                   active
                     ? "bg-blue-500 text-white"
                     : "border border-stone-200 dark:border-(--border) text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5"
                 }`}
               >
-                {day}
+                <span className="sm:hidden">{day.slice(0, 3)}</span>
+                <span className="hidden sm:inline">{day}</span>
               </button>
 
               {active ? (
@@ -197,18 +198,15 @@ function WeeklyHours() {
                     {slots.map((slot, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <Clock size={12} className="text-stone-300 shrink-0" />
-                        {/* Start time */}
-                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-32">
+                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-28 sm:w-32">
                           <span>{fmt24to12(slot.start)}</span>
                           <input type="time" value={slot.start} onChange={(e) => updateSlot(day, idx, "start", e.target.value)} className="sr-only" tabIndex={-1} />
                         </div>
-                        <span className="text-xs text-stone-400">to</span>
-                        {/* End time */}
-                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-32">
+                        <span className="text-xs text-stone-400">–</span>
+                        <div className="flex h-9 items-center justify-center rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-xs text-stone-700 dark:text-stone-200 w-28 sm:w-32">
                           <span>{fmt24to12(slot.end)}</span>
                           <input type="time" value={slot.end} onChange={(e) => updateSlot(day, idx, "end", e.target.value)} className="sr-only" tabIndex={-1} />
                         </div>
-                        {/* Remove slot */}
                         {slots.length > 1 && (
                           <button onClick={() => removeSlot(day, idx)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-300 hover:text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
                             <X size={13} />
@@ -219,12 +217,10 @@ function WeeklyHours() {
                   </div>
                   {/* Right-side actions */}
                   <div className="flex items-center gap-1 shrink-0 mt-1">
-                    {hoveredDay === day && (
-                      <button onClick={() => copyToAll(day)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
-                        <Copy size={12} />
-                        Copy to all
-                      </button>
-                    )}
+                    <button onClick={() => copyToAll(day)} className="flex sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/5">
+                      <Copy size={12} />
+                      <span className="hidden sm:inline">Copy to all</span>
+                    </button>
                     <button onClick={() => addSlot(day)} className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors" title="Add time slot">
                       <Plus size={14} />
                     </button>
@@ -761,7 +757,7 @@ function InboxSection() {
                 onClick={() => setMarketingOpen((o) => !o)}
                 className="flex w-full items-center justify-between h-10 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
               >
-                <span>{selectedMarketing.label} — {selectedMarketing.desc}</span>
+                <span>{selectedMarketing.label}</span>
                 <ChevronLeft size={12} className={`text-stone-400 transition-transform duration-150 ${marketingOpen ? "rotate-90" : "-rotate-90"}`} />
               </button>
               {marketingOpen && (
@@ -773,9 +769,10 @@ function InboxSection() {
                     <button
                       key={opt.value}
                       onClick={() => { setMarketingStrength(opt.value); setMarketingOpen(false); }}
-                      className={`flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${marketingStrength === opt.value ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
+                      className={`flex w-full flex-col px-3.5 py-2.5 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${marketingStrength === opt.value ? "text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
                     >
-                      {opt.label} — {opt.desc}
+                      <span className="text-sm font-medium">{opt.label}</span>
+                      <span className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{opt.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -841,46 +838,50 @@ function InboxSection() {
             )}
 
             {/* Add rule form */}
-            <div className="flex items-center gap-2">
-              <input
-                value={ruleInput}
-                onChange={(e) => setRuleInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addRule()}
-                placeholder="e.g. ceo@company.com or @github.com"
-                className="flex-1 h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition"
-              />
-              <div ref={ruleCatRef} className="relative shrink-0">
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-end">
                 <button
-                  onClick={() => setRuleCategoryOpen((o) => !o)}
-                  className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+                  onClick={addRule}
+                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
+                  style={{ background: "#0080FF" }}
                 >
-                  <span>{CATEGORIES.find((c) => c.key === ruleCategory)?.label ?? ruleCategory}</span>
-                  <ChevronLeft size={11} className={`text-stone-400 transition-transform duration-150 ${ruleCategoryOpen ? "rotate-90" : "-rotate-90"}`} />
+                  Add Rule
                 </button>
-                {ruleCategoryOpen && (
-                  <div
-                    className="absolute right-0 top-[calc(100%+4px)] z-20 w-52 overflow-hidden rounded-lg py-1 animate-card-in"
-                    style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.key}
-                        onClick={() => { setRuleCategory(cat.key); setRuleCategoryOpen(false); }}
-                        className={`flex w-full items-center px-3.5 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${ruleCategory === cat.key ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
-              <button
-                onClick={addRule}
-                className="flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
-                style={{ background: "#0080FF" }}
-              >
-                Add Rule
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  value={ruleInput}
+                  onChange={(e) => setRuleInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addRule()}
+                  placeholder="e.g. ceo@company.com or @github.com"
+                  className="w-3/5 h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition"
+                />
+                <div ref={ruleCatRef} className="relative w-2/5">
+                  <button
+                    onClick={() => setRuleCategoryOpen((o) => !o)}
+                    className="flex w-full items-center justify-between gap-1.5 h-9 px-3 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <span className="truncate">{CATEGORIES.find((c) => c.key === ruleCategory)?.label ?? ruleCategory}</span>
+                    <ChevronLeft size={11} className={`shrink-0 text-stone-400 transition-transform duration-150 ${ruleCategoryOpen ? "rotate-90" : "-rotate-90"}`} />
+                  </button>
+                  {ruleCategoryOpen && (
+                    <div
+                      className="absolute right-0 top-[calc(100%+4px)] z-20 w-52 overflow-hidden rounded-lg py-1 animate-card-in"
+                      style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.key}
+                          onClick={() => { setRuleCategory(cat.key); setRuleCategoryOpen(false); }}
+                          className={`flex w-full items-center px-3.5 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${ruleCategory === cat.key ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <p className="mt-2 text-xs text-stone-400 dark:text-stone-500">Accepts: email addresses, @domain.com, or text that appears in subject lines</p>
           </div>
@@ -1913,8 +1914,142 @@ function SubSectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-sm font-medium text-stone-700 dark:text-stone-200 mb-1">{children}</p>;
 }
 
+const FAKE_SETUP_KEY = "0RRR5XB40K4AH3QB2TT36LBMEYYRXVPR";
+
+function MFASetupModal({ onClose, onVerified }: { onClose: () => void; onVerified: () => void }) {
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const refs = Array.from({ length: 6 }, () => useRef<HTMLInputElement>(null));
+  const filled = digits.every(d => d !== "");
+
+  function handleDigit(i: number, val: string) {
+    const d = val.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = d;
+    setDigits(next);
+    if (d && i < 5) refs[i + 1].current?.focus();
+  }
+
+  function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !digits[i] && i > 0) refs[i - 1].current?.focus();
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    setDigits(text.padEnd(6, "").split("").slice(0, 6));
+    refs[Math.min(text.length, 5)].current?.focus();
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div
+        className="relative w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+            <X size={15} />
+          </button>
+          <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">Enable two-factor authentication</h2>
+          <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500 leading-relaxed">
+            Scan the QR code with an authenticator app (Google Authenticator, Authy, 1Password...), then enter the 6-digit code it shows. Can't scan? Use the setup key below.
+          </p>
+        </div>
+
+        {/* QR Code */}
+        <div className="flex justify-center px-6 pb-5">
+          <div className="rounded-xl border border-stone-200 dark:border-(--border) p-3 bg-white">
+            <svg width="160" height="160" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+              {/* Simplified fake QR — 3 finder patterns + random modules */}
+              {/* Top-left finder */}
+              {[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[0,1],[6,1],[0,2],[2,2],[3,2],[4,2],[6,2],[0,3],[2,3],[3,3],[4,3],[6,3],[0,4],[2,4],[3,4],[4,4],[6,4],[0,5],[6,5],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+              // Top-right finder
+              [14,0],[15,0],[16,0],[17,0],[18,0],[19,0],[20,0],[14,1],[20,1],[14,2],[16,2],[17,2],[18,2],[20,2],[14,3],[16,3],[17,3],[18,3],[20,3],[14,4],[16,4],[17,4],[18,4],[20,4],[14,5],[20,5],[14,6],[15,6],[16,6],[17,6],[18,6],[19,6],[20,6],
+              // Bottom-left finder
+              [0,14],[1,14],[2,14],[3,14],[4,14],[5,14],[6,14],[0,15],[6,15],[0,16],[2,16],[3,16],[4,16],[6,16],[0,17],[2,17],[3,17],[4,17],[6,17],[0,18],[2,18],[3,18],[4,18],[6,18],[0,19],[6,19],[0,20],[1,20],[2,20],[3,20],[4,20],[5,20],[6,20],
+              // Data modules (pseudo-random)
+              [8,0],[10,0],[12,0],[8,1],[11,1],[9,2],[12,2],[8,3],[10,3],[9,4],[11,4],[8,5],[10,5],[12,5],[8,6],[9,6],[11,6],[8,8],[10,8],[12,8],[14,8],[16,8],[18,8],[20,8],[8,9],[11,9],[13,9],[15,9],[17,9],[19,9],[8,10],[10,10],[12,10],[14,10],[16,10],[18,10],[20,10],[9,11],[11,11],[13,11],[15,11],[17,11],[19,11],[8,12],[10,12],[12,12],[14,12],[16,12],[18,12],[20,12],[8,13],[10,13],[13,13],[15,13],[17,13],[19,13],[8,14],[10,14],[12,14],[9,15],[11,15],[13,15],[15,15],[17,15],[19,15],[8,16],[10,16],[12,16],[14,16],[16,16],[18,16],[20,16],[9,17],[11,17],[13,17],[15,17],[17,17],[19,17],[8,18],[10,18],[12,18],[14,18],[16,18],[18,18],[9,19],[11,19],[13,19],[15,19],[17,19],[19,19],[8,20],[10,20],[12,20],[14,20],[16,20],[18,20],[20,20]
+              ].map(([x,y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#000" />)}
+            </svg>
+          </div>
+        </div>
+
+        {/* Setup Key */}
+        <div className="px-6 pb-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Setup Key</p>
+          <div className="flex items-center gap-2 rounded-lg border border-stone-200 dark:border-(--border) bg-stone-50 dark:bg-(--muted) px-3 py-2">
+            <span className="flex-1 text-sm font-mono text-stone-700 dark:text-stone-200 truncate">{FAKE_SETUP_KEY}</span>
+            <button
+              onClick={() => navigator.clipboard?.writeText(FAKE_SETUP_KEY)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-stone-400 hover:bg-stone-200 dark:hover:bg-white/10 transition-colors"
+            >
+              <Copy size={13} />
+            </button>
+          </div>
+          <button className="mt-2 flex items-center gap-1.5 text-xs text-blue-500 hover:underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3m0 4h4m-4-4v7"/></svg>
+            Open in authenticator app
+          </button>
+        </div>
+
+        {/* Verification code */}
+        <div className="px-6 pb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">Verification Code</p>
+          <div className="flex items-center gap-2" onPaste={handlePaste}>
+            {[0,1,2].map(i => (
+              <input
+                key={i}
+                ref={refs[i]}
+                value={digits[i]}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKey(i, e)}
+                maxLength={1}
+                inputMode="numeric"
+                className="h-12 w-full rounded-xl border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-center text-lg font-semibold text-stone-800 dark:text-stone-100 outline-none focus:border-blue-400 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            ))}
+            <span className="text-stone-300 dark:text-stone-600 text-lg font-light">–</span>
+            {[3,4,5].map(i => (
+              <input
+                key={i}
+                ref={refs[i]}
+                value={digits[i]}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKey(i, e)}
+                maxLength={1}
+                inputMode="numeric"
+                className="h-12 w-full rounded-xl border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-center text-lg font-semibold text-stone-800 dark:text-stone-100 outline-none focus:border-blue-400 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 border-t border-stone-100 dark:border-(--border) px-6 py-4">
+          <button onClick={onClose} className="h-9 rounded-lg border border-stone-200 dark:border-(--border) px-4 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => { onVerified(); onClose(); }}
+            disabled={!filled}
+            className="h-9 rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            style={{ background: "#0080FF" }}
+          >
+            Verify &amp; enable
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function SecuritySection() {
   const [mfaOn, setMfaOn] = useState(false);
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [passkeys] = useState<string[]>([]);
 
   const SESSIONS = [
@@ -1938,7 +2073,7 @@ function SecuritySection() {
               <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Authenticator app</p>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Use one-time codes from an authenticator app.</p>
             </div>
-            <Toggle on={mfaOn} onClick={() => setMfaOn(v => !v)} />
+            <Toggle on={mfaOn} onClick={() => mfaOn ? setMfaOn(false) : setMfaModalOpen(true)} />
           </div>
         </div>
       </div>
@@ -2014,6 +2149,7 @@ function SecuritySection() {
           </button>
         </div>
       </div>
+      {mfaModalOpen && <MFASetupModal onClose={() => setMfaModalOpen(false)} onVerified={() => setMfaOn(true)} />}
     </div>
   );
 }
@@ -2087,7 +2223,144 @@ const TEAM_MEMBERS = [
   { name: "Isabella Garcia",     email: "isabella@intempt.com",        role: "Admin" as MemberRole,         color: "#EC4899" },
 ];
 
+function InviteOrgMemberModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "billing" | "member" | "viewer">("member");
+  const [projectSearch, setProjectSearch] = useState("");
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
+  const PROJECTS = ["Dev Playground", "Linea"];
+  const ORG_ROLES = [
+    { key: "admin",   label: "Org admin",     desc: "Have full view and edit access across the organization including managing members, roles, and org settings." },
+    { key: "billing", label: "Billing admin",  desc: "Can manage billing, plans, and invoices for the organization. Does not have access to other org settings." },
+    { key: "member",  label: "Org member",     desc: "Can access the organization and its projects. Does not have access to change org settings." },
+    { key: "viewer",  label: "Org viewer",     desc: "Can view the organization but does not have edit rights. Does not have access to change org settings." },
+  ] as const;
+
+  const filtered = PROJECTS.filter(p => p.toLowerCase().includes(projectSearch.toLowerCase()));
+  const canSend = email.trim().length > 0 && selectedProjects.length > 0;
+
+  function toggleProject(p: string) {
+    setSelectedProjects(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  }
+
+  function handleSend() {
+    setSubmitted(true);
+    if (!canSend) return;
+    onClose();
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div
+        className="relative flex flex-col w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 shrink-0">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+            <X size={15} />
+          </button>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Invite org member</h2>
+          <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">Send an invitation to join this organization</p>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-5">
+          {/* Email */}
+          <div>
+            <label className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5 block">Invite by email</label>
+            <input
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="colleague@company.com"
+              type="email"
+              className="w-full h-10 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+            />
+          </div>
+
+          {/* Org role */}
+          <div>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-3">Access level for email invites</p>
+            <div className="flex flex-col gap-2">
+              {ORG_ROLES.map(r => {
+                const active = role === r.key;
+                return (
+                  <button key={r.key} type="button" onClick={() => setRole(r.key)}
+                    className="flex items-start gap-3 rounded-xl px-4 py-3.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                    style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                  >
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                      style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}>
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </span>
+                    <div>
+                      <p className={`text-sm font-medium ${active ? "text-stone-800 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}>{r.label}</p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 leading-relaxed">{r.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Project access */}
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Project access</p>
+              <span className="text-xs text-rose-400">*</span>
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Pick the project(s) this member joins and the role they get in each. At least one is required.</p>
+            <div className="relative mb-2">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+              <input
+                value={projectSearch}
+                onChange={e => setProjectSearch(e.target.value)}
+                placeholder="Search projects…"
+                className="w-full h-9 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) pl-8 pr-3 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-400 outline-none focus:border-blue-400 transition"
+              />
+            </div>
+            <div className="flex flex-col gap-1 rounded-xl border border-stone-200 dark:border-(--border) overflow-hidden">
+              {filtered.map(p => {
+                const checked = selectedProjects.includes(p);
+                return (
+                  <button key={p} type="button" onClick={() => toggleProject(p)}
+                    className="flex items-center gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-white/4 transition-colors border-b border-stone-100 dark:border-(--border) last:border-0"
+                  >
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors"
+                      style={{ borderColor: checked ? "#0080FF" : "var(--border)", background: checked ? "#0080FF" : "transparent" }}>
+                      {checked && <svg width="9" height="9" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </span>
+                    <span className="text-sm text-stone-700 dark:text-stone-200">{p}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {submitted && selectedProjects.length === 0 && (
+              <p className="mt-1.5 text-xs text-rose-400">Select at least one project</p>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 border-t border-stone-100 dark:border-(--border) px-6 py-4 shrink-0">
+          <button onClick={onClose} className="h-9 rounded-lg border border-stone-200 dark:border-(--border) px-4 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+            Cancel
+          </button>
+          <button onClick={handleSend} className="h-9 rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+            Send invite
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function TeamSection() {
+  const [inviteOpen, setInviteOpen] = useState(false);
   return (
     <div className="flex-1 flex flex-col min-h-0 w-full max-w-4xl mx-auto px-4 pt-6 md:px-10 md:pt-8">
       <div className="w-full max-w-4xl mx-auto">
@@ -2099,6 +2372,7 @@ function TeamSection() {
           </p>
           <div className="flex justify-end mt-3">
             <button
+              onClick={() => setInviteOpen(true)}
               className="flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-semibold text-white transition-opacity hover:opacity-90"
               style={{ background: "#0080FF" }}
             >
@@ -2107,6 +2381,7 @@ function TeamSection() {
           </div>
         </div>
       </div>
+      {inviteOpen && <InviteOrgMemberModal onClose={() => setInviteOpen(false)} />}
 
       <SettingsTable>
       <div className="min-w-[900px]">
@@ -2414,13 +2689,13 @@ function RolesSection() {
           title="Roles & Permissions"
           sub="The single source of truth for every role in your organization. Standard and custom roles defined here are available to assign in every project."
         />
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SubTabCorner
             tabs={tabs.map((item) => ({ key: item, label: item }))}
             active={tab}
             onChange={(key) => setTab(key as RoleTab)}
           />
-          <button onClick={() => setModalOpen(true)} className="flex h-9 shrink-0 items-center rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+          <button onClick={() => setModalOpen(true)} className="flex h-9 w-full sm:w-auto shrink-0 items-center justify-center rounded-md px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
             Create custom role
           </button>
         </div>
@@ -2634,7 +2909,7 @@ function AuditLogSection() {
       <div className="w-full max-w-4xl mx-auto">
         <SectionHeader
           title="Audit log"
-          sub="Org-level events — SSO, RBAC, billing, members, API keys, project lifecycle. For project events (agents, journeys, CRM) see the project's audit log."
+          sub="Org-level events — SSO, RBAC, billing, members, API keys, project lifecycle. For project events (agents, journeys, CRM) see the project's audit log. Logs are retained for 90 days."
         />
         <div className="mb-4 flex items-center justify-between gap-4">
           <SubTabCorner
@@ -2642,10 +2917,7 @@ function AuditLogSection() {
             active={tab}
             onChange={(key) => setTab(key as "Audit log" | "Login history")}
           />
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs whitespace-nowrap text-stone-400">◷ Retained 90 days</span>
-            <button className="flex h-9 items-center gap-2 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"><Download size={13} />Export CSV</button>
-          </div>
+          <button className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"><Download size={13} />Export CSV</button>
         </div>
       </div>
 
@@ -3529,7 +3801,7 @@ function MeetingBookingTab() {
       <div>
         <SubSectionLabel>Schedules</SubSectionLabel>
         <p className="text-xs text-stone-400 dark:text-stone-500 mt-1 mb-5">Set your weekly availability and date overrides</p>
-        <WeeklyHours />
+        <WeeklyHours hideTitle />
         <DateOverridesSection />
       </div>
 
@@ -3636,9 +3908,13 @@ function MeetingBookingTab() {
         </div>
         <div>
           {currentHolidays.map(({ name, date }) => (
-            <SettingsRow key={name} label={name} description={date}>
+            <div key={name} className="flex items-center justify-between gap-4 py-3.5 border-b border-stone-100 dark:border-(--border) last:border-0">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200 leading-snug">{name}</p>
+                <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{date}</p>
+              </div>
               <Toggle on={!!holidayToggles[name]} onClick={() => toggleHoliday(name)} size="md" />
-            </SettingsRow>
+            </div>
           ))}
         </div>
       </div>
@@ -3677,6 +3953,7 @@ function DimensionInput({ value, onChange }: { value: number; onChange: (v: numb
 
 function MeetingAppearanceTab() {
   const [theme, setTheme] = useState<"Auto" | "Light" | "Dark">("Auto");
+  const [themeOpen, setThemeOpen] = useState(false);
   const [embedType, setEmbedType] = useState<"Inline" | "Floating" | "Element Click" | "Email">("Inline");
   const [hidePoweredBy, setHidePoweredBy] = useState(false);
   const [widthVal, setWidthVal] = useState(100);
@@ -3762,15 +4039,30 @@ function MeetingAppearanceTab() {
       <div>
         <SubSectionLabel>Design System</SubSectionLabel>
         <SettingsRow label="Design System" description="Controls the visual theme of your booking page">
-          <div className="relative">
-            <select
-              value={theme}
-              onChange={e => setTheme(e.target.value as "Auto" | "Light" | "Dark")}
-              className="h-9 appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 cursor-pointer w-36"
+          <div className="relative w-36">
+            <button
+              onClick={() => setThemeOpen(o => !o)}
+              className="flex w-full items-center justify-between gap-2 h-9 pl-3 pr-2.5 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
             >
-              {THEMES.map(t => <option key={t.key} value={t.key}>{t.icon}  {t.key}</option>)}
-            </select>
-            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <span>{THEMES.find(t => t.key === theme)?.icon}  {theme}</span>
+              <ChevronDown size={13} className={`text-stone-400 transition-transform duration-150 ${themeOpen ? "rotate-180" : ""}`} />
+            </button>
+            {themeOpen && (
+              <div
+                className="absolute right-0 top-[calc(100%+4px)] z-30 w-full overflow-hidden rounded-lg py-1 animate-card-in"
+                style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+              >
+                {THEMES.map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => { setTheme(t.key); setThemeOpen(false); }}
+                    className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-white/5 ${theme === t.key ? "font-semibold text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}`}
+                  >
+                    {t.icon}  {t.key}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </SettingsRow>
       </div>
@@ -3816,7 +4108,7 @@ function MeetingAppearanceTab() {
                   </span>
                   <div>
                     <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">{label}</p>
-                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">{desc}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 leading-relaxed">{desc}</p>
                   </div>
                 </div>
               </button>
