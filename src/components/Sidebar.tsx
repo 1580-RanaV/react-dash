@@ -3,8 +3,9 @@
 
 import AskBluButton from "./AskBluButton";
 import { Link } from "react-router-dom";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState, cloneElement } from "react";
+import { createPortal } from "react-dom";
 import {
   Home,
   Palette,
@@ -26,14 +27,12 @@ import {
   Handshake,
   CalendarDays,
   CalendarClock,
-  BarChart2,
   Database,
   LayoutDashboard,
   CreditCard,
   ChevronRight,
   ChevronDown,
   Check,
-  Settings,
 } from "lucide-react";
 
 type NavItem = {
@@ -159,12 +158,11 @@ function Avatar({
 
 type WorkspaceItem = { name: string; initials: string; color: string; active?: boolean };
 
-function WorkspaceSwitcher() {
+function WorkspaceSwitcher({ collapsed }: { collapsed?: boolean }) {
   const [open, setOpen]                     = useState(false);
   const [selectedProject, setSelectedProject] = useState<WorkspaceItem>(projects[1]);
   const [selectedOrg, setSelectedOrg]         = useState<WorkspaceItem>(organizations[2]);
   const ref = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -178,21 +176,26 @@ function WorkspaceSwitcher() {
     <div ref={ref} className="relative px-3 pt-3 pb-4">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors"
+        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors ${collapsed ? "justify-center" : ""}`}
+        title={collapsed ? selectedProject.name : undefined}
       >
         <Avatar initials={selectedProject.initials} color={selectedProject.color} size={22} />
-        <div className="flex-1 min-w-0 text-left">
-          <div className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
-            {selectedProject.name}
-          </div>
-          <div className="text-xs text-stone-600 dark:text-stone-400 truncate leading-tight">
-            {selectedOrg.name}
-          </div>
-        </div>
-        <ChevronDown
-          size={13}
-          className={`text-stone-400 dark:text-stone-500 transition-transform duration-150 shrink-0 ${open ? "rotate-180" : ""}`}
-        />
+        {!collapsed && (
+          <>
+            <div className="flex-1 min-w-0 text-left">
+              <div className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
+                {selectedProject.name}
+              </div>
+              <div className="text-xs text-stone-600 dark:text-stone-400 truncate leading-tight">
+                {selectedOrg.name}
+              </div>
+            </div>
+            <ChevronDown
+              size={13}
+              className={`text-stone-400 dark:text-stone-500 transition-transform duration-150 shrink-0 ${open ? "rotate-180" : ""}`}
+            />
+          </>
+        )}
       </button>
 
       {open && (
@@ -288,46 +291,65 @@ function NavItemRow({
   item,
   depth = 0,
   activeItem,
+  collapsed = false,
 }: {
   item: NavItem;
   depth?: number;
   activeItem: string;
+  collapsed?: boolean;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [tooltipY, setTooltipY] = useState<number | null>(null);
+
   const hasChildren = item.children && item.children.length > 0;
   const isActive = activeItem === item.label;
   const view = NAV_VIEWS[item.label];
   const href = item.label === "Home" ? "/home" : view ? `/${view}` : "#";
   const rowClassName = `
-    w-full flex items-center gap-2.5 px-3 py-1.25 rounded-md text-left
+    w-full flex items-center gap-2.5 rounded-md text-left
     text-sm font-[450] transition-colors duration-100 group
+    ${collapsed ? "justify-center px-0 py-2" : "px-3 py-1.25"}
     ${isActive
       ? "bg-white dark:bg-white/8 text-stone-800 dark:text-stone-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
       : "text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-white/6 hover:text-stone-800 dark:hover:text-stone-100"
     }
   `;
-  const rowContent = (
+  const iconEl = (
+    <span
+      key={isActive ? "active" : "idle"}
+      className={isActive
+        ? "text-blue-600 animate-nav-pop"
+        : "text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300"}
+    >
+      {collapsed
+        ? cloneElement(item.icon as React.ReactElement<{ size?: number }>, { size: 19 })
+        : item.icon
+      }
+    </span>
+  );
+  const rowContent = collapsed ? iconEl : (
     <>
-      <span
-        key={isActive ? "active" : "idle"}
-        className={isActive
-          ? "text-blue-600 animate-nav-pop"
-          : "text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-300"}
-      >
-        {item.icon}
-      </span>
+      {iconEl}
       <span className="flex-1 leading-none">{item.label}</span>
     </>
   );
 
   return (
-    <div>
+    <div
+      ref={rowRef}
+      onMouseEnter={collapsed ? () => {
+        const rect = rowRef.current?.getBoundingClientRect();
+        if (rect) setTooltipY(rect.top + rect.height / 2);
+      } : undefined}
+      onMouseLeave={collapsed ? () => setTooltipY(null) : undefined}
+    >
       {view || item.label === "Home" ? (
         <Link to={href} className={rowClassName}>{rowContent}</Link>
       ) : (
         <button className={rowClassName}>{rowContent}</button>
       )}
 
-      {hasChildren && (
+      {hasChildren && !collapsed && (
         <div className="mt-0.5 mb-1.5">
           {item.children!.map((child, idx) => {
             const isLast = idx === item.children!.length - 1;
@@ -341,11 +363,42 @@ function NavItemRow({
                   item={child}
                   depth={depth + 1}
                   activeItem={activeItem}
+                  collapsed={false}
                 />
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* In collapsed mode render children as flat icon rows */}
+      {hasChildren && collapsed && (
+        <div className="mt-px space-y-px">
+          {item.children!.map((child) => (
+            <NavItemRow key={child.label} item={child} activeItem={activeItem} collapsed={true} />
+          ))}
+        </div>
+      )}
+
+      {/* Portal tooltip — escapes the overflow-y:auto nav container */}
+      {collapsed && tooltipY !== null && createPortal(
+        <div
+          className="pointer-events-none px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
+          style={{
+            position: "fixed",
+            top: tooltipY,
+            left: 64,
+            transform: "translateY(-50%)",
+            zIndex: 9999,
+            background: "var(--content-bg)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+            color: "var(--foreground)",
+          }}
+        >
+          {item.label}
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -355,6 +408,7 @@ function CollapsibleSection({
   section,
   activeItem,
   forcedCollapsed = false,
+  sidebarCollapsed = false,
   draggable: isDraggable = false,
   isDragOver = false,
   isDragSrc = false,
@@ -366,6 +420,7 @@ function CollapsibleSection({
   section: NavSection;
   activeItem: string;
   forcedCollapsed?: boolean;
+  sidebarCollapsed?: boolean;
   draggable?: boolean;
   isDragOver?: boolean;
   isDragSrc?: boolean;
@@ -379,7 +434,7 @@ function CollapsibleSection({
 
   return (
     <div
-      draggable={isDraggable}
+      draggable={isDraggable && !sidebarCollapsed}
       onDragStart={onDragStart}
       onDragOver={(e) => { e.preventDefault(); onDragOver?.(); }}
       onDrop={(e) => { e.preventDefault(); onDrop?.(); }}
@@ -391,7 +446,7 @@ function CollapsibleSection({
         transition: "opacity 0.15s ease, border-color 0.1s ease",
       }}
     >
-      {section.heading ? (
+      {section.heading && !sidebarCollapsed ? (
         <button
           onClick={() => setOpen((o) => !o)}
           className="w-full flex items-center gap-2 px-3 py-1.5 mb-0.5 rounded-md group hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors duration-100 cursor-grab active:cursor-grabbing"
@@ -404,12 +459,14 @@ function CollapsibleSection({
             className={`text-stone-500 dark:text-stone-400 transition-transform duration-200 ${showItems ? "rotate-90" : ""}`}
           />
         </button>
+      ) : section.heading && sidebarCollapsed ? (
+        <div className="mx-3 my-2 h-px bg-stone-200 dark:bg-white/8" />
       ) : null}
 
       <div
         className="overflow-hidden"
         style={{
-          maxHeight: showItems ? 600 : 0,
+          maxHeight: sidebarCollapsed ? 600 : (showItems ? 600 : 0),
           transition: "max-height 0.22s ease",
         }}
       >
@@ -419,6 +476,7 @@ function CollapsibleSection({
               key={item.label}
               item={item}
               activeItem={activeItem}
+              collapsed={sidebarCollapsed}
             />
           ))}
         </div>
@@ -427,7 +485,14 @@ function CollapsibleSection({
   );
 }
 
-export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean; onClose?: () => void; bluOpen?: boolean }) {
+export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, collapsed = false, isResizing = false }: {
+  isOpen?: boolean;
+  onClose?: () => void;
+  bluOpen?: boolean;
+  sidebarWidth?: number;
+  collapsed?: boolean;
+  isResizing?: boolean;
+}) {
   const location = useLocation(); const pathname = location.pathname;
   const currentView = pathname === "/home" ? "Home" : Object.entries(NAV_VIEWS).find(([, view]) => pathname === `/${view}`)?.[0] ?? "";
 
@@ -498,16 +563,30 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
         style={{
-          width: 196,
+          width: sidebarWidth,
+          transition: isResizing
+            ? "transform 300ms cubic-bezier(0.22,1,0.36,1)"
+            : "transform 300ms cubic-bezier(0.22,1,0.36,1), width 0.25s cubic-bezier(0.22,1,0.36,1)",
           background: "var(--sidebar-background)",
         }}
       >
         {/* Top: workspace switcher */}
-        <WorkspaceSwitcher />
+        <WorkspaceSwitcher collapsed={collapsed} />
 
         {/* Ask Blu pill */}
-        <div className="px-2 pb-1">
-          <AskBluButton isOpen={!!bluOpen} />
+        <div className={`pb-1 ${collapsed ? "px-1.5" : "px-2"}`}>
+          {collapsed ? (
+            <button
+              onClick={() => window.dispatchEvent(new Event("toggle-blu-chat"))}
+              title="Ask Blu"
+              className="w-full flex items-center justify-center py-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors"
+              style={bluOpen ? { color: "#0080FF" } : { color: "#78716c" }}
+            >
+              <img src="/mascot.png" alt="Blu" width={22} height={22} className="object-contain" />
+            </button>
+          ) : (
+            <AskBluButton isOpen={!!bluOpen} />
+          )}
         </div>
 
         {/* Nav */}
@@ -516,13 +595,14 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
             className="pointer-events-none absolute top-0 inset-x-0 z-10 h-12 transition-opacity duration-300"
             style={{ opacity: topFade ? 1 : 0, background: "linear-gradient(to bottom, var(--sidebar-background) 0%, transparent 100%)" }}
           />
-          <nav ref={navRef} className="h-full overflow-y-auto px-2 py-2 space-y-3">
+          <nav ref={navRef} className={`sidebar-nav h-full overflow-y-auto py-2 space-y-3 ${collapsed ? "px-1.5" : "px-2"}`}>
             {navSections.map((section, si) => (
               <CollapsibleSection
                 key={section.heading ?? "__top__"}
                 section={section}
                 activeItem={currentView}
                 forcedCollapsed={isDragging && !!section.heading}
+                sidebarCollapsed={collapsed}
                 draggable={!!section.heading}
                 isDragOver={isDragging && dragOver === si}
                 isDragSrc={dragSrc === si}
@@ -541,20 +621,15 @@ export default function Sidebar({ isOpen, onClose, bluOpen }: { isOpen?: boolean
 
         {/* Bottom: Intempt branding */}
         <div className="flex items-center gap-2 px-4 py-3.5">
-          <img
-            src="/logo.png"
-            alt="Intempt"
-            width={18}
-            height={18}
-            className="rounded-md opacity-60"
-            style={{ objectFit: "contain" }}
-          />
-          <span className="flex-1 text-xs font-medium text-stone-600 dark:text-stone-400 tracking-tight">
-            Intempt
-          </span>
-          <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
-            <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
-          </button>
+          {!collapsed && (
+            <>
+              <img src="/logo.png" alt="Intempt" width={18} height={18} className="rounded-md opacity-60" style={{ objectFit: "contain" }} />
+              <span className="flex-1 text-xs font-medium text-stone-600 dark:text-stone-400 tracking-tight">Intempt</span>
+              <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
+                <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>

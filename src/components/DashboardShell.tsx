@@ -1,6 +1,5 @@
 
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu } from "lucide-react";
 import BluChat from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
@@ -8,12 +7,128 @@ import ProfileMenu from "./ProfileMenu";
 import Sidebar from "./Sidebar";
 import UpgradeButton from "./UpgradeButton";
 
+const SIDEBAR_DEFAULT      = 196;
+const SIDEBAR_MIN          = 52;
+const SIDEBAR_MAX          = Math.round(SIDEBAR_DEFAULT * 1.5); // 294px — max user can stretch
+const SIDEBAR_ICON_THR     = 110; // below this → icon-only display
+const SNAP_COLLAPSE_BELOW  = 140; // on drag release below → snap to SIDEBAR_MIN
+const SIDEBAR_EXPANDED_MIN = 160; // minimum readable expanded width
+
+// ── Drag / click handle ───────────────────────────────────────────────────────
+
+function SidebarHandle({
+  sidebarWidth,
+  onWidthChange,
+  onResizingChange,
+  onToggleCollapse,
+}: {
+  sidebarWidth: number;
+  onWidthChange: (w: number) => void;
+  onResizingChange: (v: boolean) => void;
+  onToggleCollapse: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startW: number; moved: boolean; currentW: number } | null>(null);
+
+  function onMouseDown(e: React.MouseEvent) {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startW: sidebarWidth, moved: false, currentW: sidebarWidth };
+    setDragging(true);
+    onResizingChange(true);
+
+    function onMouseMove(ev: MouseEvent) {
+      if (!dragRef.current) return;
+      const delta = ev.clientX - dragRef.current.startX;
+      if (Math.abs(delta) > 3) dragRef.current.moved = true;
+      const rawW = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, dragRef.current.startW + delta));
+      dragRef.current.currentW = rawW;
+      onWidthChange(rawW);
+    }
+
+    function onMouseUp() {
+      // Re-enable transitions before snapping so the snap animates
+      setDragging(false);
+      onResizingChange(false);
+
+      if (dragRef.current?.moved) {
+        const w = dragRef.current.currentW;
+        if (w < SNAP_COLLAPSE_BELOW) {
+          onWidthChange(SIDEBAR_MIN);
+        } else if (w < SIDEBAR_EXPANDED_MIN) {
+          onWidthChange(SIDEBAR_EXPANDED_MIN);
+        }
+        // else: keep current dragged width
+      } else if (dragRef.current && !dragRef.current.moved) {
+        onToggleCollapse();
+      }
+
+      dragRef.current = null;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+
+  const active = hovered || dragging;
+
+  return (
+    <div
+      className="fixed top-0 bottom-0 z-60 hidden md:flex items-start justify-center select-none"
+      style={{ left: sidebarWidth - 3, width: 8, cursor: "col-resize" }}
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Visual line */}
+      <div
+        className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 transition-opacity duration-150 rounded-full"
+        style={{ background: "#0080FF", opacity: active ? 1 : 0 }}
+      />
+
+      {/* Tooltip */}
+      {hovered && !dragging && (
+        <div
+          className="absolute top-18 left-3.5 rounded-lg overflow-hidden text-xs"
+          style={{
+            background: "var(--content-bg)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.13)",
+          }}
+        >
+          <div className="px-3 py-2 text-stone-600 dark:text-stone-300">
+            Drag to resize
+          </div>
+          <div
+            className="flex items-center justify-between gap-6 px-3 py-2 text-stone-600 dark:text-stone-300"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            <span>Click to {sidebarWidth < SNAP_COLLAPSE_BELOW ? "expand" : "collapse"}</span>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400 leading-none">[</kbd>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Shell ─────────────────────────────────────────────────────────────────────
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [bluOpen, setBluOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
+  const [isResizing, setIsResizing] = useState(false);
+  const lastExpandedWidth = useRef(SIDEBAR_DEFAULT);
 
   useEffect(() => {
-    const open = () => setBluOpen(true);
+    if (sidebarWidth >= SIDEBAR_ICON_THR) lastExpandedWidth.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const open   = () => setBluOpen(true);
     const toggle = () => setBluOpen((o) => !o);
     window.addEventListener("open-blu-chat", open);
     window.addEventListener("toggle-blu-chat", toggle);
@@ -23,17 +138,43 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     };
   }, []);
 
+  function handleToggleCollapse() {
+    if (sidebarWidth < SIDEBAR_ICON_THR) {
+      setSidebarWidth(lastExpandedWidth.current >= SIDEBAR_ICON_THR ? lastExpandedWidth.current : SIDEBAR_DEFAULT);
+    } else {
+      setSidebarWidth(SIDEBAR_MIN);
+    }
+  }
+
+  const collapsed       = sidebarWidth < SIDEBAR_ICON_THR;
+  const widthTransition = isResizing ? "none" : "width 0.25s cubic-bezier(0.22,1,0.36,1)";
+
   return (
     <div className="flex h-full" style={{ background: "var(--sidebar-background)" }}>
-      {/* Desktop sidebar spacer — keeps content from sliding under the fixed sidebar */}
-      <div className="hidden md:block shrink-0" style={{ width: 196 }} />
+      {/* Desktop sidebar spacer */}
+      <div
+        className="hidden md:block shrink-0"
+        style={{ width: sidebarWidth, transition: widthTransition }}
+      />
 
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} bluOpen={bluOpen} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        bluOpen={bluOpen}
+        sidebarWidth={sidebarWidth}
+        collapsed={collapsed}
+        isResizing={isResizing}
+      />
+
+      <SidebarHandle
+        sidebarWidth={sidebarWidth}
+        onWidthChange={setSidebarWidth}
+        onResizingChange={setIsResizing}
+        onToggleCollapse={handleToggleCollapse}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 animate-fade-up">
-        {/* Top bar */}
         <div className="flex items-center gap-2 px-4 py-3 md:gap-3 md:px-5">
-          {/* Hamburger — mobile only */}
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
@@ -55,9 +196,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <ProfileMenu />
         </div>
 
-        {/* Content row */}
         <main className="flex-1 flex min-h-0 gap-2 mx-2 mb-2 md:ml-0 md:mr-3">
-          {/* BluChat panel — desktop only, left side */}
           <div
             className="hidden md:block shrink-0 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ width: bluOpen ? 380 : 0, opacity: bluOpen ? 1 : 0 }}
