@@ -400,6 +400,51 @@ input, select, textarea {
   background-clip: padding-box;
 }
 
+/* Blu chat — inline @mention chip inside contenteditable editor */
+.mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 3px 8px 3px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #2563eb;
+  margin: 0 2px;
+  vertical-align: middle;
+  line-height: 1.4;
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+}
+.dark .mention-chip {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.reference-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 3px 8px 3px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #2563eb;
+  margin: 0 2px;
+  vertical-align: middle;
+  line-height: 1.4;
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+}
+.dark .reference-chip {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
