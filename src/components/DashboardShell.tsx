@@ -164,6 +164,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         sidebarWidth={sidebarWidth}
         collapsed={collapsed}
         isResizing={isResizing}
+        onToggleCollapse={handleToggleCollapse}
       />
 
       <SidebarHandle

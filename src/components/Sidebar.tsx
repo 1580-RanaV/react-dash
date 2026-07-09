@@ -33,6 +33,7 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
+  PanelLeftOpen,
 } from "lucide-react";
 
 type NavItem = {
@@ -460,7 +461,7 @@ function CollapsibleSection({
           />
         </button>
       ) : section.heading && sidebarCollapsed ? (
-        <div className="mx-3 my-2 h-px bg-stone-200 dark:bg-white/8" />
+        <div className="mx-2 my-2 h-px bg-stone-200 dark:bg-white/8" />
       ) : null}
 
       <div
@@ -485,13 +486,14 @@ function CollapsibleSection({
   );
 }
 
-export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, collapsed = false, isResizing = false }: {
+export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, collapsed = false, isResizing = false, onToggleCollapse }: {
   isOpen?: boolean;
   onClose?: () => void;
   bluOpen?: boolean;
   sidebarWidth?: number;
   collapsed?: boolean;
   isResizing?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const location = useLocation(); const pathname = location.pathname;
   const currentView = pathname === "/home" ? "Home" : Object.entries(NAV_VIEWS).find(([, view]) => pathname === `/${view}`)?.[0] ?? "";
@@ -574,12 +576,12 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
         <WorkspaceSwitcher collapsed={collapsed} />
 
         {/* Ask Blu pill */}
-        <div className={`pb-1 ${collapsed ? "px-1.5" : "px-2"}`}>
+        <div className={`pb-1 ${collapsed ? "px-0" : "px-2"}`}>
           {collapsed ? (
             <button
               onClick={() => window.dispatchEvent(new Event("toggle-blu-chat"))}
               title="Ask Blu"
-              className="w-full flex items-center justify-center py-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors"
+              className="w-full flex items-center justify-center py-2 hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors"
               style={bluOpen ? { color: "#0080FF" } : { color: "#78716c" }}
             >
               <img src="/mascot.png" alt="Blu" width={22} height={22} className="object-contain" />
@@ -589,13 +591,26 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
           )}
         </div>
 
+        {/* Expand toggle — only in collapsed mode */}
+        {collapsed && (
+          <div className="pb-1">
+            <button
+              onClick={onToggleCollapse}
+              title="Expand sidebar"
+              className="w-full flex items-center justify-center py-1.5 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors"
+            >
+              <PanelLeftOpen size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Nav */}
         <div className="relative flex-1 min-h-0">
           <div
             className="pointer-events-none absolute top-0 inset-x-0 z-10 h-12 transition-opacity duration-300"
             style={{ opacity: topFade ? 1 : 0, background: "linear-gradient(to bottom, var(--sidebar-background) 0%, transparent 100%)" }}
           />
-          <nav ref={navRef} className={`sidebar-nav h-full overflow-y-auto py-2 space-y-3 ${collapsed ? "px-1.5" : "px-2"}`}>
+          <nav ref={navRef} className={`sidebar-nav h-full overflow-y-auto py-2 space-y-3 ${collapsed ? "px-0 sidebar-nav-collapsed" : "px-2"}`}>
             {navSections.map((section, si) => (
               <CollapsibleSection
                 key={section.heading ?? "__top__"}

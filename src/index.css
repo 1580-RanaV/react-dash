@@ -418,6 +418,15 @@ input, select, textarea {
   background: rgba(148, 163, 184, 0.42);
 }
 
+/* In collapsed mode scrollbar takes up layout space and misaligns icons — hide it */
+.sidebar-nav-collapsed {
+  scrollbar-width: none;
+}
+.sidebar-nav-collapsed::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
 /* Blu chat — inline @mention chip inside contenteditable editor */
 .mention-chip {
   display: inline-flex;
