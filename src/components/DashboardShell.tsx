@@ -121,11 +121,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
   const [isResizing, setIsResizing] = useState(false);
-  const lastExpandedWidth = useRef(SIDEBAR_DEFAULT);
-
-  useEffect(() => {
-    if (sidebarWidth >= SIDEBAR_ICON_THR) lastExpandedWidth.current = sidebarWidth;
-  }, [sidebarWidth]);
 
   useEffect(() => {
     const open   = () => setBluOpen(true);
@@ -140,7 +135,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   function handleToggleCollapse() {
     if (sidebarWidth < SIDEBAR_ICON_THR) {
-      setSidebarWidth(lastExpandedWidth.current >= SIDEBAR_ICON_THR ? lastExpandedWidth.current : SIDEBAR_DEFAULT);
+      setSidebarWidth(SIDEBAR_DEFAULT);
     } else {
       setSidebarWidth(SIDEBAR_MIN);
     }
