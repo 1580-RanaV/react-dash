@@ -7,6 +7,7 @@ import Greeting from "./Greeting";
 import ViewTabs from "./ViewTabs";
 import HeroVideo from "./HeroVideo";
 import RecentDesigns from "./RecentDesigns";
+import RevenueMetricCard from "./MetricCard";
 import {
   ComposedChart, Bar, Line, AreaChart, Area, LabelList,
   XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
@@ -18,6 +19,7 @@ import {
   DollarSign, Zap, Layers, Briefcase, Calendar, Palette, BarChart3, Target,
   AlertTriangle, AlertCircle, MessageSquare, Bell, Smartphone, Bot,
   ArrowDown, Check, Wand2, FileImage, Route,
+  Clapperboard, PenTool, Shuffle, Package, Handshake, CalendarClock,
 } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 
@@ -880,6 +882,225 @@ function SectionCard({ title, children, className = "" }: { title?: string; chil
   );
 }
 
+// ── Blu AI ───────────────────────────────────────────────────────────────────
+
+type BluRec = {
+  id: string;
+  priority: "urgent" | "high" | "growth";
+  title: string;
+  body: string;
+  impact: string;
+  action: string;
+  tag: string;
+};
+
+const DESIGN_RECS: BluRec[] = [
+  {
+    id: "dark-logo",
+    priority: "high",
+    tag: "Brand Kit",
+    title: "Upload your dark background logo",
+    body: "Your brand kit is 80% complete — the missing dark-bg logo means emails and dark-mode creatives render without proper branding. This affects an estimated 26% of your generated assets based on current usage patterns.",
+    impact: "Consistent brand identity across all channels and dark themes",
+    action: "Open Brand Kit",
+  },
+  {
+    id: "social-ads",
+    priority: "growth",
+    tag: "Recipes",
+    title: "Social Ads recipe is underutilized — only 9 runs",
+    body: "Social Ads represent just 7% of your asset output (9 runs vs 48 for Packshots). Email banners are already well-covered at 31 runs. Expanding to social creatives is the fastest way to increase channel coverage with your existing brand kit.",
+    impact: "Est. 3–5× increase in social content output",
+    action: "Create Recipe",
+  },
+  {
+    id: "credits",
+    priority: "high",
+    tag: "Credits",
+    title: "Credits at 77% — schedule batches before your cycle ends",
+    body: "You've used 3,840 of 5,000 credits (77%). At the current pace of ~14 images per day, you'll hit the 80% warning threshold in about 2 days. Scheduling remaining runs in off-peak hours avoids throttling and ensures smooth delivery.",
+    impact: "Prevent credit overage and keep generation uninterrupted",
+    action: "View Schedule",
+  },
+  {
+    id: "avatars",
+    priority: "growth",
+    tag: "Avatars",
+    title: "Add 2 more avatars to reduce visual fatigue",
+    body: "With 6 avatars configured, Avatar A and B account for 79% of all recipe runs. Research shows visual fatigue sets in after 4–6 exposures to the same model. Adding B2B and retail-specific personas would diversify creative output significantly.",
+    impact: "Higher engagement and CTR on personalized creative assets",
+    action: "Add Avatar",
+  },
+];
+
+const MARKETING_RECS: BluRec[] = [
+  {
+    id: "bounce-rate",
+    priority: "urgent",
+    tag: "Email Health",
+    title: "Email bounce rate hit 4.8% — your sender reputation is at risk",
+    body: "Detected 12 minutes ago: bounce rate is 4.8%, which is 3× above your expected range (0.9–1.6%). If sustained above 3% for 24 hours, major ESPs may throttle or block delivery. Most likely cause: stale list segment in the paused Re-engagement Q2 journey.",
+    impact: "Protect deliverability and maintain your sender score",
+    action: "Investigate Now",
+  },
+  {
+    id: "send-volume",
+    priority: "urgent",
+    tag: "Send Volume",
+    title: "Send volume is 76% below target — your pipeline is drying up",
+    body: "Only 1,200 sends in the last measurement period vs an expected 4,600–5,800. The paused Re-engagement Q2 journey accounts for most of the gap — it was contributing ~2,100 sends when active. Revenue impact compounds every day this is unaddressed.",
+    impact: "Restore expected send volume and re-engage your audience",
+    action: "Resume Journey",
+  },
+  {
+    id: "open-rate",
+    priority: "high",
+    tag: "Engagement",
+    title: "Open rate dropped to 28.4% — time for a subject line refresh",
+    body: "Open rate has declined 33% over 48 hours (from ~43% to 28.4%). Your last 3 campaigns followed similar \"[First name], don't miss...\" patterns. Subject fatigue is the likely culprit — A/B testing 2 new formats typically recovers 6–8 percentage points.",
+    impact: "+6–8pp open rate improvement within 1–2 send cycles",
+    action: "A/B Test Subjects",
+  },
+  {
+    id: "ab-winner",
+    priority: "high",
+    tag: "A/B Testing",
+    title: "Onboarding Tips A/B test has a clear winner — ship it now",
+    body: "Your Onboarding Tips experience shows a +8.6% lift after 14+ days running — well past statistical significance. Every day the losing variant stays live, you're suppressing conversion by an estimated 3–4%. This is ready to ship today.",
+    impact: "+8.6% conversion uplift on the onboarding flow",
+    action: "Ship Variant",
+  },
+  {
+    id: "sms-mix",
+    priority: "growth",
+    tag: "Channel Mix",
+    title: "SMS is only 15% of sends — test it for cart abandonment",
+    body: "Email dominates at 74% of sends. Industry data shows SMS delivers 3–5× higher open rates for time-sensitive flows like cart abandonment. With only 3,800 SMS sends currently, shifting 10% of cart abandonment sends to SMS is a low-risk, high-reward test.",
+    impact: "Est. +12% conversion rate on cart abandonment flow",
+    action: "Create SMS Journey",
+  },
+];
+
+const SALES_RECS: BluRec[] = [
+  {
+    id: "top-deal",
+    priority: "urgent",
+    tag: "Pipeline",
+    title: "Top deal at $24k in Negotiation needs a touch point today",
+    body: "FieldsUSA ($24k Enterprise Plan) is your highest-value deal currently in Negotiation. Deals at this stage without a touch point for 3+ days are 40% more likely to stall or go cold. This is your largest single opportunity this quarter.",
+    impact: "Protect $24k in pipeline revenue before end of quarter",
+    action: "Schedule Follow-up",
+  },
+  {
+    id: "meeting-attendance",
+    priority: "high",
+    tag: "Meetings",
+    title: "22% no-show rate on meetings — automate reminders",
+    body: "Of 61 meetings scheduled this month, roughly 13 weren't attended. Your attended rate this week (77%) is the lowest in 5 weeks. Automated 24h and 1h reminders typically recover 8–10 meetings per month with near-zero setup effort.",
+    impact: "Est. +3–4 additional attended meetings per month",
+    action: "Enable Reminders",
+  },
+  {
+    id: "outreach-sequence",
+    priority: "high",
+    tag: "Automation",
+    title: "52 qualified deals totalling $312k have no follow-up sequence",
+    body: "Your Qualified stage has 52 deals worth $312k but no automated outreach is running. Manual follow-up alone misses ~40% of optimal touch points. A 4-step email sequence over 14 days is proven to push more deals through to Proposal.",
+    impact: "Est. +15% qualified→proposal conversion rate",
+    action: "Create Sequence",
+  },
+  {
+    id: "prospect-nurture",
+    priority: "growth",
+    tag: "Lead Nurture",
+    title: "84 prospects representing $420k are stalling at top of funnel",
+    body: "84 prospects haven't advanced to Qualified — only 62% do. A nurture sequence targeting cold prospects in this cohort, focused on value education rather than direct sales, could recover 15–20 deals based on your historical data.",
+    impact: "Est. $42–84k additional pipeline over 60 days",
+    action: "Build Nurture",
+  },
+];
+
+const ANALYTICS_RECS: BluRec[] = [
+  {
+    id: "conversion-gap",
+    priority: "urgent",
+    tag: "Conversion",
+    title: "Visitor→Paid rate is 1.5% — well below the 2.5–3.5% benchmark",
+    body: "Of 18,400 visitors, only 274 convert to paid (1.5%). The steepest drop is Signups→Trial Started at 28.6% (840 of 2,940 signups). This points to onboarding friction — fixing this single step could unlock the most growth available to you right now.",
+    impact: "+$8k MRR at 3% conversion — the industry benchmark",
+    action: "Audit Onboarding",
+  },
+  {
+    id: "at-risk",
+    priority: "urgent",
+    tag: "Retention",
+    title: "840 customers are At-Risk — intervene before they become Lost",
+    body: "RFM analysis shows 840 formerly active customers have gone quiet. At your $156 ARPU, this cohort represents $131k in annual revenue exposure. A targeted win-back campaign now could save 20–30% of them before they permanently churn.",
+    impact: "Est. $26–39k annual revenue recovered",
+    action: "Create Win-Back",
+  },
+  {
+    id: "trial-conversion",
+    priority: "high",
+    tag: "Trial",
+    title: "Trial→Paid at 32.6% vs. 45–55% industry average",
+    body: "840 trial users, 274 converted to paid (32.6%). Data consistently shows a drop-off cliff at day 7–10 for unconverted trials. Targeted in-app messages at day 7 and day 14 are the highest-ROI fix at this stage — low effort, measurable impact.",
+    impact: "+12pp trial conversion = est. +$14k incremental MRR",
+    action: "Set Up Nudges",
+  },
+  {
+    id: "seo-organic",
+    priority: "growth",
+    tag: "Acquisition",
+    title: "Organic search is your #1 channel — worth doubling down",
+    body: "Organic search drives $42.4k in attributed revenue — 36% more than paid social ($31.2k) at near-zero marginal cost. Your top 2 blog posts drive 10% of total site traffic. A focused SEO sprint targeting 3–5 high-intent keywords could 2× organic traffic in 90 days.",
+    impact: "Est. 2× organic traffic and $20k+ additional attributed revenue in 90 days",
+    action: "Plan SEO Sprint",
+  },
+];
+
+const PRIORITY_STYLES = {
+  urgent: { label: "Urgent",      color: "#ef4444", bg: "rgba(239,68,68,0.10)"  },
+  high:   { label: "High",        color: "#f59e0b", bg: "rgba(245,158,11,0.10)" },
+  growth: { label: "Opportunity", color: "#0080FF", bg: "rgba(0,128,255,0.10)"  },
+};
+
+function BluCard({ rec }: { rec: BluRec }) {
+  const p = PRIORITY_STYLES[rec.priority];
+  return (
+    <div
+      className="rounded-xl p-5 flex flex-col"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)", borderLeft: `3px solid ${p.color}` }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full" style={{ background: p.bg, color: p.color }}>
+            {p.label}
+          </span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400">
+            {rec.tag}
+          </span>
+        </div>
+        <img src="/mascot.png" alt="Blu" width={22} height={22} className="object-contain shrink-0 opacity-75" />
+      </div>
+      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-2 leading-snug">{rec.title}</p>
+      <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed flex-1">{rec.body}</p>
+      <div className="flex items-center justify-between gap-3 pt-3 mt-4 border-t" style={{ borderColor: "var(--border)" }}>
+        <p className="text-[11px] text-stone-500 dark:text-stone-400 flex-1 min-w-0 leading-snug">
+          <span className="font-medium text-stone-600 dark:text-stone-300">Impact: </span>
+          {rec.impact}
+        </p>
+        <button
+          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 whitespace-nowrap"
+          style={{ background: p.color }}
+        >
+          {rec.action} <ChevronRight size={10} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Design dashboard ──────────────────────────────────────────────────────────
 
 function DesignDashboard() {
@@ -888,62 +1109,49 @@ function DesignDashboard() {
   const creditsPct = Math.round((creditsUsed / creditsTotal) * 100);
 
   return (
-    <div className="px-6 pt-6 pb-8 space-y-5 animate-fade-up">
+    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
       <Greeting />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MiniStat icon={FileImage}   label="Assets generated this week"  value="127"  change="+24%"  />
-        <MiniStat icon={Wand2}       label="Active recipes"              value="8"    change="+2"    />
-        <MiniStat icon={Users}       label="Avatars configured"          value="6"    change="+1"    accent="#C37EE5" />
-        <MiniStat icon={DollarSign}  label="Est. cost saved vs shoot"    value="$6.4k" change="+18%" accent="#26a269" />
+        <MiniStat icon={FileImage}   label="Assets generated this week"  value="127"   change="+24%"  />
+        <MiniStat icon={Wand2}       label="Active recipes"              value="8"     change="+2"    />
+        <MiniStat icon={Users}       label="Avatars configured"          value="6"     change="+1"    accent="#C37EE5" />
+        <MiniStat icon={DollarSign}  label="Est. cost saved vs shoot"    value="$6.4k" change="+18%"  accent="#26a269" />
       </div>
 
-      {/* Generation activity + asset types */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-        <div className="lg:col-span-3">
-          <SectionCard title="Generation Activity — Last 14 Days">
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={DESIGN_GEN_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={3} />
-                <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="images" stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.07)" dot={false} name="Images" />
-                <Area type="monotone" dataKey="videos" stroke="#C37EE5" strokeWidth={1.5} fill="rgba(195,126,229,0.07)" dot={false} name="Videos" />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div className="flex items-center gap-5 mt-3">
-              <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span className="w-3 h-0.5 rounded-full bg-blue-400 inline-block" />Images
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "#C37EE5" }} />Videos
-              </div>
-            </div>
-          </SectionCard>
-        </div>
+      {/* Generation chart + Credits + Brand kit */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <SectionCard title="Generation Activity — Last 14 Days" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={DESIGN_GEN_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={3} />
+              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="images" stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.07)" dot={false} name="Images" />
+              <Area type="monotone" dataKey="videos" stroke="#C37EE5" strokeWidth={1.5} fill="rgba(195,126,229,0.07)" dot={false} name="Videos" />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-5 mt-3">
+            <div className="flex items-center gap-1.5 text-xs text-stone-500"><span className="w-3 h-0.5 rounded-full bg-blue-400 inline-block" />Images</div>
+            <div className="flex items-center gap-1.5 text-xs text-stone-500"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "#C37EE5" }} />Videos</div>
+          </div>
+        </SectionCard>
 
-        <div className="lg:col-span-2 space-y-3">
-          {/* Credits usage */}
+        <div className="space-y-3">
           <SectionCard title="Credits Usage">
             <div className="flex items-end justify-between mb-2">
               <p className="text-2xl font-bold text-stone-800 dark:text-stone-100 leading-none">
-                {creditsUsed.toLocaleString()}
-                <span className="text-sm font-normal text-stone-400 ml-1">/ {creditsTotal.toLocaleString()}</span>
+                {creditsUsed.toLocaleString()}<span className="text-sm font-normal text-stone-400 ml-1">/ {creditsTotal.toLocaleString()}</span>
               </p>
               <span className="text-xs font-semibold text-stone-500">{creditsPct}%</span>
             </div>
             <div className="w-full bg-stone-100 dark:bg-white/8 rounded-full h-2 mb-3">
-              <div
-                className="h-2 rounded-full transition-all"
-                style={{ width: `${creditsPct}%`, background: creditsPct > 80 ? "#f59e0b" : "#0080FF" }}
-              />
+              <div className="h-2 rounded-full transition-all" style={{ width: `${creditsPct}%`, background: creditsPct > 80 ? "#f59e0b" : "#0080FF" }} />
             </div>
             <p className="text-xs text-stone-400">{(creditsTotal - creditsUsed).toLocaleString()} credits remaining this cycle</p>
           </SectionCard>
-
-          {/* Brand kit health */}
           <SectionCard title="Brand Kit">
             <div className="space-y-2">
               {DESIGN_BRAND_ITEMS.map((b) => (
@@ -958,6 +1166,12 @@ function DesignDashboard() {
             </div>
           </SectionCard>
         </div>
+      </div>
+
+      {/* Blu row 1 — brand + recipes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <BluCard rec={DESIGN_RECS[0]} />
+        <BluCard rec={DESIGN_RECS[1]} />
       </div>
 
       {/* Asset types + top recipes */}
@@ -975,7 +1189,6 @@ function DesignDashboard() {
             ))}
           </div>
         </SectionCard>
-
         <SectionCard title="Top Recipes by Usage">
           <div className="space-y-0">
             {DESIGN_TOP_RECIPES.map((r, i) => (
@@ -993,6 +1206,12 @@ function DesignDashboard() {
             ))}
           </div>
         </SectionCard>
+      </div>
+
+      {/* Blu row 2 — credits + avatars */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <BluCard rec={DESIGN_RECS[2]} />
+        <BluCard rec={DESIGN_RECS[3]} />
       </div>
 
       <div className="max-w-2xl"><BrandSetupChecklist /></div>
@@ -1016,7 +1235,7 @@ function ChannelIcon({ type }: { type: string }) {
 
 function MarketingDashboard() {
   return (
-    <div className="px-6 pt-6 pb-8 space-y-5 animate-fade-up">
+    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
       <Greeting />
 
       {/* KPI row */}
@@ -1025,6 +1244,12 @@ function MarketingDashboard() {
         <MiniStat icon={MailOpen}    label="Open rate"              value="42.6%"  change="+4.8%" accent="#C37EE5" />
         <MiniStat icon={MousePointerClick} label="Click rate"       value="7.8%"   change="+0.6%" accent="#59B277" />
         <MiniStat icon={Route}       label="Active journeys"        value="12"     change="+3"    />
+      </div>
+
+      {/* Blu urgent row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <BluCard rec={MARKETING_RECS[0]} />
+        <BluCard rec={MARKETING_RECS[1]} />
       </div>
 
       {/* Multi-series sends chart */}
@@ -1053,7 +1278,7 @@ function MarketingDashboard() {
         </ResponsiveContainer>
       </SectionCard>
 
-      {/* Engagement funnel + Channel mix */}
+      {/* Engagement funnel + Blu open rate */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionCard title="Engagement Funnel">
           <div className="space-y-0">
@@ -1090,6 +1315,11 @@ function MarketingDashboard() {
           </div>
         </SectionCard>
 
+        <BluCard rec={MARKETING_RECS[2]} />
+      </div>
+
+      {/* Channel mix + Blu A/B winner */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionCard title="Channel Mix">
           <div className="space-y-3.5">
             {CHANNEL_MIX.map((c) => (
@@ -1105,6 +1335,7 @@ function MarketingDashboard() {
             ))}
           </div>
         </SectionCard>
+        <BluCard rec={MARKETING_RECS[3]} />
       </div>
 
       {/* Active journeys + Live experiences */}
@@ -1204,37 +1435,40 @@ function MarketingDashboard() {
         </div>
       </SectionCard>
 
-      {/* Anomaly detection */}
-      <div>
-        <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-3">Anomaly Detection</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {ANOMALIES.map((a) => {
-            const isCritical = a.status === "critical";
-            return (
-              <div
-                key={a.metric}
-                className={`rounded-xl p-4 ${isCritical ? "bg-red-50 dark:bg-red-500/8 border-red-200 dark:border-red-500/20" : "bg-amber-50 dark:bg-amber-500/8 border-amber-200 dark:border-amber-500/20"}`}
-                style={{ border: "1px solid" }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  {isCritical
-                    ? <AlertCircle size={13} className="text-red-500 shrink-0" />
-                    : <AlertTriangle size={13} className="text-amber-500 shrink-0" />
-                  }
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${isCritical ? "text-red-500" : "text-amber-500"}`}>
-                    {a.status}
-                  </span>
-                  <span className="ml-auto text-[10px] text-stone-400">{a.ago}</span>
+      {/* Blu SMS + Anomaly detection */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <BluCard rec={MARKETING_RECS[4]} />
+        <div className="md:col-span-2">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-3">Anomaly Detection</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ANOMALIES.map((a) => {
+              const isCritical = a.status === "critical";
+              return (
+                <div
+                  key={a.metric}
+                  className={`rounded-xl p-4 ${isCritical ? "bg-red-50 dark:bg-red-500/8 border-red-200 dark:border-red-500/20" : "bg-amber-50 dark:bg-amber-500/8 border-amber-200 dark:border-amber-500/20"}`}
+                  style={{ border: "1px solid" }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {isCritical
+                      ? <AlertCircle size={13} className="text-red-500 shrink-0" />
+                      : <AlertTriangle size={13} className="text-amber-500 shrink-0" />
+                    }
+                    <span className={`text-[10px] font-semibold uppercase tracking-wider ${isCritical ? "text-red-500" : "text-amber-500"}`}>
+                      {a.status}
+                    </span>
+                    <span className="ml-auto text-[10px] text-stone-400">{a.ago}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-stone-700 dark:text-stone-200 mb-2">{a.metric}</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-lg font-bold leading-none ${isCritical ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>{a.actual}</span>
+                    <span className="text-xs font-medium" style={{ color: isCritical ? "#ef4444" : "#f59e0b" }}>{a.change}</span>
+                  </div>
+                  <p className="text-[10px] text-stone-400 mt-1">Expected {a.expected}</p>
                 </div>
-                <p className="text-xs font-semibold text-stone-700 dark:text-stone-200 mb-2">{a.metric}</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className={`text-lg font-bold leading-none ${isCritical ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>{a.actual}</span>
-                  <span className="text-xs font-medium" style={{ color: isCritical ? "#ef4444" : "#f59e0b" }}>{a.change}</span>
-                </div>
-                <p className="text-[10px] text-stone-400 mt-1">Expected {a.expected}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -1245,7 +1479,7 @@ function MarketingDashboard() {
 
 function AnalyticsDashboard() {
   return (
-    <div className="px-6 pt-6 pb-8 space-y-5 animate-fade-up">
+    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
       <Greeting />
 
       {/* KPI row */}
@@ -1254,6 +1488,12 @@ function AnalyticsDashboard() {
         <MiniStat icon={TrendingDown} label="Churn rate"                value="2.1%"    change="-0.4pp" accent="#26a269" />
         <MiniStat icon={Users}        label="Avg revenue per user"      value="$156"    change="+3.2%"  />
         <MiniStat icon={BarChart3}    label="Custom boards created"     value="14"      change="+4"     />
+      </div>
+
+      {/* Blu urgent row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <BluCard rec={ANALYTICS_RECS[0]} />
+        <BluCard rec={ANALYTICS_RECS[1]} />
       </div>
 
       {/* MRR trend chart */}
@@ -1267,7 +1507,7 @@ function AnalyticsDashboard() {
         color="#0080FF"
       />
 
-      {/* Conversion funnel + Attribution */}
+      {/* Conversion funnel + Blu trial */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionCard title="Conversion Funnel">
           <div className="space-y-0">
@@ -1301,7 +1541,29 @@ function AnalyticsDashboard() {
             })}
           </div>
         </SectionCard>
+        <BluCard rec={ANALYTICS_RECS[2]} />
+      </div>
 
+      {/* RFM distribution + Blu SEO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <SectionCard title="Audience Segments (RFM)">
+          <div className="space-y-3">
+            {RFM_ANALYTICS.map((s) => (
+              <div key={s.label} className="flex items-center gap-3">
+                <span className="w-20 shrink-0 text-xs font-medium text-stone-600 dark:text-stone-400">{s.label}</span>
+                <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-2">
+                  <div className="h-2 rounded-full transition-all" style={{ width: `${s.pct}%`, background: s.color }} />
+                </div>
+                <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 w-14 text-right">{s.count.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+        <BluCard rec={ANALYTICS_RECS[3]} />
+      </div>
+
+      {/* Revenue by channel + Subscription usage */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionCard title="Revenue by Channel">
           <div className="space-y-3">
             {ATTRIBUTION.map((a) => (
@@ -1315,47 +1577,31 @@ function AnalyticsDashboard() {
             ))}
           </div>
         </SectionCard>
+
+        <SectionCard title="Subscription Usage">
+          <div className="grid grid-cols-2 gap-4">
+            {SUBSCRIPTION_USAGE.map((u) => {
+              const pct = Math.round((u.used / u.total) * 100);
+              const fmt = (n: number) => u.unit === "M" ? `${(n / 1000000).toFixed(1)}M` : u.unit === "k" ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+              return (
+                <div key={u.label}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">{u.label}</span>
+                    <span className="text-[10px] font-semibold text-stone-500">{pct}%</span>
+                  </div>
+                  <div className="w-full bg-stone-100 dark:bg-white/8 rounded-full h-1.5 mb-1.5">
+                    <div
+                      className="h-1.5 rounded-full transition-all"
+                      style={{ width: `${pct}%`, background: pct > 80 ? "#f59e0b" : "#0080FF" }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-stone-400">{fmt(u.used)} / {fmt(u.total)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
       </div>
-
-      {/* RFM distribution */}
-      <SectionCard title="Audience Segments (RFM)">
-        <div className="space-y-3">
-          {RFM_ANALYTICS.map((s) => (
-            <div key={s.label} className="flex items-center gap-3">
-              <span className="w-20 shrink-0 text-xs font-medium text-stone-600 dark:text-stone-400">{s.label}</span>
-              <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-2">
-                <div className="h-2 rounded-full transition-all" style={{ width: `${s.pct}%`, background: s.color }} />
-              </div>
-              <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 w-14 text-right">{s.count.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
-      {/* Subscription usage */}
-      <SectionCard title="Subscription Usage">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {SUBSCRIPTION_USAGE.map((u) => {
-            const pct = Math.round((u.used / u.total) * 100);
-            const fmt = (n: number) => u.unit === "M" ? `${(n / 1000000).toFixed(1)}M` : u.unit === "k" ? `${(n / 1000).toFixed(1)}k` : `${n}`;
-            return (
-              <div key={u.label}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-stone-600 dark:text-stone-400">{u.label}</span>
-                  <span className="text-[10px] font-semibold text-stone-500">{pct}%</span>
-                </div>
-                <div className="w-full bg-stone-100 dark:bg-white/8 rounded-full h-1.5 mb-1.5">
-                  <div
-                    className="h-1.5 rounded-full transition-all"
-                    style={{ width: `${pct}%`, background: pct > 80 ? "#f59e0b" : "#0080FF" }}
-                  />
-                </div>
-                <p className="text-[10px] text-stone-400">{fmt(u.used)} / {fmt(u.total)}</p>
-              </div>
-            );
-          })}
-        </div>
-      </SectionCard>
     </div>
   );
 }
@@ -1378,28 +1624,19 @@ const SALES_METRICS: SalesMetricDef[] = [
 
 function SalesTab() {
   return (
-    <div className="px-6 pt-6 pb-8 space-y-5 animate-fade-up">
+    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
       <Greeting />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MiniStat icon={Briefcase}  label="Pipeline value"           value="$284k"  change="+12%"  />
-        <MiniStat icon={ShoppingCart} label="Deals closed this month" value="18"     change="+22%"  />
-        <MiniStat icon={Calendar}   label="Meetings scheduled"       value="43"     change="+8"    />
-        <MiniStat icon={Target}     label="Conversion rate"          value="14.3%"  change="+1.4%" accent="#26a269" />
+        <MiniStat icon={Briefcase}    label="Pipeline value"           value="$284k"  change="+12%"  />
+        <MiniStat icon={ShoppingCart} label="Deals closed this month"  value="18"     change="+22%"  />
+        <MiniStat icon={Calendar}     label="Meetings scheduled"       value="43"     change="+8"    />
+        <MiniStat icon={Target}       label="Conversion rate"          value="14.3%"  change="+1.4%" accent="#26a269" />
       </div>
 
-      <div className="max-w-2xl"><SalesSetupChecklist /></div>
-
-      <div>
-        <div className="-ml-4 mb-4"><DateRangePicker /></div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">
-          {SALES_METRICS.map((m) => (
-            <MetricCard key={m.id} icon={m.icon} label={m.label} value={m.value} />
-          ))}
-        </div>
-      </div>
-
+      {/* Blu urgent deal + pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <BluCard rec={SALES_RECS[0]} />
         <SectionCard title="Pipeline by Stage">
           <div className="space-y-3">
             {PIPELINE_STAGES.map((s) => (
@@ -1414,7 +1651,10 @@ function SalesTab() {
             ))}
           </div>
         </SectionCard>
+      </div>
 
+      {/* Top opportunities + Blu meetings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <SectionCard title="Top Opportunities">
           <div className="space-y-0">
             {TOP_OPPORTUNITIES.map((o, i) => (
@@ -1431,29 +1671,48 @@ function SalesTab() {
             ))}
           </div>
         </SectionCard>
+        <BluCard rec={SALES_RECS[1]} />
       </div>
 
-      {/* Meetings trend */}
-      <SectionCard title="Meetings — Scheduled vs. Attended">
-        <div className="flex items-center gap-5 mb-3">
-          {[{ label: "Scheduled", color: "#0080FF" }, { label: "Attended", color: "#59B277" }].map((l) => (
-            <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-              <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
-              {l.label}
-            </div>
+      {/* Meetings chart + Blu outreach */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <SectionCard title="Meetings — Scheduled vs. Attended" className="lg:col-span-2">
+          <div className="flex items-center gap-5 mb-3">
+            {[{ label: "Scheduled", color: "#0080FF" }, { label: "Attended", color: "#59B277" }].map((l) => (
+              <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
+                <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
+                {l.label}
+              </div>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <ComposedChart data={MEETINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
+              <Line dataKey="attended" stroke="#59B277" strokeWidth={2} dot={{ fill: "#59B277", r: 3, strokeWidth: 0 }} name="Attended" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </SectionCard>
+        <BluCard rec={SALES_RECS[2]} />
+      </div>
+
+      {/* Blu nurture + setup checklist */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+        <BluCard rec={SALES_RECS[3]} />
+        <SalesSetupChecklist />
+      </div>
+
+      <div>
+        <div className="-ml-4 mb-4"><DateRangePicker /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">
+          {SALES_METRICS.map((m) => (
+            <MetricCard key={m.id} icon={m.icon} label={m.label} value={m.value} />
           ))}
         </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <ComposedChart data={MEETINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-            <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <Tooltip content={<ChartTooltip />} />
-            <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
-            <Line dataKey="attended" stroke="#59B277" strokeWidth={2} dot={{ fill: "#59B277", r: 3, strokeWidth: 0 }} name="Attended" />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </SectionCard>
+      </div>
     </div>
   );
 }
@@ -1652,6 +1911,624 @@ const HOME_TABS = [
   { key: "analytics", label: "Analytics" },
 ];
 
+type HomeBentoCard = {
+  id: string;
+  perspective: "summary" | "blu";
+  title: string;
+  eyebrow: string;
+  value?: string;
+  body: string;
+  action?: string;
+  icon: LucideIcon;
+  signal?: string;
+  chart?: {
+    type: "bars" | "line" | "stack" | "progress";
+    label?: string;
+    values: number[];
+    labels?: string[];
+  };
+};
+
+const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeBentoCard[] }> = {
+  design: {
+    title: "Design wrapped",
+    subtitle: "What Blu saw across Brand, Asset Library, Avatars, Scenes, Poses, and Design System in the last 24 hours.",
+    cards: [
+      { id: "assets", perspective: "summary", eyebrow: "Summary", title: "127 assets generated", value: "127", body: "Packshots and email banners carried most of the creative output today.", icon: FileImage, signal: "+24%" },
+      { id: "recipes", perspective: "summary", eyebrow: "Summary", title: "8 recipes stayed active", value: "8", body: "White-bg packshot and email hero banner are doing most of the repeat work.", icon: Wand2 },
+      { id: "brand", perspective: "summary", eyebrow: "Summary", title: "Brand kit is almost ready", value: "80%", body: "Colors, primary font, and light logo are set. Dark logo is still missing.", icon: Palette },
+      { id: "credits", perspective: "summary", eyebrow: "Summary", title: "Credits are getting tight", value: "77%", body: "3,840 of 5,000 credits used this cycle.", icon: Zap },
+      { id: "avatars", perspective: "summary", eyebrow: "Summary", title: "Avatar usage is concentrated", value: "79%", body: "Avatar A and B are driving most generated visuals.", icon: Users },
+      { id: "rec-logo", perspective: "blu", eyebrow: "Blu recommendation", title: "Upload the dark logo today", body: "Dark-mode email previews and generated creatives need the missing logo to keep branding consistent.", action: "Open Brand", icon: Bot, signal: "High impact" },
+      { id: "rec-social", perspective: "blu", eyebrow: "Blu recommendation", title: "Turn packshots into social ads", body: "Social ad recipes are underused. Recycle the highest-performing packshots into square placements.", action: "Create recipe", icon: Target },
+      { id: "rec-avatars", perspective: "blu", eyebrow: "Blu recommendation", title: "Add two more personas", body: "Reduce visual fatigue by adding a B2B buyer and retail shopper avatar.", action: "Add avatar", icon: UserPlus },
+      { id: "rec-scenes", perspective: "blu", eyebrow: "Blu recommendation", title: "Create one lifestyle scene", body: "Most output is studio-style. Add a lifestyle scene to make product visuals feel less repetitive.", action: "Add scene", icon: Clapperboard },
+      { id: "rec-system", perspective: "blu", eyebrow: "Blu recommendation", title: "Lock design tokens before scaling", body: "Design System is set, but locking radius, type, and spacing will keep future assets cleaner.", action: "Review tokens", icon: PenTool },
+    ],
+  },
+  marketing: {
+    title: "Marketing wrapped",
+    subtitle: "What happened across Catalog, Feeds, Journeys, Experiences, messages, and conversion flows in the last 24 hours.",
+    cards: [
+      { id: "live-journeys", perspective: "summary", eyebrow: "Journeys", title: "Live journeys", value: "9", body: "Running journeys currently sending or waiting on triggers.", icon: Route, signal: "+2" },
+      { id: "sent-mails", perspective: "summary", eyebrow: "Journeys", title: "Sent mails", value: "3.4k", body: "Journey emails sent across active flows.", icon: Send, signal: "+12%" },
+      { id: "opens", perspective: "summary", eyebrow: "Journeys", title: "Opens", value: "3.2k", body: "Email opens from active journeys.", icon: MailOpen, signal: "+8%" },
+      { id: "clicks-replies", perspective: "summary", eyebrow: "Journeys", title: "Clicks / replies", value: "1.6k", body: "Combined clicks and replies from journey messages.", icon: MousePointerClick, signal: "+6%" },
+      { id: "journey-health", perspective: "summary", eyebrow: "Journeys", title: "Journey health", value: "Warning", body: "Revenue spiked sharply on May 26.", icon: AlertTriangle, signal: "+140%" },
+      { id: "journeys", perspective: "summary", eyebrow: "Summary", title: "Journey revenue", value: "$15,047,484.74", body: "Total revenue from running journeys over the current period.", icon: Route, chart: { type: "line", label: "journey-revenue", values: [0, 12000, 175000, 230000, 260000, 290000, 310000, 340000, 370000, 400000, 430000, 460000, 490000, 510000, 530000, 560000, 900000, 1300000, 3600000, 4700000, 5400000, 6100000, 6200000, 14900000, 15047484, 15047484, 15047484, 15047484, 15047484, 15047484] } },
+      { id: "ab", perspective: "summary", eyebrow: "Summary", title: "Experience attributed revenue", value: "$7,523,742.37", body: "Intempt attributed revenue from active experiences and personalization.", icon: Shuffle, chart: { type: "line", label: "experience-revenue", values: [0, 6000, 87500, 115000, 130000, 145000, 155000, 170000, 185000, 200000, 215000, 230000, 245000, 255000, 265000, 280000, 450000, 650000, 1800000, 2350000, 2700000, 3050000, 3100000, 7450000, 7523742, 7523742, 7523742, 7523742, 7523742, 7523742] } },
+      { id: "bounce", perspective: "summary", eyebrow: "Summary", title: "Deliverability needs attention", value: "4.8%", body: "Bounce rate is above the safe range.", icon: AlertCircle },
+      { id: "rec-bounce", perspective: "blu", eyebrow: "Blu recommendation", title: "Pause stale audiences first", body: "Suppress old re-engagement segments before the next send to protect sender reputation.", action: "Clean segment", icon: Bot, signal: "Urgent" },
+      { id: "rec-subject", perspective: "blu", eyebrow: "Blu recommendation", title: "Test two sharper subject lines", body: "Run a short A/B on curiosity vs. outcome-led copy to recover open rate.", action: "Create test", icon: Wand2 },
+      { id: "rec-ship", perspective: "blu", eyebrow: "Blu recommendation", title: "Ship the winning onboarding variant", body: "Keeping the loser live is leaving conversion lift on the table.", action: "Ship winner", icon: Check },
+      { id: "rec-sms", perspective: "blu", eyebrow: "Blu recommendation", title: "Move cart abandonment to SMS", body: "Use SMS for the second reminder only. Low risk, clearer conversion read.", action: "Add SMS step", icon: Smartphone },
+      { id: "rec-feed", perspective: "blu", eyebrow: "Blu recommendation", title: "Refresh product feed images", body: "Top catalog items can reuse the newest packshots from Design for stronger email clicks.", action: "Sync feed", icon: Package },
+    ],
+  },
+  sales: {
+    title: "Sales wrapped",
+    subtitle: "A 24-hour read across Accounts, Deals, Meetings, Scheduler, and revenue movement.",
+    cards: [
+      { id: "sales-users", perspective: "summary", eyebrow: "Users", title: "Tracked users", value: "3.79K", body: "Known users available for sales follow-up and segmentation.", icon: Users, signal: "+118" },
+      { id: "attended-meetings", perspective: "summary", eyebrow: "Meetings", title: "Meetings attended", value: "7", body: "Meetings attended in the last 7 days.", icon: Calendar, signal: "Last 7d" },
+      { id: "popular-event", perspective: "summary", eyebrow: "Events", title: "Top fired event", value: "Add to cart", body: "Most common buying-intent event in the last 24 hours.", icon: ShoppingCart, signal: "8.4k" },
+      { id: "pipeline", perspective: "summary", eyebrow: "Deals", title: "Active pipeline", value: "$284k", body: "Most value sits between Qualified and Proposal.", icon: Briefcase, signal: "+12%" },
+      { id: "sales-health", perspective: "summary", eyebrow: "Health", title: "Sales health", value: "Warning", body: "Meeting attendance is lagging behind qualified deal growth.", icon: AlertTriangle, signal: "Watch" },
+      { id: "upcoming-meetings", perspective: "summary", eyebrow: "Meetings", title: "Upcoming 3 meetings", value: "3", body: "Next meetings from your scheduler with join actions.", icon: Calendar },
+      { id: "popular-events", perspective: "summary", eyebrow: "Events", title: "Popular fired events", value: "8.4k", body: "Buying-intent events ranked by activity.", icon: Activity },
+      { id: "rec-followup", perspective: "blu", eyebrow: "Blu recommendation", title: "Touch FieldsUSA today", body: "Send a crisp next-step email and book the final decision call while the deal is warm.", action: "Schedule follow-up", icon: Bot, signal: "Urgent" },
+      { id: "rec-reminders", perspective: "blu", eyebrow: "Blu recommendation", title: "Enable meeting reminders", body: "Add 24h and 1h reminders to recover no-shows with minimal effort.", action: "Enable reminders", icon: Bell },
+      { id: "rec-sequence", perspective: "blu", eyebrow: "Blu recommendation", title: "Create a qualified-deal sequence", body: "A 4-step follow-up path should move more qualified deals into Proposal.", action: "Build sequence", icon: MailOpen },
+      { id: "rec-prospects", perspective: "blu", eyebrow: "Blu recommendation", title: "Nurture cold prospects", body: "84 prospects are stalling. Use education-led messaging before direct selling.", action: "Create nurture", icon: Users },
+      { id: "rec-calendar", perspective: "blu", eyebrow: "Blu recommendation", title: "Tighten scheduler availability", body: "Keep two clean booking windows per day to reduce back-and-forth and speed up conversion.", action: "Open scheduler", icon: CalendarClock },
+    ],
+  },
+  analytics: {
+    title: "Analytics wrapped",
+    subtitle: "A 24-hour executive read across Out-of-the-box reports, Boards, Subscription, audiences, and revenue signals.",
+    cards: [
+      { id: "active-users", perspective: "summary", eyebrow: "Out-of-the-box", title: "Active users", value: "1.87K", body: "Users who were active in the selected period across tracked web and product events.", icon: Users, signal: "-70%", chart: { type: "line", label: "Active users", values: [10, 18, 12, 25, 40, 35, 20, 32, 25, 20, 15, 25, 30, 8] } },
+      { id: "traffic-users", perspective: "summary", eyebrow: "Traffic", title: "Total users", value: "3.79K", body: "Total tracked users from the traffic report.", icon: Globe, signal: "-45%" },
+      { id: "revenue-channel", perspective: "summary", eyebrow: "Revenue", title: "Top revenue channel", value: "$42.4K", body: "Organic Search is the highest attributed revenue source.", icon: DollarSign, signal: "#1" },
+      { id: "page-views", perspective: "summary", eyebrow: "Engagement", title: "Page views", value: "4.06K", body: "Total page views across tracked sessions.", icon: Activity, signal: "+239%" },
+      { id: "mrr", perspective: "summary", eyebrow: "MRR", title: "Current MRR", value: "$25.21K", body: "Subscription MRR for Jun 2026.", icon: DollarSign, signal: "+2.62%", chart: { type: "line", label: "MRR", values: [10530, 12144, 13701, 15594, 16766, 18207, 19597, 20711, 22052, 22914, 24568, 25212] } },
+      { id: "subscribers", perspective: "summary", eyebrow: "Subscribers", title: "Total subscribers", value: "1,940", body: "Active subscribers at the end of Jun 2026.", icon: Users, signal: "-3.04%" },
+      { id: "rec-onboarding", perspective: "blu", eyebrow: "Blu recommendation", title: "Audit onboarding first", body: "Improving signup to trial start is the highest-leverage conversion move.", action: "Audit flow", icon: Bot, signal: "Highest ROI" },
+      { id: "rec-winback", perspective: "blu", eyebrow: "Blu recommendation", title: "Launch a win-back campaign", body: "Target at-risk users before they slide into the lost segment.", action: "Create campaign", icon: Route },
+      { id: "rec-trial", perspective: "blu", eyebrow: "Blu recommendation", title: "Add day-7 trial nudges", body: "Send in-app and email prompts when users are most likely to drop off.", action: "Set nudges", icon: MessageSquare },
+      { id: "rec-seo", perspective: "blu", eyebrow: "Blu recommendation", title: "Double down on SEO winners", body: "Turn the top two posts into a focused high-intent content cluster.", action: "Plan sprint", icon: TrendingUp },
+      { id: "rec-board", perspective: "blu", eyebrow: "Blu recommendation", title: "Pin this as an executive board", body: "Track MRR, churn, trial conversion, RFM, and organic revenue in one board.", action: "Create board", icon: LayoutGrid },
+    ],
+  },
+};
+
+function MiniBentoChart({ chart }: { chart: NonNullable<HomeBentoCard["chart"]> }) {
+  const max = Math.max(...chart.values, 1);
+
+  if (chart.type === "line") {
+    const points = chart.values.map((value, index) => {
+      const x = chart.values.length === 1 ? 0 : (index / (chart.values.length - 1)) * 100;
+      const y = 32 - (value / max) * 28;
+      return `${x},${y}`;
+    }).join(" ");
+
+    return (
+      <div className="mt-auto pt-3">
+        {chart.label && <p className="mb-1.5 text-[10px] font-medium text-stone-400">{chart.label}</p>}
+        <svg viewBox="0 0 100 36" className="h-12 w-full overflow-visible">
+          <polyline points={points} fill="none" stroke="#0080FF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points={`0,36 ${points} 100,36`} fill="rgba(0,128,255,0.08)" stroke="none" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (chart.type === "stack") {
+    const total = chart.values.reduce((sum, value) => sum + value, 0) || 1;
+    let offset = 0;
+
+    return (
+      <div className="mt-auto pt-3">
+        {chart.label && <p className="mb-1.5 text-[10px] font-medium text-stone-400">{chart.label}</p>}
+        <div className="flex h-2.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+          {chart.values.map((value, index) => {
+            const width = (value / total) * 100;
+            offset += width;
+            return (
+              <span
+                key={`${value}-${index}`}
+                className="h-full"
+                style={{
+                  width: `${width}%`,
+                  background: index === 0 ? "#0080FF" : `rgba(0,128,255,${Math.max(0.18, 0.42 - index * 0.07)})`,
+                }}
+              />
+            );
+          })}
+        </div>
+        {chart.labels && (
+          <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1">
+            {chart.labels.slice(0, 4).map((label, index) => (
+              <span key={label} className="flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-stone-400">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: index === 0 ? "#0080FF" : `rgba(0,128,255,${Math.max(0.22, 0.48 - index * 0.08)})` }} />
+                <span className="truncate">{label}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (chart.type === "progress") {
+    return (
+      <div className="mt-auto space-y-2 pt-3">
+        {chart.label && <p className="text-[10px] font-medium text-stone-400">{chart.label}</p>}
+        {chart.values.slice(0, 4).map((value, index) => (
+          <div key={`${value}-${index}`} className="grid grid-cols-[44px_1fr_28px] items-center gap-2">
+            <span className="truncate text-[10px] text-stone-500 dark:text-stone-400">{chart.labels?.[index] ?? `Item ${index + 1}`}</span>
+            <span className="h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+              <span className="block h-full rounded-full bg-blue-500" style={{ width: `${Math.min(value, 100)}%` }} />
+            </span>
+            <span className="text-right text-[10px] font-medium text-stone-500 dark:text-stone-400">{value}%</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-auto pt-3">
+      {chart.label && <p className="mb-1.5 text-[10px] font-medium text-stone-400">{chart.label}</p>}
+      <div className="flex h-12 items-end gap-1.5">
+        {chart.values.map((value, index) => (
+          <span
+            key={`${value}-${index}`}
+            className="flex-1 rounded-t-md bg-blue-500/80"
+            style={{ height: `${Math.max(12, (value / max) * 48)}px` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LargeBentoChart({ chart }: { chart: NonNullable<HomeBentoCard["chart"]> }) {
+  const gradientId = `homePanelGrad-${(chart.label ?? "line").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  const data = chart.values.map((value, index) => ({
+    label: chart.labels?.[index] ?? `${index + 1}`,
+    value,
+  }));
+
+  if (chart.type === "progress") {
+    return (
+      <div className="grid h-full content-center gap-4">
+        {chart.values.slice(0, 4).map((value, index) => (
+          <div key={`${value}-${index}`} className="grid grid-cols-[72px_1fr_40px] items-center gap-3">
+            <span className="truncate text-xs font-medium text-stone-500 dark:text-stone-400">{chart.labels?.[index] ?? `Item ${index + 1}`}</span>
+            <span className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+              <span className="block h-full rounded-full bg-blue-500" style={{ width: `${Math.min(value, 100)}%` }} />
+            </span>
+            <span className="text-right text-xs font-semibold text-stone-700 dark:text-stone-200">{value}%</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (chart.type === "stack") {
+    const total = chart.values.reduce((sum, value) => sum + value, 0) || 1;
+    return (
+      <div className="flex h-full flex-col justify-center">
+        <div className="flex h-4 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+          {chart.values.map((value, index) => (
+            <span
+              key={`${value}-${index}`}
+              className="h-full"
+              style={{
+                width: `${(value / total) * 100}%`,
+                background: index === 0 ? "#0080FF" : `rgba(0,128,255,${Math.max(0.2, 0.48 - index * 0.08)})`,
+              }}
+            />
+          ))}
+        </div>
+        {chart.labels && (
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            {chart.labels.slice(0, 4).map((label, index) => (
+              <div key={label} className="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2 dark:bg-white/4">
+                <span className="flex min-w-0 items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: index === 0 ? "#0080FF" : `rgba(0,128,255,${Math.max(0.24, 0.52 - index * 0.08)})` }} />
+                  <span className="truncate">{label}</span>
+                </span>
+                <span className="text-xs font-semibold text-stone-800 dark:text-stone-100">{chart.values[index]}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (chart.type === "bars") {
+    return (
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -26 }}>
+          <CartesianGrid stroke="var(--border)" strokeOpacity={0.45} vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+          <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(0,128,255,0.06)" }} />
+          <Bar dataKey="value" fill="#0080FF" fillOpacity={0.78} radius={[5, 5, 0, 0]} maxBarSize={34} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <AreaChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -26 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0080FF" stopOpacity={0.26} />
+            <stop offset="100%" stopColor="#0080FF" stopOpacity={0.07} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--border)" strokeOpacity={0.45} vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+        <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={34} />
+        <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#0080FF", strokeWidth: 1, strokeDasharray: "3 3" }} />
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke="#0080FF"
+          strokeWidth={2.25}
+          fill={`url(#${gradientId})`}
+          dot={false}
+          activeDot={{ r: 4, fill: "#0080FF", strokeWidth: 0 }}
+          name={chart.label ?? "Value"}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
+  const Icon = card.icon;
+  const displayValue = card.value === "$15,047,484.74"
+    ? "$15.0M"
+    : card.value === "$7,523,742.37"
+      ? "$7.5M"
+      : card.value;
+
+  return (
+    <div
+      className="relative min-h-[116px] overflow-hidden rounded-xl p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+      style={{
+        background: "var(--content-bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="relative z-10 flex h-full flex-col justify-between gap-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8">
+            <Icon size={15} />
+          </span>
+          {card.signal && <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{card.signal}</span>}
+        </div>
+        <div>
+          {displayValue && <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-50">{displayValue}</p>}
+          <p className="mt-2 truncate text-sm font-medium leading-snug text-stone-700 dark:text-stone-200">{card.title}</p>
+        </div>
+      </div>
+      <span className="pointer-events-none absolute -bottom-5 -right-5 text-blue-500 opacity-[0.05]">
+        <Icon size={86} />
+      </span>
+    </div>
+  );
+}
+
+function GraphPanel({ card }: { card: HomeBentoCard }) {
+  const isRevenueMetric = card.id === "journeys" || card.id === "ab" || card.id === "mrr";
+  const graphBadge =
+    card.id === "journeys" ? "Journeys" :
+    card.id === "ab" ? "Experiences" :
+    card.id === "mrr" ? "Analytics" :
+    card.id === "active-users" ? "Out-of-the-box" :
+    card.id === "upcoming-meetings" ? "Meetings" :
+    card.id === "popular-events" ? "Events" :
+    card.eyebrow;
+
+  if (card.id === "upcoming-meetings") {
+    const meetings = [
+      { name: "FieldsUSA demo", date: "JUN 10", time: "7:00 PM", due: "in 4 hours" },
+      { name: "Linea renewal call", date: "JUN 10", time: "8:00 PM", due: "in 5 hours" },
+      { name: "StockInvest onboarding", date: "JUN 13", time: "12:15 PM", due: "in 3 days" },
+    ];
+
+    return (
+      <div
+        className="relative min-h-[260px] overflow-hidden rounded-xl p-5"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Coming up</p>
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{graphBadge}</span>
+        </div>
+        <div className="space-y-2.5">
+          {meetings.map((meeting) => (
+            <div key={meeting.name} className="flex items-center gap-3 rounded-xl px-3.5 py-3 transition-colors hover:bg-stone-50 dark:hover:bg-white/4">
+              <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+                <span className="text-[10px] font-semibold leading-none">{meeting.date.split(" ")[0]}</span>
+                <span className="mt-0.5 text-base font-semibold leading-none">{meeting.date.split(" ")[1]}</span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{meeting.name}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{meeting.time}</span>
+                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600 dark:bg-orange-500/12 dark:text-orange-300">
+                    {meeting.due}
+                  </span>
+                </div>
+              </div>
+              <button className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-blue-500 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-600">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m16 13 5 3V8l-5 3" />
+                  <rect x="3" y="6" width="13" height="12" rx="2" />
+                </svg>
+                Join now
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (card.id === "popular-events") {
+    const events = [
+      { name: "Added to cart", count: "8.4k", pct: 100 },
+      { name: "Checkout started", count: "3.1k", pct: 68 },
+      { name: "Product viewed", count: "21.7k", pct: 54 },
+      { name: "Book-a-demo", count: "428", pct: 31 },
+    ];
+
+    return (
+      <div
+        className="relative min-h-[260px] overflow-hidden rounded-xl p-5"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-3xl font-extrabold leading-none tracking-tight text-stone-900 dark:text-stone-100">33.6k</p>
+            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Total buying-intent events</p>
+            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-500">Top event: Added to cart</p>
+          </div>
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{graphBadge}</span>
+        </div>
+        <div className="space-y-3">
+          {events.map((event, index) => (
+            <div key={event.name}>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-stone-700 dark:text-stone-300">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-stone-100 text-[10px] font-semibold text-stone-500 dark:bg-white/8 dark:text-stone-400">
+                    {index + 1}
+                  </span>
+                  <span className="truncate">{event.name}</span>
+                </span>
+                <span className="text-xs font-semibold text-stone-900 dark:text-stone-100">{event.count}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+                <div className="h-full rounded-full bg-blue-500" style={{ width: `${event.pct}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isRevenueMetric && card.chart) {
+    const dates = card.id === "mrr"
+      ? ["Jan 1", "Jan 10", "Jan 20", "Feb 1", "Feb 10", "Feb 20", "Mar 1", "Mar 10", "Mar 20", "Apr 1", "Apr 10", "Apr 20", "May 1", "May 10", "May 20", "Jun 1", "Jun 10", "Jun 20"]
+      : [
+        "May 3", "May 4", "May 5", "May 6", "May 7", "May 8", "May 9", "May 10", "May 11", "May 12",
+        "May 13", "May 14", "May 15", "May 16", "May 17", "May 18", "May 19", "May 20", "May 21", "May 22",
+        "May 23", "May 24", "May 25", "May 26", "May 27", "May 28", "May 29", "May 30", "Jun 1", "Jun 2",
+      ];
+    const metricData = card.chart.values.map((value, index) => ({
+      date: [
+        ...dates,
+      ][index] ?? `Day ${index + 1}`,
+      value,
+    }));
+
+    return (
+      <div className="relative min-w-0">
+        <span className="absolute right-4 top-4 z-20 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+          {graphBadge}
+        </span>
+        <RevenueMetricCard
+          value={card.value ?? ""}
+          label={card.id === "journeys" ? "Total revenue" : card.id === "ab" ? "Intempt attributed revenue" : "Monthly recurring revenue"}
+          change={card.id === "mrr" ? "+8.3% vs. previous period" : "-- vs. previous period"}
+          data={metricData}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative min-h-[260px] overflow-hidden rounded-xl p-5"
+      style={{
+        background: "var(--content-bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="mb-5">
+          <div className="mb-3 flex justify-end">
+            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+              {graphBadge}
+            </span>
+          </div>
+          <div className="min-w-0">
+            {card.value && <p className="text-3xl font-extrabold leading-none tracking-tight text-stone-900 dark:text-stone-100">{card.value}</p>}
+            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">{card.title}</p>
+            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-500">{card.signal ? `${card.signal} vs. previous period` : "-- vs. previous period"}</p>
+          </div>
+        </div>
+
+        {card.chart && <div className="min-h-0 flex-1"><LargeBentoChart chart={card.chart} /></div>}
+      </div>
+    </div>
+  );
+}
+
+function BluSuggestionCard({ card }: { card: HomeBentoCard }) {
+  function askBlu() {
+    const prompt = [
+      `Act on this recommendation: ${card.title}`,
+      card.body,
+      card.action ? `Recommended action: ${card.action}` : "",
+      "Use the current project context and suggest the next concrete steps.",
+    ].filter(Boolean).join("\n\n");
+
+    window.dispatchEvent(new Event("open-blu-chat"));
+    window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt } }));
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={askBlu}
+      className="group relative min-h-[132px] overflow-hidden rounded-xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      style={{
+        background: "var(--content-bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="relative z-10 flex h-full flex-col">
+        {card.signal && (
+          <span className="absolute right-0 top-0 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+            {card.signal}
+          </span>
+        )}
+        <div className="min-w-0 pr-16">
+          <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{card.title}</p>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{card.body}</p>
+        </div>
+        {card.action && (
+          <span className="mt-4 inline-flex h-8 w-fit items-center rounded-md bg-blue-500 px-3 text-xs font-semibold text-white transition-colors group-hover:bg-blue-600">
+            {card.action}
+          </span>
+        )}
+      </div>
+      <img
+        src="/mascot.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 rotate-[-14deg] object-contain opacity-[0.09] transition-opacity group-hover:opacity-[0.15]"
+      />
+    </button>
+  );
+}
+
+function LatestGenerationsCard() {
+  const items = [
+    { name: "Claude design - Email 1", type: "Email", ago: "2 days ago", icon: MailOpen },
+    { name: "Flash sale SMS with Liquid variables", type: "SMS", ago: "3 days ago", icon: MessageSquare },
+    { name: "Raw HTML email output", type: "Email", ago: "1 week ago", icon: MailOpen },
+    { name: "Brand character holding a can", type: "Image", ago: "1 month ago", icon: FileImage },
+    { name: "Brand character with water tumbler", type: "Image", ago: "1 month ago", icon: FileImage },
+  ];
+
+  return (
+    <div
+      className="rounded-xl p-5"
+      style={{
+        background: "var(--content-bg)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Latest generations</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Recent assets generated from Blu and the asset library</p>
+        </div>
+        <button className="h-8 rounded-md bg-blue-500 px-3 text-xs font-semibold text-white transition-colors hover:bg-blue-600">
+          Show all
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.name}
+              className="group min-w-0 rounded-xl bg-stone-50 p-3 text-left transition-colors hover:bg-blue-50 dark:bg-white/4 dark:hover:bg-blue-500/10"
+            >
+              <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-500 dark:bg-blue-500/12">
+                <Icon size={15} />
+              </span>
+              <p className="line-clamp-2 text-sm font-medium leading-snug text-stone-800 dark:text-stone-100">{item.name}</p>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:bg-white/8 dark:text-blue-300">{item.type}</span>
+                <span className="truncate text-[11px] text-stone-400">{item.ago}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HomeBentoDashboard({ tab }: { tab: string }) {
+  const dashboard = HOME_BENTO[tab] ?? HOME_BENTO.design;
+  const allSummaryCards = dashboard.cards.filter((card) => card.perspective === "summary");
+  const summaryCount = tab === "analytics" ? 6 : 5;
+  const summaryCards = allSummaryCards.slice(0, summaryCount);
+  const preferredChartIds = tab === "marketing" ? new Set(["journeys", "ab"]) : tab === "sales" ? new Set(["upcoming-meetings", "popular-events"]) : null;
+  const chartCards = (preferredChartIds
+    ? allSummaryCards.filter((card) => preferredChartIds.has(card.id))
+    : allSummaryCards.filter((card) => card.chart)
+  ).slice(0, 2);
+  const fallbackChartCards = chartCards.length >= 2 ? chartCards : allSummaryCards.slice(0, 2);
+  const bluCards = dashboard.cards.filter((card) => card.perspective === "blu").slice(0, 4);
+
+  return (
+    <div className="px-6 pt-6 pb-8 animate-fade-up">
+      <div className="mb-5">
+        <Greeting />
+      </div>
+
+      <div className="space-y-3">
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tab === "analytics" ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
+          {summaryCards.map((card) => (
+            <SummaryKpiCard key={card.id} card={card} />
+          ))}
+        </div>
+
+        {tab === "design" ? (
+          <LatestGenerationsCard />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {fallbackChartCards.map((card) => (
+              <GraphPanel key={`graph-${card.id}`} card={card} />
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {bluCards.map((card) => (
+            <BluSuggestionCard key={card.id} card={card} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1666,11 +2543,7 @@ export default function HomeView() {
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
       <ViewTabs tabs={HOME_TABS} activeTab={tab} onChange={setTab} />
-
-      {tab === "design"    && <DesignDashboard     key="design"    />}
-      {tab === "marketing" && <MarketingDashboard  key="marketing" />}
-      {tab === "sales"     && <SalesTab            key="sales"     />}
-      {tab === "analytics" && <AnalyticsDashboard  key="analytics" />}
+      <HomeBentoDashboard key={tab} tab={tab} />
     </div>
   );
 }

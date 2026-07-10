@@ -587,6 +587,16 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
     }
   }
 
+  useEffect(() => {
+    function handleSuggestedPrompt(event: Event) {
+      const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt?.trim();
+      if (prompt) sendMessage(prompt);
+    }
+
+    window.addEventListener("blu-suggested-prompt", handleSuggestedPrompt);
+    return () => window.removeEventListener("blu-suggested-prompt", handleSuggestedPrompt);
+  });
+
   return (
     <div
       className="flex flex-col h-full rounded-xl overflow-hidden"
