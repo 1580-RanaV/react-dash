@@ -482,9 +482,7 @@ function ResultsControlBar() {
   const [zoom, setZoom] = useState(50);
 
   return (
-    <div
-      className="mx-5 flex items-center gap-3 px-4 py-2.5"
-    >
+    <div className="mx-4 sm:mx-5 px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
       {/* Compare */}
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-stone-400 dark:text-stone-500">Compare</span>
@@ -493,10 +491,8 @@ function ResultsControlBar() {
         <SelectChip label="Control" />
       </div>
 
-      <div className="flex-1" />
-
-      {/* Zoom */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Zoom — hidden on small screens */}
+      <div className="hidden sm:flex items-center gap-2 shrink-0">
         <span className="text-xs text-stone-400 dark:text-stone-500">Zoom</span>
         <button
           onClick={() => setZoom((z) => Math.max(0, z - 10))}
@@ -520,10 +516,10 @@ function ResultsControlBar() {
         </button>
       </div>
 
-      <div className="h-4 w-px bg-stone-200 dark:bg-white/12 shrink-0" />
+      <div className="hidden sm:block h-4 w-px bg-stone-200 dark:bg-white/12 shrink-0" />
 
       {/* Stat badges */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex flex-wrap items-center gap-1.5">
         <CIBadge />
         <ToggleBadge label="CUPED" />
         <ToggleBadge label="Sequential Testing" />
@@ -858,7 +854,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
     <div className="relative flex h-full flex-col overflow-hidden bg-white animate-fade-up dark:bg-(--card)">
       {/* Top bar */}
       <div
-        className="shrink-0 flex flex-col sm:flex-row sm:items-center px-5 py-2.5 gap-2 border-b"
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center px-4 sm:px-5 py-2.5 gap-2 border-b"
         style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
       >
         {/* Breadcrumb */}
@@ -867,29 +863,40 @@ export default function ExperienceDetailView({ id }: { id: string }) {
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{exp.title}</span>
         </div>
 
-        {/* Status + progress + tabs row */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {exp.progress > 0 && (
-            <span className="text-xs text-stone-400 dark:text-stone-500">
-              <span className="font-semibold text-stone-600 dark:text-stone-300">{exp.progress}%</span> progress
-            </span>
-          )}
-          {exp.daysLeft > 0 && (
-            <span className="text-xs text-stone-400 dark:text-stone-500">
-              <span className="font-semibold text-stone-600 dark:text-stone-300">{exp.daysLeft.toLocaleString()}</span> days left
-            </span>
-          )}
-          <ExperienceDecisionButton initialStatus={exp.status} />
-          <div className="h-4 w-px bg-stone-200 dark:bg-white/10 shrink-0" />
-          <SubTabCorner
-            tabs={TABS.map((t) => ({
-              key: t.key,
-              label: t.key === "setup" ? "Setup" : t.key === "results" ? "Results" : "Summary",
-              icon: t.icon,
-            }))}
-            active={activeTab}
-            onChange={(k) => setActiveTab(k as TabKey)}
-          />
+        {/* Tabs + button — stack on mobile, inline on desktop */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 sm:shrink-0">
+          {/* Progress + days — desktop only */}
+          <div className="hidden sm:flex items-center gap-2">
+            {exp.progress > 0 && (
+              <span className="text-xs text-stone-400 dark:text-stone-500">
+                <span className="font-semibold text-stone-600 dark:text-stone-300">{exp.progress}%</span> progress
+              </span>
+            )}
+            {exp.daysLeft > 0 && (
+              <span className="text-xs text-stone-400 dark:text-stone-500">
+                <span className="font-semibold text-stone-600 dark:text-stone-300">{exp.daysLeft.toLocaleString()}</span> days left
+              </span>
+            )}
+            <div className="h-4 w-px bg-stone-200 dark:bg-white/10 shrink-0" />
+          </div>
+
+          {/* Tabs — centered on mobile */}
+          <div className="flex justify-center sm:block">
+            <SubTabCorner
+              tabs={TABS.map((t) => ({
+                key: t.key,
+                label: t.key === "setup" ? "Setup" : t.key === "results" ? "Results" : "Summary",
+                icon: t.icon,
+              }))}
+              active={activeTab}
+              onChange={(k) => setActiveTab(k as TabKey)}
+            />
+          </div>
+
+          {/* Action button — right-aligned on mobile, inline on desktop */}
+          <div className="flex justify-end sm:block">
+            <ExperienceDecisionButton initialStatus={exp.status} />
+          </div>
         </div>
       </div>
 
@@ -914,8 +921,8 @@ export default function ExperienceDetailView({ id }: { id: string }) {
 
           {setupView === 1 ? (
             /* View 1 — metric card grid */
-            <div className="flex flex-1 items-center justify-center overflow-y-auto px-6 py-4">
-              <div className="grid w-full max-w-2xl grid-cols-2 grid-rows-2 gap-3" style={{ height: "460px" }}>
+            <div className="flex flex-1 items-start sm:items-center justify-center overflow-y-auto px-4 sm:px-6 py-4">
+              <div className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-3">
                 <SetupCard icon={FlaskConical} title="Variants"  value="3"          label="Variants configured"    onOpen={() => setShelf("variants")}  />
                 <SetupCard icon={BarChart3}   title="Metrics"   value="2"          label="Metrics configured"     onOpen={() => setShelf("metrics")}   />
                 <SetupCard icon={Clock}       title="Schedule"  value="Always on"  label="Runs 24/7"              onOpen={() => setShelf("schedule")}  />
@@ -942,7 +949,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
                 <MetricsShelfContent />
               </InlineCard>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <ConfigTileV2
                   icon={Clock}
                   title="Schedule"
@@ -965,16 +972,16 @@ export default function ExperienceDetailView({ id }: { id: string }) {
 
       {activeTab === "results" && (
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-5 px-5 pt-4 pb-1">
+          <div className="px-4 sm:px-5 pt-4 pb-2">
             <HypothesisCard />
           </div>
 
-          <div className="flex items-center shrink-0 pr-3 pt-1">
-            <div className="flex-1"><DateRangePicker /></div>
+          <div className="px-4 sm:px-5 pt-1 pb-0">
+            <DateRangePicker />
           </div>
 
           {/* Metric cards */}
-          <div className="flex gap-4 px-4 pt-3 pb-3 animate-fade-up">
+          <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-5 pt-3 pb-2 animate-fade-up">
             <MetricCard
               value="7,140"
               label="Cumulative users"
@@ -997,7 +1004,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
           </div>
 
           {/* Metrics sections */}
-          <div className="flex flex-col gap-4 px-5 pb-6">
+          <div className="flex flex-col gap-4 px-4 sm:px-5 pb-6">
             {/* Primary Metrics */}
             <div className="rounded-xl border" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
               <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
@@ -1023,10 +1030,10 @@ export default function ExperienceDetailView({ id }: { id: string }) {
 
       {activeTab === "report" && (
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-4 px-5 py-5 max-w-3xl mx-auto">
+          <div className="flex flex-col gap-4 px-4 sm:px-5 py-4 sm:py-5 max-w-3xl mx-auto">
 
             {/* Header row */}
-            <div className="flex items-start justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               {/* Left: title + status */}
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">{exp.title}</span>
@@ -1036,12 +1043,12 @@ export default function ExperienceDetailView({ id }: { id: string }) {
                 </span>
               </div>
               {/* Right: date + day pills */}
-              <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex flex-col items-start sm:items-end gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-stone-600 dark:text-stone-300" style={{ borderColor: "var(--border)" }}>
                   <Calendar size={11} className="text-stone-400 shrink-0" />
                   Feb 23, 2026 – Jul 1, 2034
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium text-stone-500 dark:text-stone-400" style={{ borderColor: "var(--border)" }}>3050 days planned</span>
                   <span className="inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400" style={{ borderColor: "var(--border)" }}>113 days completed</span>
                   <span className="inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400" style={{ borderColor: "var(--border)" }}>2937 days left</span>
@@ -1061,7 +1068,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
             <div className="rounded-xl border" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
               <div className="px-5 py-4">
                 <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">Setup</p>
-                <div className="flex items-center gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-8">
                   {[
                     { letter: "A", name: "Control",   color: "#3F8CB2" },
                     { letter: "B", name: "Variant 1", color: "#9580FF" },
@@ -1079,7 +1086,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
             </div>
 
             {/* Settings row */}
-            <div className="rounded-xl border px-5 py-4 flex items-center gap-6" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
+            <div className="rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
               {/* Left: compare */}
               <div className="flex shrink-0 items-center gap-2">
                 <span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">Compare</span>
@@ -1087,7 +1094,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
                 <span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">relative to</span>
                 <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border px-2.5 text-xs font-medium text-stone-700 dark:text-stone-200 whitespace-nowrap" style={{ borderColor: "var(--border)" }}>Control <ChevronDown size={10} className="text-stone-400" /></span>
               </div>
-              <div className="flex-1" />
+              <div className="hidden sm:block flex-1" />
               {/* Right: 2×2 grid of pills */}
               <div className="grid grid-cols-2 gap-2 shrink-0">
                 {[
