@@ -80,7 +80,7 @@ const FEED_ROWS: TableRow[] = [
     cells: {
       name: "Sponsored Products — Sidebar",
       type: { value: "Ad", muted: true },
-      status: { label: "Paused", tone: "yellow" },
+      status: { label: "Paused", tone: "gray" },
       lastUpdated: { value: "Jun 01, 2026 - 2:15 PM", muted: true },
       createdBy: "Somya Nayak",
     },
