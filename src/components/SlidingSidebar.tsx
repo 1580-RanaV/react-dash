@@ -52,7 +52,7 @@ export default function SlidingSidebar({
           transition: "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <div className="shrink-0 px-7 pb-5 pt-7">
+        <div className="shrink-0 px-5 pb-4 pt-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               {typeof title === "string"
@@ -72,10 +72,10 @@ export default function SlidingSidebar({
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto ${contentClassName ?? "px-7 pb-5"}`}>{children}</div>
+        <div className={`flex-1 overflow-y-auto ${contentClassName ?? "px-5 pb-5"}`}>{children}</div>
 
         {footer ? (
-          <div className="flex shrink-0 items-center justify-end gap-3 px-7 py-5">
+          <div className="flex shrink-0 items-center justify-end gap-3 px-5 py-4">
             {typeof footer === "function" ? footer(close) : footer}
           </div>
         ) : null}

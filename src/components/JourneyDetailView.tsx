@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BarChart2, CalendarDays, ChevronDown, CheckCircle2, Clock,
-  Copy, Filter, Pause, Plus, Route, Settings, Trash2, Upload, Zap, Circle, X,
+  Copy, Filter, GitFork, Minus, Pause, Plus, Route, Settings, SlidersHorizontal, Trash2, Upload, Zap, Circle, X,
 } from "lucide-react";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
@@ -31,50 +31,87 @@ const TABS: { key: TabKey; icon: React.ReactNode; label: string }[] = [
 
 // ── Canvas nodes ───────────────────────────────────────────────────────────────
 
-type NodeType = "trigger" | "step";
+type TriggerNodeData   = { id: string; type: "trigger";   description: string };
+type ConditionNodeData = { id: string; type: "condition"; description: string; trueBranch: FlowNodeData[]; falseBranch: FlowNodeData[] };
+type DelayNodeData     = { id: string; type: "delay";     duration: string };
+type ActionNodeData    = { id: string; type: "action";    label: string; subtitle: string };
 
-interface CanvasNode {
-  id: string;
-  type: NodeType;
-  label: string;
-  subtitle: string;
-}
+type FlowNodeData = TriggerNodeData | ConditionNodeData | DelayNodeData | ActionNodeData;
 
-const INITIAL_NODES: CanvasNode[] = [
-  { id: "trigger", type: "trigger", label: "TRIGGER",  subtitle: "Configure trigger" },
-  { id: "s1",      type: "step",    label: "STEP",     subtitle: "Send email"        },
-  { id: "s2",      type: "step",    label: "STEP",     subtitle: "Wait 1 day"        },
-  { id: "s3",      type: "step",    label: "STEP",     subtitle: "Check condition"   },
-  { id: "s4",      type: "step",    label: "STEP",     subtitle: "Configure step"    },
+const INITIAL_FLOW: FlowNodeData[] = [
+  {
+    id: "trigger",
+    type: "trigger",
+    description: 'Trigger that starts when USERS matched next: event "Product viewed" in a source "Demo Source" of type WEB in the last 1 months',
+  },
+  {
+    id: "condition-1",
+    type: "condition",
+    description: "Configure condition",
+    trueBranch: [
+      { id: "delay-1", type: "delay", duration: "2 hrs" },
+    ],
+    falseBranch: [],
+  },
 ];
 
-function JourneyNode({ node, onClick }: { node: CanvasNode; onClick?: () => void }) {
-  const isTrigger = node.type === "trigger";
+function FlowNodeCard({ node, onClick }: { node: FlowNodeData; onClick?: () => void }) {
+  type NodeStyle = { icon: React.ReactNode; iconBg: string; label: string };
+
+  const getStyle = (): NodeStyle => {
+    const blue = "bg-blue-100 text-blue-500 dark:bg-blue-500/15 dark:text-blue-400";
+    switch (node.type) {
+      case "trigger":   return { icon: <Zap size={15} />,     iconBg: blue, label: "TRIGGER"   };
+      case "condition": return { icon: <GitFork size={15} />, iconBg: blue, label: "CONDITION" };
+      case "delay":     return { icon: <Clock size={15} />,   iconBg: blue, label: "DELAY"     };
+      case "action":    return { icon: <Circle size={14} />,  iconBg: blue, label: node.label  };
+    }
+  };
+
+  const { icon, iconBg, label } = getStyle();
+
+  let bodyContent: React.ReactNode;
+  switch (node.type) {
+    case "trigger":
+      bodyContent = <span className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{node.description}</span>;
+      break;
+    case "condition":
+      bodyContent = <span className="text-sm text-stone-500 dark:text-stone-400">{node.description}</span>;
+      break;
+    case "delay":
+      bodyContent = (
+        <span className="inline-flex items-center gap-1.5 rounded-lg border bg-white dark:bg-white/10 px-2.5 py-1 text-sm font-medium text-stone-600 dark:text-stone-300" style={{ borderColor: "var(--border)" }}>
+          <Clock size={12} className="text-amber-400" />
+          {node.duration}
+        </span>
+      );
+      break;
+    case "action":
+      bodyContent = <span className="text-sm text-stone-500 dark:text-stone-400">{node.subtitle}</span>;
+      break;
+  }
+
   return (
     <div
       onClick={onClick}
-      className="w-60 rounded-2xl border shadow-sm overflow-hidden select-none cursor-pointer hover:shadow-md transition-shadow"
-      style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
+      className={`w-60 rounded-2xl shadow-sm overflow-hidden select-none cursor-pointer hover:shadow-md transition-shadow ${
+        node.type === "trigger" ? "border-2 border-blue-400 dark:border-blue-500" : "border"
+      }`}
+      style={{
+        background: "var(--content-bg)",
+        ...(node.type !== "trigger" ? { borderColor: "var(--border)" } : {}),
+      }}
     >
-      {/* Header: icon + type label */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-            isTrigger
-              ? "bg-emerald-100 text-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-400"
-              : "bg-stone-100 text-stone-400 dark:bg-white/8 dark:text-stone-500"
-          }`}
-        >
-          {isTrigger ? <Zap size={15} /> : <Circle size={14} />}
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+          {icon}
         </span>
         <span className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-          {node.label}
+          {label}
         </span>
       </div>
-
-      {/* Subtitle row */}
       <div className="mx-3 mb-3 rounded-xl bg-stone-50 dark:bg-white/5 px-3.5 py-2.5">
-        <span className="text-sm text-stone-500 dark:text-stone-400">{node.subtitle}</span>
+        {bodyContent}
       </div>
     </div>
   );
@@ -96,6 +133,65 @@ function Connector({ onAdd }: { onAdd: () => void }) {
   );
 }
 
+function ConditionFork({ node, onNodeClick }: { node: ConditionNodeData; onNodeClick: (n: FlowNodeData) => void }) {
+  function BranchNodes({ nodes }: { nodes: FlowNodeData[] }) {
+    return (
+      <>
+        {nodes.map((n, i) => (
+          <div key={n.id} className="flex flex-col items-center">
+            {i > 0 && <div className="h-4 w-px bg-stone-300 dark:bg-stone-600" />}
+            <FlowNodeCard node={n} onClick={() => onNodeClick(n)} />
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
+      <div className="relative flex w-130">
+        {/* Horizontal bar connecting branch centers */}
+        <div className="absolute top-0 left-[25%] right-[25%] h-px bg-stone-300 dark:bg-stone-600" />
+
+        {/* True branch */}
+        <div className="flex-1 flex flex-col items-center">
+          <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
+          <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+            True
+          </span>
+          <div className="h-4 w-px bg-stone-300 dark:bg-stone-600" />
+          <BranchNodes nodes={node.trueBranch} />
+          {node.trueBranch.length > 0 && <div className="h-4 w-px bg-stone-300 dark:bg-stone-600" />}
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-stone-300 dark:border-(--border) text-stone-400 dark:text-stone-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
+            style={{ background: "var(--content-bg)" }}
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+
+        {/* False branch */}
+        <div className="flex-1 flex flex-col items-center">
+          <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
+          <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-400">
+            False
+          </span>
+          <div className="h-4 w-px bg-stone-300 dark:bg-stone-600" />
+          <BranchNodes nodes={node.falseBranch} />
+          {node.falseBranch.length > 0 && <div className="h-4 w-px bg-stone-300 dark:bg-stone-600" />}
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-stone-300 dark:border-(--border) text-stone-400 dark:text-stone-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
+            style={{ background: "var(--content-bg)" }}
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Trigger shelf ──────────────────────────────────────────────────────────────
 
 type MatchLogic = "already" | "and-will" | "will-only";
@@ -108,8 +204,8 @@ const MATCH_OPTIONS: { key: MatchLogic; label: string; desc: string }[] = [
 ];
 
 const ENTRY_OPTIONS: { key: EntryFreq; label: string; desc: string }[] = [
-  { key: "once",   label: "Once",   desc: "This journey will only trigger the first time the user/account matches the conditions" },
-  { key: "always", label: "Always", desc: "This journey will trigger every time the user/account matches the conditions" },
+  { key: "once",   label: "Once",     desc: "This journey will only trigger the first time the user/account matches the conditions" },
+  { key: "always", label: "Multiple", desc: "This journey will trigger every time the user/account matches the conditions" },
 ];
 
 interface FilterRow {
@@ -153,7 +249,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
     <SlidingSidebar
       title={
         <span className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-500 dark:bg-emerald-500/15">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-500 dark:bg-blue-500/15 dark:text-blue-400">
             <Zap size={14} />
           </span>
           Trigger
@@ -171,7 +267,7 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
         </>
       )}
     >
-      <div className="flex flex-col gap-6 px-5 py-5">
+      <div className="flex flex-col gap-6 py-2">
 
         {/* Filter rows */}
         <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
@@ -220,25 +316,24 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
           <p className="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">
             Which condition matching logic should be used to enter the journey?
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {MATCH_OPTIONS.map((opt) => {
               const active = matchLogic === opt.key;
               return (
                 <button
                   key={opt.key}
                   onClick={() => setMatch(opt.key)}
-                  className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${
-                    active
-                      ? "border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/8"
-                      : "hover:bg-stone-50 dark:hover:bg-white/4"
-                  }`}
-                  style={{ borderColor: active ? undefined : "var(--border)" }}
+                  className="flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                  style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
                 >
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
-                    {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+                  <span
+                    className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                    style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                  >
+                    {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                   </span>
                   <div>
-                    <p className={`text-xs font-semibold ${active ? "text-blue-700 dark:text-blue-300" : "text-stone-700 dark:text-stone-200"}`}>{opt.label}</p>
+                    <p className={`text-sm ${active ? "font-medium text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{opt.label}</p>
                     <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 leading-relaxed">{opt.desc}</p>
                   </div>
                 </button>
@@ -252,25 +347,24 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
           <p className="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">
             How often should users enter this journey?
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {ENTRY_OPTIONS.map((opt) => {
               const active = entryFreq === opt.key;
               return (
                 <button
                   key={opt.key}
                   onClick={() => setFreq(opt.key)}
-                  className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${
-                    active
-                      ? "border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/8"
-                      : "hover:bg-stone-50 dark:hover:bg-white/4"
-                  }`}
-                  style={{ borderColor: active ? undefined : "var(--border)" }}
+                  className="flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                  style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
                 >
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
-                    {active && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+                  <span
+                    className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                    style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                  >
+                    {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                   </span>
                   <div>
-                    <p className={`text-xs font-semibold ${active ? "text-blue-700 dark:text-blue-300" : "text-stone-700 dark:text-stone-200"}`}>{opt.label}</p>
+                    <p className={`text-sm ${active ? "font-medium text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{opt.label}</p>
                     <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 leading-relaxed">{opt.desc}</p>
                   </div>
                 </button>
@@ -284,10 +378,168 @@ function TriggerShelf({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Condition shelf ────────────────────────────────────────────────────────────
+
+const COND_FILTERS: FilterRow[] = [
+  { id: "cf1", connector: "who", did: "did", event: "Testing replay 2", freq: "at least once", range: "Last 111 months" },
+];
+
+function ConditionShelf({ onClose }: { onClose: () => void }) {
+  const [filters, setFilters] = useState<FilterRow[]>(COND_FILTERS);
+
+  function removeFilter(id: string) { setFilters((f) => f.filter((r) => r.id !== id)); }
+  function addFilter() { setFilters((f) => [...f, { id: `cf${Date.now()}`, connector: "AND", did: "did", event: "Select event", freq: "at least once", range: "Last 1 months" }]); }
+
+  return (
+    <SlidingSidebar
+      title={
+        <span className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-500 dark:bg-blue-500/15 dark:text-blue-400">
+            <GitFork size={14} />
+          </span>
+          True/false branch
+        </span>
+      }
+      onClose={onClose}
+      footer={(close) => (
+        <>
+          <button onClick={close} className="inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8">Cancel</button>
+          <button className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>Save</button>
+        </>
+      )}
+    >
+      <div className="flex flex-col gap-5 py-2">
+        <div className="flex items-start gap-2.5 rounded-xl bg-stone-50 dark:bg-white/5 px-4 py-3">
+          <SlidersHorizontal size={14} className="shrink-0 mt-0.5 text-stone-400" />
+          <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+            Users who <strong className="font-semibold text-stone-800 dark:text-stone-100">match</strong> these conditions will follow the <strong className="font-semibold text-stone-800 dark:text-stone-100">True</strong> path. All others will follow the <strong className="font-semibold text-stone-800 dark:text-stone-100">False</strong> path.
+          </p>
+        </div>
+
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Condition</p>
+
+        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+          {filters.map((row, i) => (
+            <div key={row.id} className={`px-4 py-3 ${i < filters.length - 1 ? "border-b" : ""}`} style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <Chip>{row.connector}</Chip>
+                <Chip>{row.did}</Chip>
+                <Chip><Zap size={12} className="text-emerald-500" />{row.event}</Chip>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Chip>{row.freq}</Chip>
+                <Chip><CalendarDays size={11} className="text-stone-400" />{row.range}</Chip>
+                <div className="ml-auto flex items-center gap-1">
+                  <button className="flex h-6 w-6 items-center justify-center rounded text-stone-300 hover:text-stone-500 dark:text-stone-600 dark:hover:text-stone-400 transition-colors"><Filter size={11} /></button>
+                  <button className="flex h-6 w-6 items-center justify-center rounded text-stone-300 hover:text-stone-500 dark:text-stone-600 dark:hover:text-stone-400 transition-colors"><Copy size={11} /></button>
+                  <button onClick={() => removeFilter(row.id)} className="flex h-6 w-6 items-center justify-center rounded text-stone-300 hover:text-red-400 dark:text-stone-600 transition-colors"><Trash2 size={11} /></button>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-between px-4 py-2.5 border-t bg-stone-50 dark:bg-white/3" style={{ borderColor: "var(--border)" }}>
+            <button onClick={addFilter} className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors"><Plus size={12} />Add filter</button>
+            <button className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"><Plus size={12} />Add group</button>
+          </div>
+        </div>
+      </div>
+    </SlidingSidebar>
+  );
+}
+
+// ── Delay shelf ────────────────────────────────────────────────────────────────
+
+const UNIT_ABBR: Record<string, string> = { Minutes: "min", Hours: "h", Days: "d", Weeks: "wk" };
+
+function DelayShelf({ onClose }: { onClose: () => void }) {
+  const [duration, setDuration] = useState(2);
+  const [unit, setUnit] = useState("Hours");
+  const [specificWindow, setSpecificWindow] = useState(false);
+
+  return (
+    <SlidingSidebar
+      title={
+        <span className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-500 dark:bg-blue-500/15 dark:text-blue-400">
+            <Clock size={14} />
+          </span>
+          Delay
+        </span>
+      }
+      onClose={onClose}
+      footer={(close) => (
+        <>
+          <button onClick={close} className="inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8">Cancel</button>
+          <button className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>Save</button>
+        </>
+      )}
+    >
+      <div className="flex flex-col gap-6 py-2">
+        {/* Disclaimer */}
+        <div className="flex items-start gap-2.5 rounded-xl bg-stone-50 dark:bg-white/5 px-4 py-3">
+          <Clock size={14} className="shrink-0 mt-0.5 text-stone-400" />
+          <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">
+            The journey will wait{" "}
+            <strong className="font-semibold text-stone-800 dark:text-stone-100">{duration} {UNIT_ABBR[unit]}</strong>{" "}
+            before proceeding to the next step.
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">Delay action for</p>
+          <div className="flex items-center gap-3">
+            {/* Stepper */}
+            <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+              <button
+                onClick={() => setDuration((d) => Math.max(1, d - 1))}
+                className="flex h-10 w-10 items-center justify-center text-stone-500 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="flex h-10 w-12 items-center justify-center border-x text-sm font-semibold text-stone-800 dark:text-stone-100" style={{ borderColor: "var(--border)" }}>
+                {duration}
+              </span>
+              <button
+                onClick={() => setDuration((d) => d + 1)}
+                className="flex h-10 w-10 items-center justify-center text-stone-500 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            {/* Unit */}
+            <div className="relative flex-1">
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full appearance-none rounded-lg border bg-white dark:bg-(--input) px-3 py-2.5 text-sm text-stone-700 dark:text-stone-200 outline-none transition-colors hover:bg-stone-50 dark:hover:bg-white/8"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <option>Minutes</option>
+                <option>Hours</option>
+                <option>Days</option>
+                <option>Weeks</option>
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Specific time window</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Resume at specific time windows</p>
+          </div>
+          <Toggle on={specificWindow} onClick={() => setSpecificWindow((v) => !v)} />
+        </div>
+      </div>
+    </SlidingSidebar>
+  );
+}
+
 // ── Journey canvas ─────────────────────────────────────────────────────────────
 
-function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
-  const [nodes, setNodes] = useState<CanvasNode[]>(INITIAL_NODES);
+function JourneyCanvas({ onNodeClick }: { onNodeClick: (node: FlowNodeData) => void }) {
+  const [nodes, setNodes] = useState<FlowNodeData[]>(INITIAL_FLOW);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const isPanning = useRef(false);
   const panStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
@@ -304,11 +556,11 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
   }, []);
 
   function addAfter(index: number) {
-    const newNode: CanvasNode = {
-      id: `s${Date.now()}`,
-      type: "step",
-      label: "STEP",
-      subtitle: "Configure step",
+    const newNode: ActionNodeData = {
+      id: `a${Date.now()}`,
+      type: "action",
+      label: "ACTION",
+      subtitle: "Configure action",
     };
     setNodes((prev) => [
       ...prev.slice(0, index + 1),
@@ -324,6 +576,13 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
     e.currentTarget.style.cursor = "grabbing";
   }, [offset]);
 
+  const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    const t = e.touches[0];
+    isPanning.current = true;
+    panStart.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
+  }, [offset]);
+
   useEffect(() => {
     function onMove(e: MouseEvent) {
       if (!isPanning.current) return;
@@ -334,9 +593,22 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
       isPanning.current = false;
       if (canvasRef.current) canvasRef.current.style.cursor = "grab";
     }
+    function onTouchMove(e: TouchEvent) {
+      if (!isPanning.current) return;
+      const t = e.touches[0];
+      setOffset({ x: panStart.current.ox + t.clientX - panStart.current.mx, y: panStart.current.oy + t.clientY - panStart.current.my });
+    }
+    function onTouchEnd() { isPanning.current = false; }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
   }, []);
 
   return (
@@ -396,7 +668,8 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
       <div
         ref={canvasRef}
         onMouseDown={onMouseDown}
-        className="absolute inset-0 cursor-grab select-none bg-[#f0f2f5] dark:bg-[#111315] bg-[radial-gradient(circle,#c8cdd6_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#2c2f33_1px,transparent_1px)] bg-size-[22px_22px]"
+        onTouchStart={onTouchStart}
+        className="absolute inset-0 cursor-grab select-none touch-none bg-[#f0f2f5] dark:bg-[#111315] bg-[radial-gradient(circle,#c8cdd6_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#2c2f33_1px,transparent_1px)] bg-size-[22px_22px]"
       >
         <div
           style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, willChange: "transform" }}
@@ -404,24 +677,27 @@ function JourneyCanvas({ onTriggerOpen }: { onTriggerOpen: () => void }) {
         >
           {nodes.map((node, i) => (
             <div key={node.id} className="flex flex-col items-center">
-              <JourneyNode
+              {i > 0 && <Connector onAdd={() => addAfter(i - 1)} />}
+              <FlowNodeCard
                 node={node}
-                onClick={node.type === "trigger" ? onTriggerOpen : undefined}
+                onClick={() => onNodeClick(node)}
               />
-              {i < nodes.length - 1 && <Connector onAdd={() => addAfter(i)} />}
+              {node.type === "condition" && <ConditionFork node={node} onNodeClick={onNodeClick} />}
             </div>
           ))}
 
-          <div className="flex flex-col items-center">
-            <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
-            <button
-              onClick={() => addAfter(nodes.length - 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-(--border) text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
-              style={{ background: "var(--content-bg)" }}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          {nodes[nodes.length - 1]?.type !== "condition" && (
+            <div className="flex flex-col items-center">
+              <div className="h-6 w-px bg-stone-300 dark:bg-stone-600" />
+              <button
+                onClick={() => addAfter(nodes.length - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-stone-300 dark:border-(--border) text-stone-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                style={{ background: "var(--content-bg)" }}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -475,8 +751,8 @@ function JourneyAnalytics() {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Date picker row */}
-      <div className="flex items-center shrink-0 pr-3 pt-3">
-        <div className="flex-1"><DateRangePicker /></div>
+      <div className="flex items-center shrink-0 px-3 pt-3">
+        <DateRangePicker />
       </div>
 
       <div className="flex flex-col gap-8 px-4 py-4">
@@ -494,14 +770,14 @@ function JourneyAnalytics() {
           className="rounded-2xl border"
           style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
         >
-          <div className="flex items-start justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between px-4 sm:px-5 py-4 border-b gap-3" style={{ borderColor: "var(--border)" }}>
             <div>
               <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Journey Funnel Performance</p>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
                 See how journey recipients progress from email engagement through your conversion funnel.
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0 ml-4">
+            <div className="flex items-center gap-2 flex-wrap">
               <MiniSelect label="All messages" icon={<BarChart2 size={12} className="text-stone-400" />} />
               <MiniSelect label="No funnel selected" icon={<BarChart2 size={12} className="text-stone-400" />} />
             </div>
@@ -522,7 +798,7 @@ function JourneyAnalytics() {
 
 function SettingCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border px-6 py-5" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
+    <div className="rounded-2xl border px-4 sm:px-6 py-4 sm:py-5" style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}>
       <p className="mb-2 text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</p>
       {children}
     </div>
@@ -545,7 +821,7 @@ function JourneySettings() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-5">
+    <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-5">
       <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
 
         {/* Goal */}
@@ -578,19 +854,26 @@ function JourneySettings() {
         {/* Exit Rules */}
         <SettingCard title="Exit Rules">
           <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">A user will exit the journey early, when:</p>
-          <div className="flex flex-col gap-3">
-            {EXIT_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setExitRule(opt.key)}
-                className="flex items-center gap-3 text-left"
-              >
-                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${exitRule === opt.key ? "border-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
-                  {exitRule === opt.key && <span className="h-2 w-2 rounded-full bg-blue-500" />}
-                </span>
-                <span className="text-sm text-stone-700 dark:text-stone-200">{opt.label}</span>
-              </button>
-            ))}
+          <div className="flex flex-col gap-1">
+            {EXIT_OPTIONS.map((opt) => {
+              const active = exitRule === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setExitRule(opt.key)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-100 hover:bg-stone-50 dark:hover:bg-white/4"
+                  style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                >
+                  <span
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                    style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                  >
+                    {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </span>
+                  <span className={`text-sm ${active ? "font-medium text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{opt.label}</span>
+                </button>
+              );
+            })}
           </div>
           <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
             The exit conditions are checked before sending every message in a journey.
@@ -656,9 +939,17 @@ export default function JourneyDetailView({ id }: { id: string }) {
   const activeTab = (searchParams.get("tab") as TabKey) ?? "journey";
   const journey = JOURNEYS[id] ?? JOURNEYS["browse-abandonment"];
   const [triggerOpen, setTriggerOpen] = useState(false);
+  const [conditionOpen, setConditionOpen] = useState(false);
+  const [delayOpen, setDelayOpen] = useState(false);
 
   function setTab(key: TabKey) {
     navigate(`?tab=${key}`, { replace: true });
+  }
+
+  function handleNodeClick(node: FlowNodeData) {
+    if (node.type === "trigger") setTriggerOpen(true);
+    else if (node.type === "condition") setConditionOpen(true);
+    else if (node.type === "delay") setDelayOpen(true);
   }
 
   const isLive = journey.status === "Running";
@@ -697,11 +988,13 @@ export default function JourneyDetailView({ id }: { id: string }) {
       </div>
 
       {/* Tab content */}
-      {activeTab === "journey" && <JourneyCanvas onTriggerOpen={() => setTriggerOpen(true)} />}
+      {activeTab === "journey" && <JourneyCanvas onNodeClick={handleNodeClick} />}
       {activeTab === "analytics" && <JourneyAnalytics />}
       {activeTab === "settings" && <JourneySettings />}
 
       {triggerOpen && <TriggerShelf onClose={() => setTriggerOpen(false)} />}
+      {conditionOpen && <ConditionShelf onClose={() => setConditionOpen(false)} />}
+      {delayOpen && <DelayShelf onClose={() => setDelayOpen(false)} />}
     </div>
   );
 }
