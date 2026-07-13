@@ -858,18 +858,16 @@ export default function ExperienceDetailView({ id }: { id: string }) {
     <div className="relative flex h-full flex-col overflow-hidden bg-white animate-fade-up dark:bg-(--card)">
       {/* Top bar */}
       <div
-        className="shrink-0 flex items-center gap-3 px-5 py-2.5 border-b"
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center px-5 py-2.5 gap-2 border-b"
         style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
       >
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm min-w-0">
+        <div className="flex items-center gap-2 text-sm min-w-0 sm:flex-1">
           <BackButton href="/experiences" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{exp.title}</span>
         </div>
 
-        <div className="flex-1" />
-
-        {/* Status + progress — pinned beside tabs */}
+        {/* Status + progress + tabs row */}
         <div className="flex items-center gap-2.5 shrink-0">
           {exp.progress > 0 && (
             <span className="text-xs text-stone-400 dark:text-stone-500">
@@ -882,12 +880,7 @@ export default function ExperienceDetailView({ id }: { id: string }) {
             </span>
           )}
           <ExperienceDecisionButton initialStatus={exp.status} />
-        </div>
-
-        <div className="h-4 w-px bg-stone-200 dark:bg-white/10 shrink-0" />
-
-        {/* Segmented control */}
-        <div className="shrink-0">
+          <div className="h-4 w-px bg-stone-200 dark:bg-white/10 shrink-0" />
           <SubTabCorner
             tabs={TABS.map((t) => ({
               key: t.key,

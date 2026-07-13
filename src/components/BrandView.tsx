@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import { BOARDS_MENU_ITEMS } from "./ThreeDotsMenu";
 import SlidingSidebar from "./SlidingSidebar";
 
 type Palette = { id: string; name: string; colors: [string, string, string, string] };
@@ -342,6 +343,7 @@ function IdentityContent() {
     Story: false,
     Voice: false,
   });
+  const [activeVoice, setActiveVoice] = useState("Approachable");
 
   function toggleSection(section: IdentitySection) {
     if (section === "Company") return;
@@ -383,13 +385,30 @@ function IdentityContent() {
           </AccordionSection>
 
           <AccordionSection icon={<MessageSquare size={16} />} title="Voice" summary="Tone profile, language rules, and writing examples." open={openSections.Voice} onToggle={() => toggleSection("Voice")}>
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-                {voiceCards.map((voice) => (
-                  <button key={voice.title} className={`rounded-lg border p-3 text-left transition-colors ${voice.active ? "border-blue-500 bg-white shadow-sm dark:bg-blue-500/10" : "border-stone-200 bg-white/70 hover:bg-white dark:border-(--border) dark:bg-white/[0.025] dark:hover:bg-white/[0.05]"}`}>
-                    <p className="text-xs font-semibold text-stone-900 dark:text-stone-100">{voice.title}</p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{voice.desc}</p>
-                  </button>
-                ))}
+              <div className="flex flex-col gap-1">
+                {voiceCards.map((voice) => {
+                  const active = activeVoice === voice.title;
+                  return (
+                    <button
+                      key={voice.title}
+                      type="button"
+                      onClick={() => setActiveVoice(voice.title)}
+                      className="flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-all hover:bg-stone-50 dark:hover:bg-white/4"
+                      style={{ background: active ? "rgba(0,128,255,0.06)" : "transparent" }}
+                    >
+                      <span
+                        className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                        style={{ borderColor: active ? "#0080FF" : "var(--border)", background: active ? "#0080FF" : "transparent" }}
+                      >
+                        {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className={`text-sm font-semibold ${active ? "text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-200"}`}>{voice.title}</p>
+                        <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">{voice.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <div className="mt-3 space-y-3">
                 <EditableTextArea label="Selected Voice" initialValue="Approachable. Warm, accessible, and friendly. Makes complex topics feel simple and inviting." compact />
@@ -413,6 +432,7 @@ function KnowledgeBaseView({ onUpload }: { onUpload: () => void }) {
         columns={KNOWLEDGE_COLUMNS}
         rows={KNOWLEDGE_ROWS}
         searchPlaceholder="Search knowledge..."
+        menuItems={BOARDS_MENU_ITEMS}
         action={
           <button
             onClick={onUpload}

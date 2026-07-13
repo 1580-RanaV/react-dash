@@ -1,8 +1,10 @@
 
 
 import { useState } from "react";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { Check, ChevronLeft, ChevronRight, Copy, Shuffle, UserCircle2 } from "lucide-react";
 import type { GridCard } from "./GridCardView";
+import { AVATARS } from "./AvatarsView";
 import SlidingSidebar from "./SlidingSidebar";
 import BackButton from "./BackButton";
 
@@ -55,10 +57,10 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
         </div>
       </div>
 
-      {/* Body — 50/50 */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left 50%: image switcher */}
-        <div className="flex items-center justify-center gap-3 p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
+      {/* Body */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
+        {/* Image + prev/next */}
+        <div className="flex items-center justify-center gap-3 px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
           <button
             onClick={() => setImgIdx((i) => (i - 1 + IMAGES.length) % IMAGES.length)}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
@@ -66,7 +68,7 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
             <ChevronLeft size={15} />
           </button>
           <div className="flex flex-col items-center gap-2">
-            <div className="w-100 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
+            <div className="w-full max-w-55 md:w-100 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
               <img src={IMG} alt={IMAGES[imgIdx].label} className="h-full w-full object-cover object-top" />
             </div>
             <span className="text-xs text-stone-400 dark:text-stone-500">
@@ -81,8 +83,8 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
           </button>
         </div>
 
-        {/* Right 50%: details */}
-        <div className="overflow-y-auto px-8 py-6" style={{ flexBasis: "50%" }}>
+        {/* Details */}
+        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <Section title="Identity">
               <Row label="Name"        value={avatar.name} />
@@ -244,4 +246,12 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-sm text-stone-700 dark:text-stone-300">{value}</span>
     </div>
   );
+}
+
+export function AvatarDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const avatar = AVATARS.find((a) => a.id === id);
+  if (!avatar) return <Navigate to="/avatars" replace />;
+  return <AvatarDetailView avatar={avatar} onBack={() => navigate("/avatars")} />;
 }

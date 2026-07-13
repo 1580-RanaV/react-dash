@@ -831,19 +831,20 @@ export default function UserDetailView() {
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--content-bg)" }}>
       {/* Top bar */}
       <div
-        className="flex shrink-0 items-center gap-3 border-b px-5 py-2.5"
+        className="flex shrink-0 flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b px-5 py-2.5"
         style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
       >
         <div className="flex min-w-0 items-center gap-2 text-sm">
           <BackButton href="/users" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{user.name}</span>
         </div>
-        <div className="flex-1" />
-        <SubTabCorner
-          tabs={TABS as unknown as { key: string; label: string }[]}
-          active={activeTab}
-          onChange={(k) => navigate(`/users/${id}/${k}`)}
-        />
+        <div className="shrink-0">
+          <SubTabCorner
+            tabs={TABS as unknown as { key: string; label: string }[]}
+            active={activeTab}
+            onChange={(k) => navigate(`/users/${id}/${k}`)}
+          />
+        </div>
       </div>
 
       {/* Body: persistent left sidebar + right column */}

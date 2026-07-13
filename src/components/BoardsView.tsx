@@ -1,20 +1,25 @@
 
 
 import { useEffect, useRef, useState } from "react";
-import { Filter, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingUp } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Activity, Filter, Globe, HandCoins, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingUp } from "lucide-react";
+import ViewTabs from "./ViewTabs";
 import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import SlidingSidebar from "./SlidingSidebar";
-import { BOARDS_DATA, BoardEntry } from "./boards/boardsData";
+import { BOARDS_DATA, BoardEntry, BoardType } from "./boards/boardsData";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
-function TypeBadge({ type }: { type: "retention" | "dashboard" | "insights" | "funnel" }) {
-  const config = {
-    retention: { icon: <RotateCcw size={12} />, label: "Retention" },
-    dashboard: { icon: <LayoutDashboard size={12} />, label: "Dashboard" },
-    insights: { icon: <TrendingUp size={12} />, label: "Insights" },
-    funnel: { icon: <Filter size={12} />, label: "Funnel" },
-  } as const;
+function TypeBadge({ type }: { type: BoardType }) {
+  const config: Record<BoardType, { icon: React.ReactNode; label: string }> = {
+    retention:  { icon: <RotateCcw size={12} />,     label: "Retention"  },
+    dashboard:  { icon: <LayoutDashboard size={12} />, label: "Dashboard" },
+    insights:   { icon: <TrendingUp size={12} />,     label: "Insights"   },
+    funnel:     { icon: <Filter size={12} />,         label: "Funnel"     },
+    traffic:    { icon: <Globe size={12} />,          label: "Traffic"    },
+    revenue:    { icon: <HandCoins size={12} />,      label: "Revenue"    },
+    engagement: { icon: <Activity size={12} />,       label: "Engagement" },
+  };
   const { icon, label } = config[type];
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-(--border) dark:bg-white/4 dark:text-stone-300">
@@ -73,11 +78,25 @@ function InlineEditor({
 
 
 const BOARD_TYPES = [
-  { key: "insights",  Icon: TrendingUp,     label: "Insights"  },
-  { key: "funnel",    Icon: Filter,          label: "Funnel"    },
-  { key: "retention", Icon: RotateCcw,       label: "Retention" },
-  { key: "dashboard", Icon: LayoutDashboard, label: "Dashboard" },
+  { key: "insights",   Icon: TrendingUp,     label: "Insights"   },
+  { key: "funnel",     Icon: Filter,         label: "Funnel"     },
+  { key: "retention",  Icon: RotateCcw,      label: "Retention"  },
+  { key: "dashboard",  Icon: LayoutDashboard, label: "Dashboard" },
+  { key: "traffic",    Icon: Globe,          label: "Traffic"    },
+  { key: "revenue",    Icon: HandCoins,      label: "Revenue"    },
+  { key: "engagement", Icon: Activity,       label: "Engagement" },
 ] as const;
+
+const VIEW_TABS = [
+  { key: "all",        label: "All",        icon: null },
+  { key: "insights",   label: "Insights",   icon: <TrendingUp size={14} /> },
+  { key: "funnel",     label: "Funnels",    icon: <Filter size={14} /> },
+  { key: "retention",  label: "Retention",  icon: <RotateCcw size={14} /> },
+  { key: "traffic",    label: "Traffic",    icon: <Globe size={14} /> },
+  { key: "revenue",    label: "Revenue",    icon: <HandCoins size={14} /> },
+  { key: "engagement", label: "Engagement", icon: <Activity size={14} /> },
+  { key: "dashboard",  label: "Dashboards", icon: <LayoutDashboard size={14} /> },
+];
 
 function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<string>("insights");
@@ -131,8 +150,6 @@ function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
   );
 }
 
-const INITIAL_ENTRIES = BOARDS_DATA;
-
 const COLUMNS: TableColumn[] = [
   { key: "title", label: "Title", width: "30%" },
   { key: "type", label: "Type", width: "160px" },
@@ -142,21 +159,23 @@ const COLUMNS: TableColumn[] = [
 
 const BOARDS_FILTER: FilterConfig = {
   sortFields: ["Name", "Type", "Last updated"],
-  groups: [
-    {
-      label: "Type",
-      options: [
-        { key: "insights",  label: "Insights",   icon: <TrendingUp size={13} /> },
-        { key: "funnel",    label: "Funnel",      icon: <Filter size={13} /> },
-        { key: "retention", label: "Retention",   icon: <RotateCcw size={13} /> },
-        { key: "dashboard", label: "Dashboard",   icon: <LayoutDashboard size={13} /> },
-      ],
-    },
-  ],
 };
 
+function defaultHref(entry: BoardEntry) {
+  if (entry.href) return entry.href;
+  if (entry.type === "dashboard") return `/dashboards/${entry.id}`;
+  return `/boards/${entry.id}`;
+}
+
 export default function BoardsView() {
-  const [entries, setEntries] = useState<BoardEntry[]>(INITIAL_ENTRIES);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const activeTab = VIEW_TABS.some((t) => t.key === searchParams.get("tab"))
+    ? searchParams.get("tab")!
+    : "all";
+  function setTab(key: string) { navigate(`/boards?tab=${key}`, { replace: true }); }
+
+  const [entries, setEntries] = useState<BoardEntry[]>(BOARDS_DATA);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
@@ -176,9 +195,16 @@ export default function BoardsView() {
     ];
   }
 
-  const tableRows: TableRow[] = entries.map((entry) => ({
+  const filtered = activeTab === "all" ? entries : entries.filter((e) => e.type === activeTab);
+
+  const tabsWithCounts = VIEW_TABS.map((t) => ({
+    ...t,
+    count: t.key === "all" ? entries.length : entries.filter((e) => e.type === t.key).length || null,
+  }));
+
+  const tableRows: TableRow[] = filtered.map((entry) => ({
     id: entry.id,
-    href: entry.type === "dashboard" ? `/dashboards/${entry.id}` : `/boards/${entry.id}`,
+    href: defaultHref(entry),
     menuItems: menuItemsFor(entry),
     cells: {
       title: editingId === entry.id
@@ -192,7 +218,9 @@ export default function BoardsView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
-      <div className="flex-1 min-h-0 px-4 py-4 flex flex-col animate-fade-up">
+      <ViewTabs tabs={tabsWithCounts} activeTab={activeTab} onChange={setTab} />
+
+      <div key={activeTab} className="flex-1 min-h-0 px-4 py-4 flex flex-col animate-fade-up">
         <DashboardTable
           columns={COLUMNS}
           rows={tableRows}

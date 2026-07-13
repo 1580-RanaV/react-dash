@@ -12,6 +12,9 @@ import ProductDetailView from "./components/ProductDetailView";
 import DashboardCanvasView from "./components/DashboardCanvasView";
 import AssetCreatorView from "./components/AssetCreatorView";
 import UserDetailView from "./components/UserDetailView";
+import { AvatarDetailPage } from "./components/AvatarDetailView";
+import { SceneDetailPage } from "./components/SceneDetailView";
+import { PoseDetailPage } from "./components/PoseDetailView";
 
 function ExperienceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -106,6 +109,9 @@ export default function App() {
                   <Route path="/catalog/products/:id" element={<ProductDetailView />} />
                   <Route path="/dashboards/:id" element={<DashboardCanvasPage />} />
                   <Route path="/asset-library/new/:type" element={<AssetCreatorPage />} />
+                  <Route path="/avatars/:id" element={<AvatarDetailPage />} />
+                  <Route path="/scenes/:id" element={<SceneDetailPage />} />
+                  <Route path="/poses/:id" element={<PoseDetailPage />} />
                   {DASHBOARD_VIEW_KEYS.map((view) => (
                     <Route key={view} path={`/${view}`} element={<DashboardView view={view} />} />
                   ))}

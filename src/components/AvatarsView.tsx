@@ -1,12 +1,11 @@
 
 
-import { useState } from "react";
-import AvatarDetailView from "./AvatarDetailView";
+import { useNavigate } from "react-router-dom";
 import GridCardView, { GridCard } from "./GridCardView";
 
 const IMG = "/avatar.png";
 
-const AVATARS: GridCard[] = [
+export const AVATARS: GridCard[] = [
   { id: "ada",    name: "Ada",    gradient: ["#d6c5b4", "#b8a090"], image: IMG },
   { id: "amara",  name: "Amara",  gradient: ["#c5cdd8", "#9aabb8"], image: IMG },
   { id: "diego",  name: "Diego",  gradient: ["#b8c9b2", "#8faa88"], image: IMG },
@@ -21,12 +20,7 @@ const AVATARS: GridCard[] = [
 ];
 
 export default function AvatarsView() {
-  const [selected, setSelected] = useState<GridCard | null>(null);
-
-  if (selected) {
-    return <AvatarDetailView avatar={selected} onBack={() => setSelected(null)} />;
-  }
-
+  const navigate = useNavigate();
   return (
     <GridCardView
       createLabel="Custom avatar"
@@ -34,7 +28,7 @@ export default function AvatarsView() {
       items={AVATARS}
       searchPlaceholder="Search avatars..."
       newLabel="New avatar"
-      onCardClick={setSelected}
+      onCardClick={(card) => navigate(`/avatars/${card.id}`)}
     />
   );
 }

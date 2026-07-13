@@ -1,10 +1,12 @@
 
 
 import { useState } from "react";
-import { CalendarDays, Link2, Plus, Table2, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, Link2, Plus, RefreshCw, Table2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import SlidingSidebar from "./SlidingSidebar";
+import Toggle from "./Toggle";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
@@ -154,9 +156,125 @@ const MEETING_NAME: Record<string, string> = {
   "rd-checkin-jun3":      "R&D check-in",
 };
 
+// ── Notifications tab ──────────────────────────────────────────────────────────
+
+type NotifItem = { id: string; icon: React.ReactNode; title: string; desc: string; defaultOn: boolean };
+type NotifSection = { id: string; label: string; hint: string; items: NotifItem[] };
+
+const NOTIF_SECTIONS: NotifSection[] = [
+  {
+    id: "booking",
+    label: "Booking",
+    hint: "Event gets created, changed, or cancelled",
+    items: [
+      { id: "booking-confirm",   icon: <Bell size={15} />,      title: "Booking confirmation",    desc: "Keep hosts informed when new events are scheduled",          defaultOn: true  },
+      { id: "reschedule-notif",  icon: <RefreshCw size={15} />, title: "Rescheduled notification", desc: "Notify host and invitee when an event is rescheduled",       defaultOn: true  },
+      { id: "cancel-notif",      icon: <CalendarDays size={15} />, title: "Cancellation notification", desc: "Keep hosts up-to-date with cancelled events",           defaultOn: true  },
+    ],
+  },
+  {
+    id: "pre-meeting",
+    label: "Pre-Meeting",
+    hint: "Before the meeting starts",
+    items: [
+      { id: "meeting-reminder",  icon: <Bell size={15} />,      title: "Meeting reminder",        desc: "Send a reminder email before the meeting starts",            defaultOn: false },
+    ],
+  },
+  {
+    id: "post-meeting",
+    label: "Post-Meeting",
+    hint: "After the meeting ends",
+    items: [
+      { id: "recording-ready",   icon: <CalendarDays size={15} />, title: "Recording ready",      desc: "Notify participants when the recording is available",         defaultOn: true  },
+      { id: "summary-ready",     icon: <Bell size={15} />,      title: "Summary ready",           desc: "Send meeting summary and action items to all attendees",      defaultOn: false },
+    ],
+  },
+];
+
+function NotificationsTab() {
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    NOTIF_SECTIONS.forEach((s) => s.items.forEach((i) => { init[i.id] = i.defaultOn; }));
+    return init;
+  });
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+      <div className="max-w-2xl">
+        <div className="flex flex-col gap-7">
+          {NOTIF_SECTIONS.map((section) => {
+            const onCount = section.items.filter((i) => enabled[i.id]).length;
+            const isCollapsed = collapsed[section.id];
+            return (
+              <div key={section.id}>
+                {/* Section header */}
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((c) => ({ ...c, [section.id]: !c[section.id] }))}
+                  className="flex w-full items-center justify-between mb-3"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-200">
+                    <ChevronDown
+                      size={15}
+                      className={`text-stone-400 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                    />
+                    {section.label}
+                    <span className="text-xs font-medium text-stone-400 dark:text-stone-500">{onCount}/{section.items.length}</span>
+                  </span>
+                  <span className="text-xs text-stone-400 dark:text-stone-500">{section.hint}</span>
+                </button>
+
+                {/* Items */}
+                {!isCollapsed && (
+                  <div className="flex flex-col gap-0">
+                    {section.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-3.5"
+                      >
+                        <div className="flex items-start gap-3 min-w-0">
+                          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400">
+                            {item.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{item.title}</p>
+                            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{item.desc}</p>
+                          </div>
+                        </div>
+                        <div className="ml-6 shrink-0">
+                          <Toggle on={enabled[item.id]} onClick={() => setEnabled((e) => ({ ...e, [item.id]: !e[item.id] }))} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main view ──────────────────────────────────────────────────────────────────
 
+const TABS = [
+  { key: "table",         label: "Table",         icon: <Table2 size={14} />, count: MEETING_ROWS.length },
+  { key: "notifications", label: "Notifications",  icon: <Bell size={14} />,  count: null               },
+] as const;
+
+type TabKey = typeof TABS[number]["key"];
+
 export default function MeetingsView() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tab = (TABS as readonly { key: string }[]).some((t) => t.key === searchParams.get("tab"))
+    ? searchParams.get("tab") as TabKey
+    : "table";
+  function setTab(key: TabKey) { navigate(`/meetings?tab=${key}`, { replace: true }); }
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -175,25 +293,29 @@ export default function MeetingsView() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 relative overflow-hidden">
-      <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} /> }]} activeTab="table" />
+      <ViewTabs tabs={TABS} activeTab={tab} onChange={(k) => setTab(k as TabKey)} />
 
-      <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
-        <DashboardTable
-          columns={MEETING_COLUMNS}
-          rows={displayRows}
-          searchPlaceholder="Search meetings..."
-          action={
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
-              style={{ background: "#0080FF" }}
-            >
-              <Plus size={14} />
-              <span className="hidden sm:inline">Add to live meeting</span>
-            </button>
-          }
-        />
-      </div>
+      {tab === "table" && (
+        <div key="table" className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
+          <DashboardTable
+            columns={MEETING_COLUMNS}
+            rows={displayRows}
+            searchPlaceholder="Search meetings..."
+            action={
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                <Plus size={14} />
+                <span className="hidden sm:inline">Add to live meeting</span>
+              </button>
+            }
+          />
+        </div>
+      )}
+
+      {tab === "notifications" && <NotificationsTab />}
 
       {drawerOpen && <AddToLiveMeetingDrawer onClose={() => setDrawerOpen(false)} />}
       {deleteTarget && (

@@ -667,11 +667,11 @@ export default function JourneyDetailView({ id }: { id: string }) {
     <div className="relative flex flex-col h-full overflow-hidden animate-fade-up" style={{ background: "var(--content-bg)" }}>
       {/* Top bar */}
       <div
-        className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b"
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-2.5 gap-2 border-b"
         style={{ borderColor: "var(--border)" }}
       >
-        {/* Left: breadcrumb */}
-        <div className="flex items-center gap-2 text-sm min-w-0 pr-4">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm min-w-0">
           <BackButton href="/journeys" />
           <span
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -686,7 +686,7 @@ export default function JourneyDetailView({ id }: { id: string }) {
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{journey.title}</span>
         </div>
 
-        {/* Right: segmented tabs */}
+        {/* Segmented tabs */}
         <div className="shrink-0">
           <SubTabCorner
             tabs={TABS.map((t) => ({ key: t.key, label: t.label, icon: t.icon }))}

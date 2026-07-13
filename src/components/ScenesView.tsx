@@ -1,12 +1,11 @@
 
 
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import GridCardView, { GridCard } from "./GridCardView";
-import SceneDetailView from "./SceneDetailView";
 
 const IMG = "/scene.png";
 
-const SCENES: GridCard[] = [
+export const SCENES: GridCard[] = [
   { id: "office",        name: "Office",         gradient: ["#c4d0d8", "#8fa4b4"], image: IMG },
   { id: "street",        name: "Street",         gradient: ["#c8c4bc", "#a0988c"], image: IMG },
   { id: "park",          name: "Park",           gradient: ["#b8d0b8", "#80a880"], image: IMG },
@@ -21,12 +20,7 @@ const SCENES: GridCard[] = [
 ];
 
 export default function ScenesView() {
-  const [selected, setSelected] = useState<GridCard | null>(null);
-
-  if (selected) {
-    return <SceneDetailView scene={selected} onBack={() => setSelected(null)} />;
-  }
-
+  const navigate = useNavigate();
   return (
     <GridCardView
       createLabel="Custom scene"
@@ -34,7 +28,7 @@ export default function ScenesView() {
       items={SCENES}
       searchPlaceholder="Search scenes..."
       newLabel="New scene"
-      onCardClick={setSelected}
+      onCardClick={(card) => navigate(`/scenes/${card.id}`)}
     />
   );
 }

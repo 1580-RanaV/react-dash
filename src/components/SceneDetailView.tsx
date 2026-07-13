@@ -1,8 +1,10 @@
 
 
 import { useState } from "react";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { Check, Copy, RefreshCw, Shuffle } from "lucide-react";
 import type { GridCard } from "./GridCardView";
+import { SCENES } from "./ScenesView";
 import SlidingSidebar from "./SlidingSidebar";
 import BackButton from "./BackButton";
 
@@ -64,11 +66,11 @@ export default function SceneDetailView({ scene, onBack }: { scene: GridCard; on
         </div>
       </div>
 
-      {/* Body — 50/50 */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left 50%: landscape image */}
-        <div className="flex flex-col items-center justify-center gap-4 p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
-          <div className="relative w-full max-w-120 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "4/3" }}>
+      {/* Body */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
+        {/* Image */}
+        <div className="flex flex-col items-center justify-center gap-4 px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
+          <div className="relative w-full max-w-sm md:max-w-120 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "4/3" }}>
             <img src={IMG} alt={scene.name} className="h-full w-full object-cover" />
             <button className="absolute right-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/90 px-3 text-xs font-medium text-stone-700 backdrop-blur-sm transition-colors hover:bg-white dark:bg-black/50 dark:text-stone-200 dark:hover:bg-black/70">
               <RefreshCw size={11} />
@@ -77,8 +79,8 @@ export default function SceneDetailView({ scene, onBack }: { scene: GridCard; on
           </div>
         </div>
 
-        {/* Right 50%: details */}
-        <div className="overflow-y-auto px-8 py-6" style={{ flexBasis: "50%" }}>
+        {/* Details */}
+        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <Section title="Identity">
               <Row label="Name"     value={scene.name} />
@@ -163,4 +165,12 @@ function SceneMdContent({ name }: { name: string }) {
       </pre>
     </div>
   );
+}
+
+export function SceneDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const scene = SCENES.find((s) => s.id === id);
+  if (!scene) return <Navigate to="/scenes" replace />;
+  return <SceneDetailView scene={scene} onBack={() => navigate("/scenes")} />;
 }

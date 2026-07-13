@@ -88,6 +88,7 @@ function CellContent({ value }: { value: React.ReactNode | TableCell | TableStat
 
 export type FilterGroup = {
   label: string;
+  single?: boolean;
   options: { key: string; label: string; icon?: React.ReactNode }[];
 };
 
@@ -133,6 +134,8 @@ export default function DashboardTable({
   actionsLabel,
   onRowClick,
   filterConfig,
+  defaultActiveFilters,
+  onFilterChange,
   hideToolbar = false,
   selectable = false,
   onDeleteSelected,
@@ -146,6 +149,8 @@ export default function DashboardTable({
   actionsLabel?: string;
   onRowClick?: (row: TableRow) => void;
   filterConfig?: FilterConfig;
+  defaultActiveFilters?: string[];
+  onFilterChange?: (activeFilters: Set<string>) => void;
   hideToolbar?: boolean;
   selectable?: boolean;
   onDeleteSelected?: (ids: string[]) => void;
@@ -154,7 +159,7 @@ export default function DashboardTable({
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(defaultActiveFilters ?? []));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<HTMLDivElement>(null);
@@ -165,7 +170,10 @@ export default function DashboardTable({
   const navigate = useNavigate();
 
   const hasFilter = !!(filterConfig?.sortFields?.length || filterConfig?.groups?.length);
-  const activeCount = activeFilters.size + (sortField ? 1 : 0);
+  const singleGroupKeys = new Set(
+    filterConfig?.groups?.filter((g) => g.single).flatMap((g) => g.options.map((o) => o.key)) ?? []
+  );
+  const activeCount = [...activeFilters].filter((k) => !singleGroupKeys.has(k)).length + (sortField ? 1 : 0);
   const visibleColumns = columns.filter((c) => !hiddenCols.has(c.key));
 
   useEffect(() => {
@@ -293,14 +301,21 @@ export default function DashboardTable({
                           <button
                             key={opt.key}
                             onClick={() => setActiveFilters((prev) => {
-                              const next = new Set(prev);
-                              active ? next.delete(opt.key) : next.add(opt.key);
+                              let next: Set<string>;
+                              if (group.single) {
+                                next = new Set([opt.key]);
+                              } else {
+                                next = new Set(prev);
+                                active ? next.delete(opt.key) : next.add(opt.key);
+                              }
+                              onFilterChange?.(next);
                               return next;
                             })}
                             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
                           >
-                            <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${active ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
-                              {active && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                            <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center transition-colors ${group.single ? "rounded-full border-2" : "rounded border"} ${active ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-(--border)"}`}>
+                              {active && !group.single && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                              {active && group.single && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                             </span>
                             {opt.icon && <span className="text-stone-400 dark:text-stone-500">{opt.icon}</span>}
                             <span className={active ? "text-stone-900 dark:text-stone-100" : "text-stone-600 dark:text-stone-400"}>{opt.label}</span>

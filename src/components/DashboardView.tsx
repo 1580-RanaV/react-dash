@@ -59,7 +59,7 @@ export default function DashboardView({ view = "home" }: { view?: string }) {
   if (view === "feeds")        return <FeedsView />;
   if (view === "journeys")     return <JourneysView />;
   if (view === "experiences")  return <ExperiencesView />;
-  if (view === "connections")  return <Suspense><ConnectionsView /></Suspense>;
+  if (view === "integrations") return <Suspense><ConnectionsView /></Suspense>;
   if (view === "users")        return <Suspense><UsersView /></Suspense>;
   if (view === "meetings")     return <MeetingsView />;
   if (view === "scheduler")    return <SchedulerView />;

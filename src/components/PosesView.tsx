@@ -1,12 +1,11 @@
 
 
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import GridCardView, { GridCard } from "./GridCardView";
-import PoseDetailView from "./PoseDetailView";
 
 const IMG = "/pose.png";
 
-const POSES: GridCard[] = [
+export const POSES: GridCard[] = [
   { id: "standing",     name: "Standing",    gradient: ["#c8d0dc", "#98a8bc"], image: IMG },
   { id: "sitting",      name: "Sitting",     gradient: ["#d0c8c0", "#a89888"], image: IMG },
   { id: "walking",      name: "Walking",     gradient: ["#c0d0c0", "#90a890"], image: IMG },
@@ -20,12 +19,7 @@ const POSES: GridCard[] = [
 ];
 
 export default function PosesView() {
-  const [selected, setSelected] = useState<GridCard | null>(null);
-
-  if (selected) {
-    return <PoseDetailView pose={selected} onBack={() => setSelected(null)} />;
-  }
-
+  const navigate = useNavigate();
   return (
     <GridCardView
       createLabel="Custom pose"
@@ -33,7 +27,7 @@ export default function PosesView() {
       items={POSES}
       searchPlaceholder="Search poses..."
       newLabel="New pose"
-      onCardClick={setSelected}
+      onCardClick={(card) => navigate(`/poses/${card.id}`)}
     />
   );
 }

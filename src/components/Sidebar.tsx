@@ -19,7 +19,7 @@ import {
   PersonStanding,
   PenTool,
   Package,
-  PackageOpen,
+
   Rss,
   Route,
   Shuffle,
@@ -63,7 +63,7 @@ const nav: NavSection[] = [
           { label: "Subscribers", icon: <UserCheck size={15} /> },
         ],
       },
-      { label: "Connections", icon: <Plug size={15} /> },
+      { label: "Integrations", icon: <Plug size={15} /> },
     ],
   },
   {
@@ -105,7 +105,6 @@ const nav: NavSection[] = [
   {
     heading: "Analytics",
     items: [
-      { label: "Out-of-the-box", icon: <PackageOpen size={15} /> },
       { label: "Boards", icon: <LayoutDashboard size={15} /> },
       { label: "Subscription", icon: <CreditCard size={15} /> },
     ],
@@ -269,7 +268,7 @@ const NAV_VIEWS: Record<string, string> = {
   Events: "events",
   Subscribers: "subscribers",
   Attributes: "attributes",
-  Connections: "connections",
+  Integrations: "integrations",
   "Asset Library": "asset-library",
   Avatars: "avatars",
   Scenes: "scenes",

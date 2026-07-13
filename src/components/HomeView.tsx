@@ -2385,6 +2385,12 @@ function GraphPanel({ card }: { card: HomeBentoCard }) {
 }
 
 function BluSuggestionCard({ card }: { card: HomeBentoCard }) {
+  const toneColor = card.signal?.toLowerCase().includes("urgent")
+    ? "#ef4444"
+    : card.signal?.toLowerCase().includes("high")
+      ? "#f59e0b"
+      : "#0080FF";
+
   function askBlu() {
     const prompt = [
       `Act on this recommendation: ${card.title}`,
@@ -2401,34 +2407,36 @@ function BluSuggestionCard({ card }: { card: HomeBentoCard }) {
     <button
       type="button"
       onClick={askBlu}
-      className="group relative min-h-[132px] overflow-hidden rounded-xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      className="group relative min-h-[116px] overflow-hidden rounded-xl py-4 pl-5 pr-4 text-left transition-colors hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:hover:bg-white/4"
       style={{
         background: "var(--content-bg)",
         border: "1px solid var(--border)",
       }}
     >
-      <div className="relative z-10 flex h-full flex-col">
-        {card.signal && (
-          <span className="absolute right-0 top-0 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-            {card.signal}
-          </span>
-        )}
-        <div className="min-w-0 pr-16">
-          <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{card.title}</p>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{card.body}</p>
+      <span className="absolute left-0 top-0 h-full w-1.5" style={{ background: toneColor }} />
+      <div className="flex h-full">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <span className="truncate text-xs font-medium text-stone-400 dark:text-stone-500">
+              Recommendation
+            </span>
+            {card.signal && (
+              <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+                {card.signal}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{card.title}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{card.body}</p>
+          </div>
+          <div className="mt-auto flex justify-end pt-3">
+            <span className="shrink-0 text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700 dark:text-blue-300 dark:group-hover:text-blue-200">
+              Ask Blu
+            </span>
+          </div>
         </div>
-        {card.action && (
-          <span className="mt-4 inline-flex h-8 w-fit items-center rounded-md bg-blue-500 px-3 text-xs font-semibold text-white transition-colors group-hover:bg-blue-600">
-            {card.action}
-          </span>
-        )}
       </div>
-      <img
-        src="/mascot.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 rotate-[-14deg] object-contain opacity-[0.09] transition-opacity group-hover:opacity-[0.15]"
-      />
     </button>
   );
 }

@@ -9,25 +9,6 @@ import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import SlidingSidebar from "./SlidingSidebar";
 
-const tabs = [
-  {
-    key: "products",
-    label: "Products",
-    icon: <Package size={15} />,
-    emptyIcon: <Package size={20} className="text-stone-300 dark:text-stone-600" />,
-    emptyTitle: "No products yet",
-    emptyDesc: "Add products to start building a browsable catalog.",
-  },
-  {
-    key: "sources",
-    label: "Sources",
-    icon: <Rss size={15} />,
-    emptyIcon: <Rss size={20} className="text-stone-300 dark:text-stone-600" />,
-    emptyTitle: "No sources connected",
-    emptyDesc: "Connect product feeds and data sources to keep your catalog updated.",
-  },
-];
-
 const PRODUCT_COLUMNS: TableColumn[] = [
   { key: "image", label: "Image", width: "7%", align: "center" },
   { key: "title", label: "Title", width: "48%" },
@@ -109,6 +90,26 @@ const PRODUCT_ROWS: TableRow[] = [
       lastUpdated: { value: "Jun 02, 2026 23:06 PM", muted: true },
       id: { value: "37939", muted: true },
     },
+  },
+];
+
+const tabs = [
+  {
+    key: "products",
+    label: "Products",
+    icon: <Package size={15} />,
+    count: PRODUCT_ROWS.length,
+    emptyIcon: <Package size={20} className="text-stone-300 dark:text-stone-600" />,
+    emptyTitle: "No products yet",
+    emptyDesc: "Add products to start building a browsable catalog.",
+  },
+  {
+    key: "sources",
+    label: "Sources",
+    icon: <Rss size={15} />,
+    emptyIcon: <Rss size={20} className="text-stone-300 dark:text-stone-600" />,
+    emptyTitle: "No sources connected",
+    emptyDesc: "Connect product feeds and data sources to keep your catalog updated.",
   },
 ];
 

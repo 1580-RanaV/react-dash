@@ -1,8 +1,8 @@
 
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import { Plus } from "lucide-react";
+import DashboardTable, { TableColumn, TableRow, FilterConfig } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
@@ -65,11 +65,46 @@ const FEED_ROWS: TableRow[] = [
       createdBy: "Somya Nayak",
     },
   },
+  {
+    id: "sponsored-top",
+    cells: {
+      name: "Sponsored Products — Top Placement",
+      type: { value: "Ad", muted: true },
+      status: { label: "Active", tone: "green" },
+      lastUpdated: { value: "May 10, 2026 - 11:30 AM", muted: true },
+      createdBy: "rana",
+    },
+  },
+  {
+    id: "sponsored-sidebar",
+    cells: {
+      name: "Sponsored Products — Sidebar",
+      type: { value: "Ad", muted: true },
+      status: { label: "Paused", tone: "yellow" },
+      lastUpdated: { value: "Jun 01, 2026 - 2:15 PM", muted: true },
+      createdBy: "Somya Nayak",
+    },
+  },
 ];
+
+const FEED_FILTER_CONFIG: FilterConfig = {
+  groups: [
+    {
+      label: "Type",
+      single: true,
+      options: [
+        { key: "all",     label: "All"     },
+        { key: "regular", label: "Regular" },
+        { key: "ad",      label: "Ad"      },
+      ],
+    },
+  ],
+};
 
 export default function FeedsView() {
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [typeFilter, setTypeFilter] = useState("all");
 
   function makeMenu(row: TableRow): ThreeDotsMenuItem[] {
     return DEFAULT_MENU_ITEMS.map((item) =>
@@ -81,6 +116,11 @@ export default function FeedsView() {
 
   const displayRows = FEED_ROWS
     .filter((r) => !deletedIds.has(r.id))
+    .filter((r) => {
+      if (typeFilter === "all") return true;
+      const rowType = String((r.cells.type as { value: string }).value).toLowerCase();
+      return rowType === typeFilter;
+    })
     .map((r) => ({ ...r, menuItems: makeMenu(r) }));
 
   return (
@@ -89,6 +129,9 @@ export default function FeedsView() {
         columns={FEED_COLUMNS}
         rows={displayRows}
         searchPlaceholder="Search feeds..."
+        filterConfig={FEED_FILTER_CONFIG}
+        defaultActiveFilters={["all"]}
+        onFilterChange={(filters) => setTypeFilter([...filters][0] ?? "all")}
         action={
           <button
             className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 shrink-0"

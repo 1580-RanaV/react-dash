@@ -1,8 +1,10 @@
 
 
 import { useState } from "react";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { Shuffle } from "lucide-react";
 import type { GridCard } from "./GridCardView";
+import { POSES } from "./PosesView";
 import BackButton from "./BackButton";
 
 const IMG = "/pose.png";
@@ -38,17 +40,17 @@ export default function PoseDetailView({ pose, onBack }: { pose: GridCard; onBac
         </div>
       </div>
 
-      {/* Body — 50/50 */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left 50%: centered portrait photo */}
-        <div className="flex items-center justify-center p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
-          <div className="w-90 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
+      {/* Body */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
+        {/* Image */}
+        <div className="flex items-center justify-center px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
+          <div className="w-full max-w-55 md:w-90 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
             <img src={IMG} alt={pose.name} className="h-full w-full object-cover object-top" />
           </div>
         </div>
 
-        {/* Right 60%: details */}
-        <div className="overflow-y-auto px-8 py-6" style={{ flexBasis: "50%" }}>
+        {/* Details */}
+        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <Section title="Why This Pose Works">
               <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">
@@ -124,4 +126,12 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-sm text-stone-700 dark:text-stone-300">{value}</span>
     </div>
   );
+}
+
+export function PoseDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const pose = POSES.find((p) => p.id === id);
+  if (!pose) return <Navigate to="/poses" replace />;
+  return <PoseDetailView pose={pose} onBack={() => navigate("/poses")} />;
 }

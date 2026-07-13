@@ -12,7 +12,7 @@ import CreateApiKeyDrawer from "./CreateApiKeyDrawer";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 const tabs = [
-  { key: "connections", label: "Integrations", icon: <Workflow size={15} /> },
+  { key: "connections", label: "Connections", icon: <Workflow size={15} /> },
   { key: "domains",     label: "Domains",     icon: <Globe size={15} /> },
 ];
 

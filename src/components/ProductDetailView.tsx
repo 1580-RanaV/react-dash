@@ -32,16 +32,15 @@ export default function ProductDetailView() {
         </div>
       </div>
 
-      {/* Body — 50/50 */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left 50%: image centered */}
-        <div className="relative flex items-center justify-center p-8" style={{ flexBasis: "50%", flexShrink: 0 }}>
-          <div className="relative w-full max-w-120 aspect-square overflow-hidden rounded-2xl border border-stone-200 dark:border-(--border)">
+      {/* Body */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
+        {/* Image */}
+        <div className="relative flex items-center justify-center px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
+          <div className="relative w-full max-w-sm md:max-w-120 aspect-square overflow-hidden rounded-2xl border border-stone-200 dark:border-(--border)">
             <img
               src="/pava.png"
               alt="PavaShot C5 OC Rounds 5% Capsaicin .68 Cal Projectiles"
-
-              sizes="50vw"
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-contain p-6"
             />
             <button
@@ -55,8 +54,8 @@ export default function ProductDetailView() {
           </div>
         </div>
 
-        {/* Right 50%: details */}
-        <div className="overflow-y-auto px-8 py-6" style={{ flexBasis: "50%" }}>
+        {/* Details */}
+        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <div>
               <h1 className="text-xl font-bold leading-snug tracking-tight text-stone-950 dark:text-stone-50">
