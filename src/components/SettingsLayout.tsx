@@ -30,7 +30,7 @@ const settingsNav: SettingsSection[] = [
   {
     heading: "Profile",
     items: [
-      { label: "Profile", icon: <User size={14} />, key: "about" },
+      { label: "About me", icon: <User size={14} />, key: "about" },
       { label: "My availability", icon: <Clock size={14} />, key: "availability" },
       { label: "Connections", icon: <Link2 size={14} />, key: "connections" },
       { label: "Inbox", icon: <Inbox size={14} />, key: "inbox" },
