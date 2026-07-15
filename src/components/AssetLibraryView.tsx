@@ -1,6 +1,7 @@
 
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Image, Mail, MessageSquare, Plus } from "lucide-react";
 import CreateAssetDrawer from "./CreateAssetDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
@@ -11,10 +12,10 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 function TypeBadge({ type }: { type: "Email Plain" | "Email HTML" | "SMS" | "Image" }) {
   const map = {
-    "Email Plain": "bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
-    "Email HTML":  "bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
-    "SMS":         "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-    "Image":       "bg-rose-50 text-rose-400 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
+    "Email Plain": "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+    "Email HTML":  "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+    "SMS":         "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+    "Image":       "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
   };
   return (
     <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${map[type]}`}>
@@ -237,6 +238,7 @@ const ASSET_NAME: Record<string, string> = {
 // ── view ──────────────────────────────────────────────────────────────────────
 
 export default function AssetLibraryView() {
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -260,6 +262,7 @@ export default function AssetLibraryView() {
           columns={COLUMNS}
           rows={displayRows}
           searchPlaceholder="Search assets..."
+          onRowClick={(row) => navigate(`/asset-library/${row.id}`)}
           action={
             <button
               onClick={() => setDrawerOpen(true)}

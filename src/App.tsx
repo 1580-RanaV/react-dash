@@ -11,10 +11,12 @@ import BoardDetailView from "./components/boards/BoardDetailView";
 import ProductDetailView from "./components/ProductDetailView";
 import DashboardCanvasView from "./components/DashboardCanvasView";
 import AssetCreatorView from "./components/AssetCreatorView";
+import AssetDetailView from "./components/AssetDetailView";
 import UserDetailView from "./components/UserDetailView";
 import { AvatarDetailPage } from "./components/AvatarDetailView";
 import { SceneDetailPage } from "./components/SceneDetailView";
 import { PoseDetailPage } from "./components/PoseDetailView";
+import BluFullscreenView from "./components/BluFullscreenView";
 
 function ExperienceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +41,12 @@ function DashboardCanvasPage() {
 function AssetCreatorPage() {
   const { type } = useParams<{ type: string }>();
   return <AssetCreatorView type={type!} />;
+}
+
+function AssetDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  return <AssetDetailView id={id!} onBack={() => navigate("/asset-library")} />;
 }
 
 const TABLE_SECTIONS = new Set(["team", "domains", "roles", "auditlog", "projects", "people", "project-users"]);
@@ -93,6 +101,9 @@ export default function App() {
           {/* Settings — no DashboardShell */}
           <Route path="/settings/*" element={<SettingsPage />} />
 
+          {/* Blu fullscreen — opens in new tab, no shell */}
+          <Route path="/blu" element={<BluFullscreenView />} />
+
           {/* Dashboard shell wraps all other routes */}
           <Route
             path="/*"
@@ -109,6 +120,7 @@ export default function App() {
                   <Route path="/catalog/products/:id" element={<ProductDetailView />} />
                   <Route path="/dashboards/:id" element={<DashboardCanvasPage />} />
                   <Route path="/asset-library/new/:type" element={<AssetCreatorPage />} />
+                  <Route path="/asset-library/:id" element={<AssetDetailPage />} />
                   <Route path="/avatars/:id" element={<AvatarDetailPage />} />
                   <Route path="/scenes/:id" element={<SceneDetailPage />} />
                   <Route path="/poses/:id" element={<PoseDetailPage />} />

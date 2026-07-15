@@ -39,8 +39,20 @@ import {
   ThumbsDown,
   Copy,
   Check,
+  Maximize2,
+  Minimize2,
+  AppWindow,
+  Mail,
+  Bell,
+  MessageSquare,
+  Type,
+  Zap,
+  Eye,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
+import TypingDots from "./TypingDots";
+import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
 
 type MentionChip = {
   id: string;
@@ -120,6 +132,8 @@ type ChatMessage = {
   attachments?: ReferenceAttachment[];
   mentions?: MentionChip[];
   feedbackForm?: boolean;
+  isTyping?: boolean;
+  journeyChip?: { name: string };
 };
 
 
@@ -197,12 +211,27 @@ const BLU_REPLIES = [
   "All good — working on it.",
 ];
 
-const PLACEHOLDERS = [
-  "Type @ to reference anything and ask Blu...",
-  "What should Blu create for you?",
-  "Ask Blu to write an email or campaign copy...",
-  "Describe the content you want...",
-  "Generate a banner, email, or product shot...",
+type Placeholder = { text: string; shortcut?: string };
+const PLACEHOLDERS: Placeholder[] = [
+  { text: "Ask Blu to create anything..." },
+  { text: " for recipes and prompt templates", shortcut: "/" },
+  { text: " to reference journeys, events, assets", shortcut: "@" },
+  { text: " to attach files, feeds, or brand kit", shortcut: "+" },
+  { text: "Generate a banner, email, or product shot..." },
+];
+
+type SlashRecipe = { key: string; icon: React.ReactNode; label: string; desc: string };
+const SLASH_RECIPES: SlashRecipe[] = [
+  { key: "email",    icon: <Mail size={13} />,           label: "Email campaign",      desc: "Campaign or transactional email"     },
+  { key: "sms",      icon: <MessageSquare size={13} />,  label: "SMS message",          desc: "Short message for mobile"            },
+  { key: "push",     icon: <Bell size={13} />,           label: "Push notification",    desc: "App or browser push"                 },
+  { key: "social",   icon: <Globe size={13} />,          label: "Social post",          desc: "Instagram, LinkedIn, X"              },
+  { key: "banner",   icon: <Camera size={13} />,         label: "Banner creative",      desc: "Visual ad or hero banner"            },
+  { key: "subject",  icon: <Type size={13} />,           label: "Subject lines",        desc: "Email subject line variants"         },
+  { key: "product",  icon: <Package size={13} />,        label: "Product shot",         desc: "AI-generated product image"          },
+  { key: "landing",  icon: <LayoutDashboard size={13} />,label: "Landing page",         desc: "Full landing page copy"              },
+  { key: "nurture",  icon: <Route size={13} />,          label: "Nurture flow",         desc: "Multi-step email sequence"           },
+  { key: "welcome",  icon: <Zap size={13} />,            label: "Welcome series",       desc: "Onboarding email sequence"           },
 ];
 
 const REFERENCE_LIST_ITEMS: Record<string, string[]> = {
@@ -230,7 +259,23 @@ function referenceTitle(label: string) {
   return label === "Products & Feeds" ? "Products & feeds" : `${label}s`;
 }
 
-export default function BluChat({ onClose }: { onClose: () => void }) {
+export type BluMode = "panel" | "float" | "fullscreen";
+
+export default function BluChat({
+  onClose,
+  mode = "panel",
+  onFloat,
+  onFullscreen,
+  onBackToPanel,
+  onHeaderMouseDown,
+}: {
+  onClose: () => void;
+  mode?: BluMode;
+  onFloat?: () => void;
+  onFullscreen?: () => void;
+  onBackToPanel?: () => void;
+  onHeaderMouseDown?: (e: React.MouseEvent) => void;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>(SAMPLE);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -255,6 +300,12 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
   const [mentionCategory, setMentionCategory] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionItemQuery, setMentionItemQuery] = useState("");
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+  const savedSlashRangeRef = useRef<Range | null>(null);
+  const [plusPickerOpen, setPlusPickerOpen] = useState(false);
+  const savedPlusRangeRef = useRef<Range | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
@@ -266,6 +317,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const [msgTopFade, setMsgTopFade] = useState(false);
   const [msgBottomFade, setMsgBottomFade] = useState(true);
+  const [journeyPreviewName, setJourneyPreviewName] = useState<string | null>(null);
 
   function checkMsgFades() {
     const el = messagesRef.current;
@@ -291,6 +343,8 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
       if (mentionRef.current && !mentionRef.current.contains(e.target as Node)) {
         setMentionOpen(false);
         setMentionCategory(null);
+        setSlashOpen(false);
+        setPlusPickerOpen(false);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -391,14 +445,16 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
   function handleEditorInput() {
     const sel = window.getSelection();
     updateEditorEmpty();
-    if (!sel?.rangeCount) { setMentionOpen(false); return; }
+    if (!sel?.rangeCount) { setMentionOpen(false); setSlashOpen(false); return; }
     const range = sel.getRangeAt(0);
     const container = range.startContainer;
-    if (container.nodeType !== Node.TEXT_NODE) { setMentionOpen(false); setMentionCategory(null); return; }
+    if (container.nodeType !== Node.TEXT_NODE) { setMentionOpen(false); setMentionCategory(null); setSlashOpen(false); return; }
     const textBefore = (container.textContent ?? "").slice(0, range.startOffset);
-    const match = textBefore.match(/@([^\s@]*)$/);
-    if (match) {
-      const query = match[1];
+
+    // @ mention
+    const mentionMatch = textBefore.match(/@([^\s@]*)$/);
+    if (mentionMatch) {
+      const query = mentionMatch[1];
       const atPos = range.startOffset - query.length - 1;
       const saved = document.createRange();
       saved.setStart(container, atPos);
@@ -407,10 +463,46 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
       setMentionOpen(true);
       setMentionQuery(query.toLowerCase());
       if (!query) setMentionCategory(null);
-    } else {
+      setSlashOpen(false);
+      return;
+    }
+
+    // / recipe
+    const slashMatch = textBefore.match(/(^|\s)\/([^\s/]*)$/);
+    if (slashMatch) {
+      const query = slashMatch[2];
+      const slashPos = range.startOffset - query.length - 1;
+      const saved = document.createRange();
+      saved.setStart(container, slashPos);
+      saved.setEnd(container, range.startOffset);
+      savedSlashRangeRef.current = saved;
+      setSlashOpen(true);
+      setSlashQuery(query.toLowerCase());
       setMentionOpen(false);
       setMentionCategory(null);
+      setPlusPickerOpen(false);
+      return;
     }
+
+    // + attach
+    const plusMatch = textBefore.match(/(^|\s)\+$/);
+    if (plusMatch) {
+      const plusPos = range.startOffset - 1;
+      const saved = document.createRange();
+      saved.setStart(container, plusPos);
+      saved.setEnd(container, range.startOffset);
+      savedPlusRangeRef.current = saved;
+      setPlusPickerOpen(true);
+      setMentionOpen(false);
+      setMentionCategory(null);
+      setSlashOpen(false);
+      return;
+    }
+
+    setMentionOpen(false);
+    setMentionCategory(null);
+    setSlashOpen(false);
+    setPlusPickerOpen(false);
   }
 
   function selectCategory(key: string) {
@@ -435,6 +527,42 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
     setMentionOpen(false);
     setMentionCategory(null);
     setMentionQuery("");
+    editorRef.current?.focus();
+    updateEditorEmpty();
+  }
+
+  function openFilePicker() {
+    if (savedPlusRangeRef.current) {
+      savedPlusRangeRef.current.deleteContents();
+      savedPlusRangeRef.current = null;
+    }
+    setPlusPickerOpen(false);
+    editorRef.current?.focus();
+    updateEditorEmpty();
+    fileInputRef.current?.click();
+  }
+
+  function selectRecipe(recipe: SlashRecipe) {
+    if (!savedSlashRangeRef.current) return;
+    const range = savedSlashRangeRef.current;
+    range.deleteContents();
+    const chip = document.createElement("span");
+    chip.contentEditable = "false";
+    chip.dataset.recipe = "true";
+    chip.dataset.recipeKey = recipe.key;
+    chip.dataset.label = recipe.label;
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:3px;background:rgb(245,243,255);color:rgb(109,40,217);border-radius:4px;padding:1px 7px 1px 5px;font-size:12px;font-weight:600;white-space:nowrap;cursor:default;user-select:none;";
+    chip.textContent = "/" + recipe.label;
+    range.insertNode(chip);
+    const sel = window.getSelection();
+    const after = document.createRange();
+    after.setStartAfter(chip);
+    after.collapse(true);
+    sel?.removeAllRanges();
+    sel?.addRange(after);
+    savedSlashRangeRef.current = null;
+    setSlashOpen(false);
+    setSlashQuery("");
     editorRef.current?.focus();
     updateEditorEmpty();
   }
@@ -550,6 +678,8 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
     }
 
     const isFeedback = !overrideText && text.toLowerCase() === "feedback";
+    const isCreateJourney = /create (a )?journey/i.test(text);
+    const journeyName = isCreateJourney ? "Demo" : null;
 
     setMessages((current) => {
       const ts = Date.now();
@@ -562,6 +692,8 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
           text: "I'd love to help capture that! Answer a few quick questions so your feedback reaches the right people.",
           feedbackForm: true,
         });
+      } else if (isCreateJourney) {
+        next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else {
         next.push({
           id: `blu-${ts}`,
@@ -571,6 +703,24 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
       }
       return next;
     });
+
+    if (isCreateJourney && journeyName) {
+      setTimeout(() => {
+        setMessages((current) => {
+          const typingIdx = current.findIndex((m) => m.isTyping);
+          if (typingIdx === -1) return current;
+          const ts = Date.now();
+          const next = [...current];
+          next[typingIdx] = {
+            id: `blu-journey-${ts}`,
+            role: "blu",
+            text: `Created journey "${journeyName}". It starts with a signup trigger, sends a welcome email, waits 2 days, then branches based on whether the email was opened.`,
+            journeyChip: { name: journeyName },
+          };
+          return next;
+        });
+      }, 3000);
+    }
 
     if (!overrideText) {
       clearEditor();
@@ -608,28 +758,87 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2.5 px-4 py-2.75 shrink-0"
+        className={`flex items-center gap-2.5 px-4 py-2.75 shrink-0 ${onHeaderMouseDown ? "cursor-move select-none" : ""}`}
+        onMouseDown={onHeaderMouseDown}
       >
-        <img src="/mascot.png" alt="Blu" width={28} height={28} className="rounded-full shrink-0 object-contain" />
-        <div className="flex-1 min-w-0">
+        <img src="/mascot.png" alt="Blu" width={28} height={28} className="rounded-full shrink-0 object-contain pointer-events-none" />
+        <div className="flex-1 min-w-0 pointer-events-none">
           <p className="text-base font-semibold text-stone-800 dark:text-stone-100 leading-none">Blu</p>
         </div>
-        <button
-          onClick={() => { setHistoryOpen((o) => !o); setHistorySearch(""); }}
-          className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors ${
-            historyOpen
-              ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-              : "hover:bg-stone-100 dark:hover:bg-white/8 text-stone-400"
-          }`}
-        >
-          <History size={13} />
-        </button>
-        <button
-          onClick={onClose}
-          className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
-        >
-          <X size={13} />
-        </button>
+
+        {/* Mode action buttons — stop propagation so they don't trigger drag */}
+        <div className="flex items-center gap-0.5" onMouseDown={(e) => e.stopPropagation()}>
+          {mode === "panel" && (
+            <>
+              {onFloat && (
+                <button
+                  onClick={onFloat}
+                  title="Float window"
+                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                >
+                  <AppWindow size={13} />
+                </button>
+              )}
+              {onFullscreen && (
+                <button
+                  onClick={onFullscreen}
+                  title="Fullscreen"
+                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                >
+                  <Maximize2 size={13} />
+                </button>
+              )}
+            </>
+          )}
+          {mode === "float" && (
+            <>
+              {onFullscreen && (
+                <button
+                  onClick={onFullscreen}
+                  title="Fullscreen"
+                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                >
+                  <Maximize2 size={13} />
+                </button>
+              )}
+              {onBackToPanel && (
+                <button
+                  onClick={onBackToPanel}
+                  title="Back to panel"
+                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                >
+                  <AppWindow size={13} />
+                </button>
+              )}
+            </>
+          )}
+          {mode === "fullscreen" && onBackToPanel && (
+            <button
+              onClick={onBackToPanel}
+              title="Exit fullscreen"
+              className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+            >
+              <Minimize2 size={13} />
+            </button>
+          )}
+
+          <button
+            onClick={() => { setHistoryOpen((o) => !o); setHistorySearch(""); }}
+            className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors ${
+              historyOpen
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                : "hover:bg-stone-100 dark:hover:bg-white/8 text-stone-400"
+            }`}
+          >
+            <History size={13} />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+          >
+            <X size={13} />
+          </button>
+        </div>
       </div>
 
       {/* History panel */}
@@ -739,9 +948,37 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                 </span>
                 <span className="text-xs text-stone-400 dark:text-stone-500">Just now</span>
               </div>
-              <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
-                {msg.text}
-              </p>
+              {msg.isTyping ? (
+                <TypingDots />
+              ) : (
+                <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
+                  {msg.text}
+                </p>
+              )}
+              {msg.journeyChip && (
+                <div className="mt-2.5">
+                  <button
+                    onClick={() => setJourneyPreviewName(msg.journeyChip!.name)}
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:opacity-90"
+                    style={{
+                      background: "rgb(245,243,255)",
+                      color: "rgb(109,40,217)",
+                      border: "1px solid rgb(221,214,254)",
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="6" cy="19" r="3"/>
+                      <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>
+                      <circle cx="18" cy="5" r="3"/>
+                    </svg>
+                    {msg.journeyChip.name}
+                    <span className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]" style={{ background: "rgb(237,233,254)" }}>
+                      <Eye size={9} />
+                      Preview
+                    </span>
+                  </button>
+                </div>
+              )}
               {msg.feedbackForm && (
                 <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} />
               )}
@@ -770,7 +1007,7 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
                   ))}
                 </div>
               ) : null}
-              {msg.role === "blu" && !msg.feedbackForm && (
+              {msg.role === "blu" && !msg.feedbackForm && !msg.isTyping && (
                 <div className="mt-2 flex items-center gap-0.5">
                   {/* Copy */}
                   <div className="group/tip relative">
@@ -834,6 +1071,94 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
 
       {/* Input */}
       {!historyOpen && <div ref={mentionRef} className="relative px-3 pb-3 shrink-0">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            files.forEach((file) => {
+              setAttachments((prev) => [
+                ...prev.filter((a) => a.category !== "File"),
+                { category: "File", title: file.name, subtitle: "", bg: "" },
+              ]);
+            });
+            e.target.value = "";
+          }}
+        />
+
+        {/* + attach picker — floats above input */}
+        {plusPickerOpen && (
+          <div
+            className="absolute bottom-full left-3 right-3 mb-2 z-30 rounded-xl overflow-hidden animate-card-in"
+            style={{
+              background: "var(--content-bg)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)",
+            }}
+          >
+            <button
+              onClick={openFilePicker}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400">
+                <Paperclip size={14} />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-stone-800 dark:text-stone-100">Attach files</p>
+                <p className="text-xs text-stone-400 dark:text-stone-500">Upload from your device · Press Enter to open</p>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Slash / recipe picker — floats above input */}
+        {slashOpen && (
+          <div
+            className="absolute bottom-full left-3 right-3 mb-2 z-30 rounded-xl overflow-hidden animate-card-in"
+            style={{
+              background: "var(--content-bg)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)",
+            }}
+          >
+            <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
+              <span
+                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold"
+                style={{ background: "rgb(245,243,255)", color: "rgb(109,40,217)" }}
+              >
+                /
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Recipes</p>
+            </div>
+            <div className="pb-2 max-h-60 overflow-y-auto">
+              {SLASH_RECIPES.filter((r) => !slashQuery || r.label.toLowerCase().includes(slashQuery)).map((recipe) => (
+                <button
+                  key={recipe.key}
+                  onClick={() => selectRecipe(recipe)}
+                  className="flex w-full items-center gap-3 px-3.5 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+                >
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                    style={{ background: "rgb(245,243,255)", color: "rgb(109,40,217)" }}
+                  >
+                    {recipe.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{recipe.label}</p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500">{recipe.desc}</p>
+                  </div>
+                </button>
+              ))}
+              {SLASH_RECIPES.filter((r) => !slashQuery || r.label.toLowerCase().includes(slashQuery)).length === 0 && (
+                <p className="px-4 py-3 text-sm text-stone-400 dark:text-stone-500">No recipes match "{slashQuery}"</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Mention picker — floats above input */}
         {mentionOpen && (
           <div
@@ -980,21 +1305,48 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
             </div>
           )}
           <div className="relative">
-            {editorEmpty && (
-              <span
-                aria-hidden
-                className={`pointer-events-none absolute top-0 left-0 select-none text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
-              >
-                {PLACEHOLDERS[placeholderIdx]}
-              </span>
-            )}
+            {editorEmpty && (() => {
+              const ph = PLACEHOLDERS[placeholderIdx];
+              return (
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute top-0 left-0 select-none text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 flex items-center gap-1 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
+                >
+                  {ph.shortcut && (
+                    <kbd
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 4,
+                        padding: "0 5px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: "monospace",
+                        background: "var(--muted)",
+                        color: "var(--icon)",
+                        border: "1px solid var(--border)",
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {ph.shortcut}
+                    </kbd>
+                  )}
+                  {ph.text}
+                </span>
+              );
+            })()}
             <div
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
               onInput={handleEditorInput}
               onKeyDown={(e) => {
-                if (e.key === "Escape") { setMentionOpen(false); setMentionCategory(null); return; }
+                if (e.key === "Escape") { setMentionOpen(false); setMentionCategory(null); setSlashOpen(false); setPlusPickerOpen(false); return; }
+                if (e.key === "Enter" && plusPickerOpen) { e.preventDefault(); openFilePicker(); return; }
                 if (e.key === "Enter" && mentionOpen && !mentionCategory) {
                   const filtered = MENTION_CATEGORIES.filter((c) => !mentionQuery || c.label.toLowerCase().includes(mentionQuery));
                   if (filtered.length === 1) { e.preventDefault(); selectCategory(filtered[0].key); return; }
@@ -1226,6 +1578,14 @@ export default function BluChat({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>}
+
+      {/* Journey preview overlay */}
+      {journeyPreviewName && (
+        <JourneyPreviewOverlay
+          name={journeyPreviewName}
+          onClose={() => setJourneyPreviewName(null)}
+        />
+      )}
     </div>
   );
 }

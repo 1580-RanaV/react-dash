@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Menu } from "lucide-react";
-import BluChat from "./BluChat";
+import BluChat, { type BluMode } from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
 import Sidebar from "./Sidebar";
@@ -114,13 +115,86 @@ function SidebarHandle({
   );
 }
 
+// ── Floating Blu window ───────────────────────────────────────────────────────
+
+const FLOAT_W = 400;
+const FLOAT_H = 628;
+
+function FloatingBluWindow({
+  onClose, onFullscreen, onBackToPanel,
+}: {
+  onClose: () => void;
+  onFullscreen: () => void;
+  onBackToPanel: () => void;
+}) {
+  const [pos, setPos] = useState(() => ({
+    x: Math.max(0, window.innerWidth  - FLOAT_W - 24),
+    y: Math.max(0, window.innerHeight - FLOAT_H - 24),
+  }));
+  const dragRef = useRef<{ startMX: number; startMY: number; startPX: number; startPY: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  function onHeaderMouseDown(e: React.MouseEvent) {
+    e.preventDefault();
+    dragRef.current = { startMX: e.clientX, startMY: e.clientY, startPX: pos.x, startPY: pos.y };
+    setDragging(true);
+
+    function onMouseMove(ev: MouseEvent) {
+      if (!dragRef.current) return;
+      const x = Math.max(0, Math.min(window.innerWidth  - FLOAT_W, dragRef.current.startPX + ev.clientX - dragRef.current.startMX));
+      const y = Math.max(0, Math.min(window.innerHeight - FLOAT_H, dragRef.current.startPY + ev.clientY - dragRef.current.startMY));
+      setPos({ x, y });
+    }
+
+    function onMouseUp() {
+      dragRef.current = null;
+      setDragging(false);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+
+  return (
+    <div
+      className="fixed z-150 flex flex-col animate-card-in"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        width: FLOAT_W,
+        height: FLOAT_H,
+        borderRadius: 16,
+        overflow: "hidden",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.12)",
+        userSelect: dragging ? "none" : undefined,
+      }}
+    >
+      <BluChat
+        onClose={onClose}
+        mode="float"
+        onFullscreen={onFullscreen}
+        onBackToPanel={onBackToPanel}
+        onHeaderMouseDown={onHeaderMouseDown}
+      />
+    </div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [bluOpen, setBluOpen] = useState(false);
+  const [bluMode, setBluMode] = useState<BluMode>("panel");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
   const [isResizing, setIsResizing] = useState(false);
+
+  function closeBlu() { setBluOpen(false); setBluMode("panel"); }
+  function floatBlu() { setBluMode("float"); }
+  function fullscreenBlu() { window.open("/blu", "_blank"); }
+  function panelBlu() { setBluMode("panel"); }
 
   useEffect(() => {
     const open   = () => setBluOpen(true);
@@ -144,7 +218,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const collapsed       = sidebarWidth < SIDEBAR_ICON_THR;
   const widthTransition = isResizing ? "none" : "width 0.25s cubic-bezier(0.22,1,0.36,1)";
 
+  const panelOpen = bluOpen && bluMode === "panel";
+
   return (
+    <>
+      {/* Floating window portal */}
+      {bluOpen && bluMode === "float" && createPortal(
+        <FloatingBluWindow onClose={closeBlu} onFullscreen={fullscreenBlu} onBackToPanel={panelBlu} />,
+        document.body
+      )}
+
+
     <div className="flex h-full" style={{ background: "var(--sidebar-background)" }}>
       {/* Desktop sidebar spacer */}
       <div
@@ -195,9 +279,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <main className="flex-1 flex min-h-0 gap-2 mx-2 mb-2 md:ml-0 md:mr-3">
           <div
             className="hidden md:block shrink-0 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ width: bluOpen ? 380 : 0, opacity: bluOpen ? 1 : 0 }}
+            style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0 }}
           >
-            {bluOpen && <BluChat onClose={() => setBluOpen(false)} />}
+            {panelOpen && (
+              <BluChat
+                onClose={closeBlu}
+                mode="panel"
+                onFloat={floatBlu}
+                onFullscreen={fullscreenBlu}
+              />
+            )}
           </div>
 
           <div
@@ -213,5 +304,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </main>
       </div>
     </div>
+    </>
   );
 }
