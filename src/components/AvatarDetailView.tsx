@@ -2,13 +2,20 @@
 
 import { useState } from "react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
-import { Check, ChevronLeft, ChevronRight, Copy, Shuffle, UserCircle2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, FileText, Shuffle, UserCircle2 } from "lucide-react";
 import type { GridCard } from "./GridCardView";
 import { AVATARS } from "./AvatarsView";
 import SlidingSidebar from "./SlidingSidebar";
 import BackButton from "./BackButton";
+import SubTabCorner from "./SubTabCorner";
 
 const IMG = "/avatar.png";
+
+const AVATAR_TABS = [
+  { key: "details", label: "Details", icon: <FileText size={13} /> },
+  { key: "remix",   label: "Remix",   icon: <Shuffle size={13} /> },
+  { key: "avatar",  label: "avatar.md", icon: <UserCircle2 size={13} /> },
+];
 
 const IMAGES = [
   { label: "Main Reference" },
@@ -27,33 +34,26 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
   return (
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--content-bg)" }}>
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 text-sm min-w-0 pr-4">
+      <div
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-2.5 gap-2 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex items-center gap-2 text-sm min-w-0">
           <BackButton onClick={onBack} />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">@{avatar.name}</span>
         </div>
 
-        <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-stone-100 dark:bg-white/8 p-0.5">
-          <button
-            onClick={() => setActiveAction("details")}
-            className={`flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${activeAction === "details" ? "bg-white text-stone-900 shadow-sm dark:bg-white/12 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"}`}
-          >
-            Details
-          </button>
-          <button
-            onClick={() => { setActiveAction("remix"); window.dispatchEvent(new Event("open-blu-chat")); }}
-            className={`flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${activeAction === "remix" ? "bg-white text-stone-900 shadow-sm dark:bg-white/12 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"}`}
-          >
-            <Shuffle size={13} />
-            Remix
-          </button>
-          <button
-            onClick={() => { setActiveAction("avatar"); setMdOpen(true); }}
-            className={`flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${activeAction === "avatar" ? "bg-white text-stone-900 shadow-sm dark:bg-white/12 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"}`}
-          >
-            <UserCircle2 size={13} />
-            avatar.md
-          </button>
+        <div className="shrink-0">
+          <SubTabCorner
+            tabs={AVATAR_TABS}
+            active={activeAction}
+            onChange={(k) => {
+              const key = k as ActionKey;
+              setActiveAction(key);
+              if (key === "remix") window.dispatchEvent(new Event("open-blu-chat"));
+              setMdOpen(key === "avatar");
+            }}
+          />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
@@ -11,6 +11,14 @@ export type GridCard = {
   gradient: [string, string];
   image?: string;
 };
+
+const SORT_OPTIONS = [
+  { key: "my-first",      label: "My characters first" },
+  { key: "presets-first", label: "Presets first" },
+  { key: "recent",        label: "Recently updated" },
+  { key: "alpha",         label: "A to Z" },
+] as const;
+type SortKey = typeof SORT_OPTIONS[number]["key"];
 
 const NEW_CARD: GridCard = {
   id: "generated-custom",
@@ -37,11 +45,34 @@ export default function GridCardView({
   const [shelfMethod, setShelfMethod] = useState<"ai" | "upload" | null>(null);
   const [uploading, setUploading]   = useState(false);
   const [newId, setNewId]           = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [sortKey, setSortKey]       = useState<SortKey>("recent");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const fileRef   = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  const filtered = search
-    ? cards.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
-    : cards;
+  const presetIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  const filtered = useMemo(() => {
+    let result = search
+      ? cards.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
+      : cards;
+    if (sortKey === "alpha") {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortKey === "my-first") {
+      result = [...result].sort((a) => (!presetIds.has(a.id) ? -1 : 1));
+    } else if (sortKey === "presets-first") {
+      result = [...result].sort((a) => (presetIds.has(a.id) ? -1 : 1));
+    }
+    return result;
+  }, [cards, search, sortKey, presetIds]);
 
   function handleBluAI() {
     setShelfOpen(false);
@@ -74,10 +105,44 @@ export default function GridCardView({
           />
         </div>
 
-        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2.5 sm:px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
-          <ListFilter size={13} />
-          <span className="hidden sm:inline">Filter</span>
-        </button>
+        <div ref={filterRef} className="relative">
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-xs font-medium transition-colors
+              ${sortKey !== "recent"
+                ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
+                : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
+              }`}
+          >
+            <ListFilter size={13} />
+            <span className="hidden sm:inline">Filter</span>
+          </button>
+
+          {filterOpen && (
+            <div
+              className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 overflow-hidden rounded-xl animate-card-in"
+              style={{
+                background: "var(--content-bg)",
+                border: "1px solid var(--border)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+              }}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => { setSortKey(opt.key); setFilterOpen(false); }}
+                  className={`flex w-full items-center px-4 py-2.5 text-sm text-left transition-colors
+                    ${sortKey === opt.key
+                      ? "bg-stone-50 text-stone-900 font-medium dark:bg-white/5 dark:text-stone-100"
+                      : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           onClick={() => { setShelfOpen(true); setShelfMethod(null); }}

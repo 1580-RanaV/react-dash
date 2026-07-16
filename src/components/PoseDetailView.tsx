@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
-import { Shuffle } from "lucide-react";
+import { FileText, Shuffle } from "lucide-react";
 import type { GridCard } from "./GridCardView";
 import { POSES } from "./PosesView";
 import BackButton from "./BackButton";
+import SubTabCorner from "./SubTabCorner";
 
 const IMG = "/pose.png";
 
@@ -17,40 +18,43 @@ export default function PoseDetailView({ pose, onBack }: { pose: GridCard; onBac
   return (
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--content-bg)" }}>
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 text-sm min-w-0 pr-4">
+      <div
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-2.5 gap-2 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex items-center gap-2 text-sm min-w-0">
           <BackButton onClick={onBack} />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{pose.name}</span>
         </div>
-
-        <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-stone-100 dark:bg-white/8 p-0.5">
-          <button
-            onClick={() => setActiveAction("details")}
-            className={`flex h-9 items-center rounded-md px-3 text-xs font-medium transition-all ${activeAction === "details" ? "bg-white text-stone-900 shadow-sm dark:bg-white/12 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"}`}
-          >
-            Details
-          </button>
-          <button
-            onClick={() => { setActiveAction("remix"); window.dispatchEvent(new Event("open-blu-chat")); }}
-            className={`flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-all ${activeAction === "remix" ? "bg-white text-stone-900 shadow-sm dark:bg-white/12 dark:text-stone-100" : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"}`}
-          >
-            <Shuffle size={13} />
-            Remix
-          </button>
+        <div className="shrink-0">
+          <SubTabCorner
+            tabs={[
+              { key: "details", label: "Details", icon: <FileText size={13} /> },
+              { key: "remix",   label: "Remix",   icon: <Shuffle size={13} /> },
+            ]}
+            active={activeAction}
+            onChange={(k) => {
+              setActiveAction(k as ActionKey);
+              if (k === "remix") window.dispatchEvent(new Event("open-blu-chat"));
+            }}
+          />
         </div>
       </div>
 
       {/* Body */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         {/* Image */}
-        <div className="flex items-center justify-center px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
-          <div className="w-full max-w-55 md:w-90 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
+        <div className="flex items-center justify-center md:px-6 md:py-8 md:w-[55%] md:shrink-0">
+          <div
+            className="w-full md:w-auto overflow-hidden md:rounded-2xl shadow-lg"
+            style={{ aspectRatio: "3/4", height: "clamp(280px, 72vh, 600px)" }}
+          >
             <img src={IMG} alt={pose.name} className="h-full w-full object-cover object-top" />
           </div>
         </div>
 
         {/* Details */}
-        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
+        <div className="px-6 pb-8 md:w-[45%] md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <Section title="Why This Pose Works">
               <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">

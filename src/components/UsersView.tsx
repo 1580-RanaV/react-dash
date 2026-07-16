@@ -1,12 +1,11 @@
 
 
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { BarChart2, LayoutDashboard, Plus, Table2, TableRowsSplit, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Table2, TableRowsSplit, Trash2 } from "lucide-react";
 import CreateUserDrawer from "./CreateUserDrawer";
 import ViewTabs from "./ViewTabs";
-import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
-import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
+import DashboardTable, { TableColumn } from "./DashboardTable";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import SegmentSelector, { Segment } from "./SegmentSelector";
 import FilterBuilder from "./FilterBuilder";
@@ -19,9 +18,9 @@ const USER_COLUMNS: TableColumn[] = [
   { key: "intemptTags", label: "Intempt tags", width: "16%" },
 ];
 
-function Tag({ label, color }: { label: string; color: string }) {
+function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: color + "18", color }}>
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
     </span>
   );
@@ -70,7 +69,7 @@ const USER_ROWS = USERS_DATA.map(({ id, name, account, email, title, tags }) => 
     jobTitle:     title,
     intemptTags: (
       <div className="flex flex-wrap gap-1">
-        {tags.map(([label, color]) => <Tag key={label} label={label} color={color} />)}
+        {tags.map(([label]) => <Tag key={label} label={label} />)}
       </div>
     ),
   },
@@ -84,35 +83,19 @@ const USER_SEGMENTS: Segment[] = [
   { id: "list-copy", name: "List 1 copy",      icon: <TableRowsSplit size={15} /> },
 ];
 
-const TABS = [
-  { key: "table",     label: "Table",     icon: <Table2 size={14} />,          count: USERS_DATA.length },
-  { key: "board",     label: "Board",     icon: <LayoutDashboard size={14} />, count: null },
-  { key: "analytics", label: "Analytics", icon: <BarChart2 size={14} />,       count: null },
-] as const;
-
-type Tab = typeof TABS[number]["key"];
-
 export default function UsersView() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const tab = (TABS as readonly { key: string }[]).some((t) => t.key === searchParams.get("tab")) ? searchParams.get("tab") as Tab : "table";
-  function setTab(key: Tab) { navigate(`/users?tab=${key}`, { replace: true }); }
   const [selectedSegment, setSelectedSegment] = useState(USER_SEGMENTS[0]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  function makeMenu(row: TableRow): ThreeDotsMenuItem[] {
-    return DEFAULT_MENU_ITEMS.map((item) =>
-      item.label === "Delete"
-        ? { ...item, onClick: () => setDeleteTarget({ id: row.id, name: String(row.cells.user) }) }
-        : item
-    );
-  }
-
   const displayUserRows = USER_ROWS
     .filter((r) => !deletedIds.has(r.id))
-    .map((r) => ({ ...r, menuItems: makeMenu(r) }));
+    .map((r) => ({
+      ...r,
+      menuItems: [{ label: "Delete user", icon: Trash2, tone: "danger" as const, onClick: () => setDeleteTarget({ id: r.id, name: r.cells.user as string }) }],
+    }));
 
   return (
     <div className="relative flex flex-1 flex-col min-h-0">
@@ -123,46 +106,27 @@ export default function UsersView() {
           onSelect={setSelectedSegment}
         />
         <div className="h-5 w-px shrink-0 bg-stone-200 dark:bg-white/10" />
-        <ViewTabs tabs={TABS} activeTab={tab} onChange={setTab} className="flex items-center gap-1" />
+        <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayUserRows.length }]} activeTab="table" className="flex items-center gap-1" />
       </div>
 
-      <div key={tab} className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
-        {tab === "table" && (
-          <DashboardTable
-            columns={USER_COLUMNS}
-            rows={displayUserRows}
-            searchPlaceholder="Search users..."
-            filterPanel={<FilterBuilder />}
-            selectable
-            onDeleteSelected={(ids) => setDeletedIds((s) => new Set([...s, ...ids]))}
-            action={
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                style={{ background: "#0080FF" }}
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Create user</span>
-              </button>
-            }
-          />
-        )}
-        {tab === "board" && (
-          <div className="flex flex-1 h-full items-center justify-center">
-            <div className="text-center space-y-1.5">
-              <LayoutDashboard size={24} className="mx-auto text-stone-300 dark:text-stone-600" />
-              <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Board view coming soon</p>
-            </div>
-          </div>
-        )}
-        {tab === "analytics" && (
-          <div className="flex flex-1 h-full items-center justify-center">
-            <div className="text-center space-y-1.5">
-              <BarChart2 size={24} className="mx-auto text-stone-300 dark:text-stone-600" />
-              <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Analytics view coming soon</p>
-            </div>
-          </div>
-        )}
+      <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
+        <DashboardTable
+          columns={USER_COLUMNS}
+          rows={displayUserRows}
+          searchPlaceholder="Search users..."
+          filterPanel={<FilterBuilder />}
+          selectable
+          action={
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+              style={{ background: "#0080FF" }}
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">Create user</span>
+            </button>
+          }
+        />
       </div>
 
       {drawerOpen && <CreateUserDrawer onClose={() => setDrawerOpen(false)} />}

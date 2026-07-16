@@ -11,7 +11,7 @@ import {
   Home,
   Palette,
   Users,
-  Activity,
+  Zap,
   UserCheck,
   Plug,
   Library,
@@ -60,7 +60,7 @@ const nav: NavSection[] = [
         label: "Users",
         icon: <Users size={15} />,
         children: [
-          { label: "Events", icon: <Activity size={15} /> },
+          { label: "Events", icon: <Zap size={15} /> },
           { label: "Subscribers", icon: <UserCheck size={15} /> },
         ],
       },

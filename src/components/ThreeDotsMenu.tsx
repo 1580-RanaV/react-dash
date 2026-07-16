@@ -25,7 +25,6 @@ export const BOARDS_MENU_ITEMS: ThreeDotsMenuItem[] = [
 
 export const ASSET_MENU_ITEMS: ThreeDotsMenuItem[] = [
   { label: "Edit", icon: Edit3 },
-  { label: "Copy preview link", icon: Link },
   { label: "Delete", icon: Trash2, tone: "danger" },
 ];
 

@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Image, Mail, MessageSquare, Plus } from "lucide-react";
+import { Mail, MessageSquare, Plus, Table2 } from "lucide-react";
 import CreateAssetDrawer from "./CreateAssetDrawer";
 import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./DashboardTable";
 import { ASSET_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import ViewTabs from "./ViewTabs";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -278,11 +279,11 @@ export default function AssetLibraryView() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   function makeMenu(row: TableRow): ThreeDotsMenuItem[] {
-    return ASSET_MENU_ITEMS.map((item) =>
-      item.label === "Delete"
-        ? { ...item, onClick: () => setDeleteTarget({ id: row.id, name: ASSET_NAME[row.id] ?? row.id }) }
-        : item
-    );
+    return ASSET_MENU_ITEMS.map((item) => {
+      if (item.label === "Edit") return { ...item, onClick: () => navigate(`/asset-library/${row.id}`) };
+      if (item.label === "Delete") return { ...item, onClick: () => setDeleteTarget({ id: row.id, name: ASSET_NAME[row.id] ?? row.id }) };
+      return item;
+    });
   }
 
   const displayRows = useMemo(() => {
@@ -304,6 +305,8 @@ export default function AssetLibraryView() {
 
   return (
     <div className="relative flex flex-1 flex-col min-h-0 overflow-x-hidden">
+      <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayRows.length }]} activeTab="table" />
+
       <div className="flex flex-1 min-h-0 flex-col px-4 pb-4 pt-4 animate-fade-up">
         <DashboardTable
           columns={COLUMNS}

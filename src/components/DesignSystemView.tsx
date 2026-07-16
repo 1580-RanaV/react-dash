@@ -1,6 +1,6 @@
 
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
@@ -18,6 +18,14 @@ const DEFAULT_PALETTES: Palette[] = [
   { id: "stone-age",   name: "Stone Age",   colors: ["#A89070", "#D4C0A8", "#3C2C1C", "#F4EDE4"] },
   { id: "citrus",      name: "Citrus",      colors: ["#D4A820", "#E8D870", "#5C4000", "#FDF8D8"] },
 ];
+
+const DS_SORT_OPTIONS = [
+  { key: "my-first",      label: "My designs first" },
+  { key: "presets-first", label: "Presets first" },
+  { key: "recent",        label: "Recently updated" },
+  { key: "alpha",         label: "A to Z" },
+] as const;
+type DSSortKey = typeof DS_SORT_OPTIONS[number]["key"];
 
 function makeGeneratedPalette(): Palette {
   return {
@@ -60,13 +68,36 @@ export default function DesignSystemView() {
   const [uploading, setUploading] = useState(false);
   const [palettes, setPalettes]   = useState<Palette[]>(DEFAULT_PALETTES);
   const [newId, setNewId]         = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [sortKey, setSortKey]     = useState<DSSortKey>("recent");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const fileRef   = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  const presetIds = useMemo(() => new Set(DEFAULT_PALETTES.map((p) => p.id)), []);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  const filtered = useMemo(() => {
+    let result = search
+      ? palettes.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+      : palettes;
+    if (sortKey === "alpha") {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortKey === "my-first") {
+      result = [...result].sort((a) => (!presetIds.has(a.id) ? -1 : 1));
+    } else if (sortKey === "presets-first") {
+      result = [...result].sort((a) => (presetIds.has(a.id) ? -1 : 1));
+    }
+    return result;
+  }, [palettes, search, sortKey, presetIds]);
 
   if (selected) return <DesignThemeDetailView palette={selected} onBack={() => setSelected(null)} />;
-
-  const filtered = search
-    ? palettes.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-    : palettes;
 
   function handleBluAI() {
     setShelfOpen(false);
@@ -100,10 +131,44 @@ export default function DesignSystemView() {
           />
         </div>
 
-        <button className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2.5 sm:px-3.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100">
-          <ListFilter size={13} />
-          <span className="hidden sm:inline">Filter</span>
-        </button>
+        <div ref={filterRef} className="relative">
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-xs font-medium transition-colors
+              ${sortKey !== "recent"
+                ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
+                : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-white/3 dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
+              }`}
+          >
+            <ListFilter size={13} />
+            <span className="hidden sm:inline">Filter</span>
+          </button>
+
+          {filterOpen && (
+            <div
+              className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 overflow-hidden rounded-xl animate-card-in"
+              style={{
+                background: "var(--content-bg)",
+                border: "1px solid var(--border)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+              }}
+            >
+              {DS_SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => { setSortKey(opt.key); setFilterOpen(false); }}
+                  className={`flex w-full items-center px-4 py-2.5 text-sm text-left transition-colors
+                    ${sortKey === opt.key
+                      ? "bg-stone-50 text-stone-900 font-medium dark:bg-white/5 dark:text-stone-100"
+                      : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           onClick={() => { setShelfOpen(true); setShelfMethod(null); }}

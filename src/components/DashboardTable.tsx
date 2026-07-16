@@ -1,7 +1,7 @@
 
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ArrowUpDown, ChevronDown, ChevronRight, ChevronUp, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronRight, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThreeDotsMenu, { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 
@@ -332,7 +332,7 @@ export default function DashboardTable({
                 ${!hasSort ? "opacity-40 cursor-default" : "cursor-pointer"}`}
             >
               <ArrowUpDown size={13} />
-              <span className="hidden sm:inline">Sort</span>
+              <span className="hidden sm:inline">Sort by</span>
               {sortField && (
                 <span className="hidden sm:inline text-xs font-semibold opacity-70">· {sortField}</span>
               )}
@@ -340,53 +340,61 @@ export default function DashboardTable({
 
             {sortOpen && filterConfig?.sortFields && (
               <div
-                className="absolute right-0 top-[calc(100%+6px)] z-50 w-44 rounded-xl animate-card-in overflow-hidden"
+                className="absolute right-0 top-[calc(100%+6px)] z-50 w-80 rounded-xl animate-card-in p-4"
                 style={{
                   background: "var(--content-bg)",
                   border: "1px solid var(--border)",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
                 }}
               >
-                <div className="px-2 py-2 space-y-0.5">
-                  {filterConfig.sortFields.map((field) => {
-                    const active = sortField === field;
-                    return (
-                      <button
-                        key={field}
-                        onClick={() => {
-                          if (active) {
-                            const next = sortDir === "asc" ? "desc" : "asc";
-                            setSortDir(next);
-                            onSortChange?.(field, next);
-                          } else {
-                            setSortField(field);
-                            setSortDir("asc");
-                            onSortChange?.(field, "asc");
-                          }
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors
-                          ${active ? "bg-stone-100 text-stone-900 dark:bg-white/8 dark:text-stone-100" : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"}`}
-                      >
-                        <span>{field}</span>
-                        {active && (
-                          sortDir === "asc"
-                            ? <ChevronUp size={13} className="text-stone-400 dark:text-stone-500" />
-                            : <ChevronDown size={13} className="text-stone-400 dark:text-stone-500" />
-                        )}
-                      </button>
-                    );
-                  })}
-                  {sortField && (
-                    <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
-                      <button
-                        onClick={() => { setSortField(null); setSortDir("asc"); onSortChange?.(null, "asc"); setSortOpen(false); }}
-                        className="w-full text-center text-xs font-medium text-blue-500 hover:text-blue-600 py-1 transition-colors"
-                      >
-                        Clear sort
-                      </button>
-                    </div>
-                  )}
+                <p className="mb-3 text-sm font-semibold text-stone-800 dark:text-stone-100">Sort</p>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      value={sortField ?? ""}
+                      onChange={(e) => {
+                        const f = e.target.value || null;
+                        setSortField(f);
+                        setSortDir("asc");
+                        onSortChange?.(f, "asc");
+                      }}
+                      className="h-9 w-full appearance-none rounded-lg border border-stone-200 bg-white pl-3 pr-8 text-sm font-medium text-stone-700 outline-none focus:border-blue-400 dark:border-(--border) dark:bg-(--input) dark:text-stone-200"
+                    >
+                      <option value="">Select attribute</option>
+                      {filterConfig.sortFields.map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                  </div>
+                  <div className="relative w-32">
+                    <select
+                      value={sortField ? sortDir : ""}
+                      disabled={!sortField}
+                      onChange={(e) => {
+                        const dir = e.target.value as "asc" | "desc";
+                        setSortDir(dir);
+                        if (sortField) onSortChange?.(sortField, dir);
+                      }}
+                      className="h-9 w-full appearance-none rounded-lg border border-stone-200 bg-white pl-3 pr-8 text-sm font-medium text-stone-700 outline-none focus:border-blue-400 disabled:opacity-50 dark:border-(--border) dark:bg-(--input) dark:text-stone-200"
+                    >
+                      <option value="" disabled>Sort</option>
+                      <option value="asc">Ascending</option>
+                      <option value="desc">Descending</option>
+                    </select>
+                    <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                  </div>
                 </div>
+                {sortField && (
+                  <div className="mt-3 border-t pt-2.5" style={{ borderColor: "var(--border)" }}>
+                    <button
+                      onClick={() => { setSortField(null); setSortDir("asc"); onSortChange?.(null, "asc"); setSortOpen(false); }}
+                      className="w-full py-0.5 text-center text-xs font-medium text-blue-500 transition-colors hover:text-blue-600"
+                    >
+                      Clear sort
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,6 +1,8 @@
 
 import { useState } from "react";
-import { ArrowLeft, Bell, ChevronDown, ChevronUp, Home, Search, Shuffle, Star, User } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Home, Search, Shuffle, Star, User } from "lucide-react";
+import BackButton from "./BackButton";
+import SubTabCorner from "./SubTabCorner";
 
 // ── Color math ────────────────────────────────────────────────────────────────
 function hexToHsv(hex: string): [number, number, number] {
@@ -318,6 +320,7 @@ export default function DesignThemeDetailView({
 }) {
   const [p, se, t, n] = palette.colors;
 
+  const [activeTab, setActiveTab] = useState("preset");
   const [seed, setSeed] = useState(p);
   const [previewMode, setPreviewMode] = useState<"light" | "dark">("light");
   const [expanded, setExpanded] = useState(new Set(["seed", "palette", "typography", "radius", "components"]));
@@ -355,23 +358,28 @@ export default function DesignThemeDetailView({
   const radii = [0, 4, 8, 16];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden" style={{ background: "var(--content-bg)" }}>
       {/* Top nav */}
-      <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3" style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}>
-        <button
-          onClick={onBack}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-100 dark:hover:bg-white/8"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <h1 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{palette.name}</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/6" style={{ borderColor: "var(--border)" }}>
-            Preset
-          </button>
-          <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/6" style={{ borderColor: "var(--border)" }}>
-            <Shuffle size={12} /> Remix
-          </button>
+      <div
+        className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 py-2.5 gap-2 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex items-center gap-2 text-sm min-w-0">
+          <BackButton onClick={onBack} />
+          <span className="truncate font-medium text-stone-900 dark:text-stone-100">{palette.name}</span>
+        </div>
+        <div className="shrink-0">
+          <SubTabCorner
+            tabs={[
+              { key: "preset", label: "Preset" },
+              { key: "remix",  label: "Remix", icon: <Shuffle size={13} /> },
+            ]}
+            active={activeTab}
+            onChange={(k) => {
+              setActiveTab(k);
+              if (k === "remix") window.dispatchEvent(new Event("open-blu-chat"));
+            }}
+          />
         </div>
       </div>
 

@@ -1,13 +1,14 @@
 
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Toggle from "./Toggle";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, BarChart2, Hash, LayoutDashboard, Plus, Search, Table2, Trash2, Users2 } from "lucide-react";
+import { Activity, Hash, Plus, Search, Table2, Trash2, Users2 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import { CartesianGrid, Line, LineChart, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import CreateEventDrawer from "./CreateEventDrawer";
-import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./DashboardTable";
+import FilterBuilder from "./FilterBuilder";
 import SlidingSidebar from "./SlidingSidebar";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
@@ -360,6 +361,23 @@ const ROWS: TableRow[] = [
   { id: "e10", cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
 ];
 
+const EVENT_SORT_META: Record<string, { event: string; users: number; events: number; lastUpdated: string }> = {
+  e1:  { event: "free_tool_generated",              users: 0, events: 0, lastUpdated: "2026-06-02" },
+  e2:  { event: "subscribed v2",                    users: 1, events: 1, lastUpdated: "2026-05-29" },
+  e3:  { event: "Team member invited to a project", users: 1, events: 3, lastUpdated: "2026-05-28" },
+  e4:  { event: "free_tool_lead",                   users: 1, events: 1, lastUpdated: "2026-05-22" },
+  e5:  { event: "book-a-demo",                      users: 0, events: 0, lastUpdated: "2026-05-12" },
+  e6:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
+  e7:  { event: "Newsletter Signup",                users: 0, events: 0, lastUpdated: "2026-05-12" },
+  e8:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
+  e9:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
+  e10: { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
+};
+
+const EVENTS_FILTER_CONFIG: FilterConfig = {
+  sortFields: ["Event", "# of users", "# of events", "Last updated"],
+};
+
 // ── live tab ───────────────────────────────────────────────────────────────────
 
 type LiveRow = {
@@ -573,10 +591,8 @@ function LiveTab({ onRowSelect }: { onRowSelect: (row: LiveRow | null) => void }
 // ── view ───────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { key: "table",     label: "Table",     icon: <Table2 size={14} /> },
-  { key: "board",     label: "Board",     icon: <LayoutDashboard size={14} /> },
-  { key: "analytics", label: "Analytics", icon: <BarChart2 size={14} /> },
-  { key: "live",      label: "Live",      icon: null, dot: true },
+  { key: "table", label: "Table", icon: <Table2 size={14} /> },
+  { key: "live",  label: "Live",  icon: <Activity size={14} /> },
 ] as const;
 
 type Tab = typeof TABS[number]["key"];
@@ -591,6 +607,25 @@ export default function EventsView() {
   const [selectedTableEvent, setSelectedTableEvent] = useState<EventMeta | null>(null);
   const [deletedEventIds, setDeletedEventIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<EventMeta | null>(null);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const displayRows = useMemo(() => {
+    let rows = ROWS.filter((r) => !deletedEventIds.has(r.id));
+    if (sortField) {
+      rows = [...rows].sort((a, b) => {
+        const ma = EVENT_SORT_META[a.id];
+        const mb = EVENT_SORT_META[b.id];
+        let cmp = 0;
+        if (sortField === "Event")             cmp = (ma?.event ?? "").localeCompare(mb?.event ?? "");
+        else if (sortField === "# of users")   cmp = (ma?.users ?? 0) - (mb?.users ?? 0);
+        else if (sortField === "# of events")  cmp = (ma?.events ?? 0) - (mb?.events ?? 0);
+        else if (sortField === "Last updated") cmp = (ma?.lastUpdated ?? "").localeCompare(mb?.lastUpdated ?? "");
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return rows;
+  }, [deletedEventIds, sortField, sortDir]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
@@ -601,8 +636,11 @@ export default function EventsView() {
         {tab === "table" && (
           <DashboardTable
             columns={COLUMNS}
-            rows={ROWS.filter((r) => !deletedEventIds.has(r.id))}
+            rows={displayRows}
             searchPlaceholder="Search events..."
+            filterConfig={EVENTS_FILTER_CONFIG}
+            filterPanel={<FilterBuilder />}
+            onSortChange={(f, d) => { setSortField(f); setSortDir(d); }}
             onRowClick={(row) => {
               const meta = EVENT_META[row.id];
               if (meta) setSelectedTableEvent(meta);
@@ -618,22 +656,6 @@ export default function EventsView() {
               </button>
             }
           />
-        )}
-        {tab === "board" && (
-          <div className="flex flex-1 h-full items-center justify-center">
-            <div className="text-center space-y-1.5">
-              <LayoutDashboard size={24} className="mx-auto text-stone-300 dark:text-stone-600" />
-              <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Board view coming soon</p>
-            </div>
-          </div>
-        )}
-        {tab === "analytics" && (
-          <div className="flex flex-1 h-full items-center justify-center">
-            <div className="text-center space-y-1.5">
-              <BarChart2 size={24} className="mx-auto text-stone-300 dark:text-stone-600" />
-              <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Analytics view coming soon</p>
-            </div>
-          </div>
         )}
         {tab === "live" && <LiveTab onRowSelect={setSelectedLive} />}
       </div>

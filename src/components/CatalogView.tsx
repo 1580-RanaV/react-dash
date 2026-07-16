@@ -93,26 +93,6 @@ const PRODUCT_ROWS: TableRow[] = [
   },
 ];
 
-const tabs = [
-  {
-    key: "products",
-    label: "Products",
-    icon: <Package size={15} />,
-    count: PRODUCT_ROWS.length,
-    emptyIcon: <Package size={20} className="text-stone-300 dark:text-stone-600" />,
-    emptyTitle: "No products yet",
-    emptyDesc: "Add products to start building a browsable catalog.",
-  },
-  {
-    key: "sources",
-    label: "Sources",
-    icon: <Rss size={15} />,
-    emptyIcon: <Rss size={20} className="text-stone-300 dark:text-stone-600" />,
-    emptyTitle: "No sources connected",
-    emptyDesc: "Connect product feeds and data sources to keep your catalog updated.",
-  },
-];
-
 const SOURCE_COLUMNS: TableColumn[] = [
   { key: "name", label: "Name", width: "34%" },
   { key: "source", label: "Source", width: "24%" },
@@ -147,6 +127,27 @@ const SOURCE_ROWS: TableRow[] = [
       lastUpdated: { value: "May 28, 2026 09:16 AM", muted: true },
       createdBy: "Rohan",
     },
+  },
+];
+
+const tabs = [
+  {
+    key: "products",
+    label: "Products",
+    icon: <Package size={15} />,
+    count: PRODUCT_ROWS.length,
+    emptyIcon: <Package size={20} className="text-stone-300 dark:text-stone-600" />,
+    emptyTitle: "No products yet",
+    emptyDesc: "Add products to start building a browsable catalog.",
+  },
+  {
+    key: "sources",
+    label: "Sources",
+    icon: <Rss size={15} />,
+    count: SOURCE_ROWS.length,
+    emptyIcon: <Rss size={20} className="text-stone-300 dark:text-stone-600" />,
+    emptyTitle: "No sources connected",
+    emptyDesc: "Connect product feeds and data sources to keep your catalog updated.",
   },
 ];
 
