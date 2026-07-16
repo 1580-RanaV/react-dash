@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { ChevronDown, X } from "lucide-react";
 import { LOCALES, type Locale } from "../lib/locales";
 import { parseGlyph, align, lerpShape, toPath, easeInOutBack } from "../lib/morph";
-import { useLocale, type UILocale } from "../lib/LocaleContext";
+import { useLocale } from "../lib/LocaleContext";
+import type { UILocale } from "../lib/i18n";
 
 // ── types & constants ─────────────────────────────────────────────────────────
 
