@@ -2,6 +2,7 @@
 
 
 import AskBluButton from "./AskBluButton";
+import { useLocale } from "../lib/LocaleContext";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useEffect, useRef, useState, cloneElement } from "react";
@@ -298,6 +299,7 @@ function NavItemRow({
   activeItem: string;
   collapsed?: boolean;
 }) {
+  const { t } = useLocale();
   const rowRef = useRef<HTMLDivElement>(null);
   const [tooltipY, setTooltipY] = useState<number | null>(null);
 
@@ -330,7 +332,7 @@ function NavItemRow({
   const rowContent = collapsed ? iconEl : (
     <>
       {iconEl}
-      <span className="flex-1 leading-none">{item.label}</span>
+      <span className="flex-1 leading-none">{t(item.label)}</span>
     </>
   );
 
@@ -396,7 +398,7 @@ function NavItemRow({
             color: "var(--foreground)",
           }}
         >
-          {item.label}
+          {t(item.label)}
         </div>,
         document.body
       )}
@@ -429,6 +431,7 @@ function CollapsibleSection({
   onDrop?: () => void;
   onDragEnd?: () => void;
 }) {
+  const { t } = useLocale();
   const [open, setOpen] = useState(true);
   const showItems = open && !forcedCollapsed;
 
@@ -452,7 +455,7 @@ function CollapsibleSection({
           className="w-full flex items-center gap-2 px-3 py-1.5 mb-0.5 rounded-md group hover:bg-stone-200/60 dark:hover:bg-white/6 transition-colors duration-100 cursor-grab active:cursor-grabbing"
         >
           <span className="flex-1 text-left text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
-            {section.heading}
+            {t(section.heading!)}
           </span>
           <ChevronRight
             size={10}

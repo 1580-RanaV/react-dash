@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BarChart2, LayoutDashboard, Plus, Table2, Trash2 } from "lucide-react";
+import { BarChart2, LayoutDashboard, Plus, Table2, TableRowsSplit, Trash2 } from "lucide-react";
 import CreateUserDrawer from "./CreateUserDrawer";
 import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import SegmentSelector, { Segment } from "./SegmentSelector";
+import FilterBuilder from "./FilterBuilder";
 
 const USER_COLUMNS: TableColumn[] = [
   { key: "user", label: "User", width: "22%" },
@@ -74,8 +76,16 @@ const USER_ROWS = USERS_DATA.map(({ id, name, account, email, title, tags }) => 
   },
 }));
 
+const USER_SEGMENTS: Segment[] = [
+  { id: "all",       name: "All users",       icon: <TableRowsSplit size={15} />, count: USERS_DATA.length },
+  { id: "list1",     name: "List 1",           icon: <TableRowsSplit size={15} /> },
+  { id: "beso-test", name: "Jsut Beso test",   icon: <TableRowsSplit size={15} /> },
+  { id: "all-copy",  name: "All users copy",   icon: <TableRowsSplit size={15} /> },
+  { id: "list-copy", name: "List 1 copy",      icon: <TableRowsSplit size={15} /> },
+];
+
 const TABS = [
-  { key: "table",     label: "Table",     icon: <Table2 size={14} />,        count: USERS_DATA.length },
+  { key: "table",     label: "Table",     icon: <Table2 size={14} />,          count: USERS_DATA.length },
   { key: "board",     label: "Board",     icon: <LayoutDashboard size={14} />, count: null },
   { key: "analytics", label: "Analytics", icon: <BarChart2 size={14} />,       count: null },
 ] as const;
@@ -87,6 +97,7 @@ export default function UsersView() {
   const [searchParams] = useSearchParams();
   const tab = (TABS as readonly { key: string }[]).some((t) => t.key === searchParams.get("tab")) ? searchParams.get("tab") as Tab : "table";
   function setTab(key: Tab) { navigate(`/users?tab=${key}`, { replace: true }); }
+  const [selectedSegment, setSelectedSegment] = useState(USER_SEGMENTS[0]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -105,7 +116,15 @@ export default function UsersView() {
 
   return (
     <div className="relative flex flex-1 flex-col min-h-0">
-      <ViewTabs tabs={TABS} activeTab={tab} onChange={setTab} />
+      <div className="flex items-center gap-2 px-4 pt-3 shrink-0">
+        <SegmentSelector
+          segments={USER_SEGMENTS}
+          selected={selectedSegment}
+          onSelect={setSelectedSegment}
+        />
+        <div className="h-5 w-px shrink-0 bg-stone-200 dark:bg-white/10" />
+        <ViewTabs tabs={TABS} activeTab={tab} onChange={setTab} className="flex items-center gap-1" />
+      </div>
 
       <div key={tab} className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
         {tab === "table" && (
@@ -113,6 +132,7 @@ export default function UsersView() {
             columns={USER_COLUMNS}
             rows={displayUserRows}
             searchPlaceholder="Search users..."
+            filterPanel={<FilterBuilder />}
             selectable
             onDeleteSelected={(ids) => setDeletedIds((s) => new Set([...s, ...ids]))}
             action={

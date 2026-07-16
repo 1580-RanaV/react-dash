@@ -23,14 +23,10 @@ export default function AskBluButton({ isOpen }: { isOpen: boolean }) {
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       className="relative w-full flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium active:scale-95 transition-all duration-200 ease-out overflow-hidden"
-      style={isOpen ? {
-        background: "rgba(0,128,255,0.08)",
-        border: "1px solid rgba(0,128,255,0.22)",
+      style={{
+        background: "rgba(0,128,255,0.10)",
+        border: "none",
         color: "#0080FF",
-      } : {
-        background: "transparent",
-        border: "1px solid rgba(0,0,0,0.1)",
-        color: "#57534e",
       }}
     >
       {/* Shimmer streak — on hover */}

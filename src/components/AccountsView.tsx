@@ -1,12 +1,13 @@
 
 
 import { useState } from "react";
-import { Plus, Table2, Trash2 } from "lucide-react";
+import { Plus, Table2, TableRowsSplit, Trash2 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import CreateAccountDrawer from "./CreateAccountDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import SegmentSelector, { Segment } from "./SegmentSelector";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,30 +20,17 @@ function Tag({ label }: { label: string }) {
 }
 
 function LifecycleBadge({ stage }: { stage: string }) {
-  const map: Record<string, string> = {
-    Lead:      "bg-blue-50 text-blue-700 dark:bg-blue-500/12 dark:text-blue-300",
-    Prospect:  "bg-violet-50 text-violet-600 dark:bg-violet-500/12 dark:text-violet-300",
-    Customer:  "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300",
-    Churned:   "bg-rose-50 text-rose-600 dark:bg-rose-500/12 dark:text-rose-300",
-    Qualified: "bg-amber-50 text-amber-700 dark:bg-amber-500/12 dark:text-amber-300",
-  };
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${map[stage] ?? map.Lead}`}>
+    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {stage}
     </span>
   );
 }
 
 function IntentBadge({ level }: { level: "High" | "Medium" | "Low" }) {
-  const map = {
-    High:   { dot: "bg-rose-500",   text: "text-rose-600 dark:text-rose-400" },
-    Medium: { dot: "bg-amber-500",  text: "text-amber-600 dark:text-amber-400" },
-    Low:    { dot: "bg-stone-400",  text: "text-stone-500 dark:text-stone-400" },
-  };
-  const { dot, text } = map[level];
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${text}`}>
-      <span className={`inline-block h-2 w-2 rounded-full ${dot}`} />
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
       {level}
     </span>
   );
@@ -173,9 +161,16 @@ const ROWS: TableRow[] = [
   },
 ];
 
+const ACCOUNT_SEGMENTS: Segment[] = [
+  { id: "all",       name: "All accounts",       icon: <TableRowsSplit size={15} />, count: ROWS.length },
+  { id: "new-view",  name: "New accounts view",   icon: <TableRowsSplit size={15} /> },
+  { id: "new-view1", name: "New accounts view 1", icon: <TableRowsSplit size={15} /> },
+];
+
 // ── view ──────────────────────────────────────────────────────────────────────
 
 export default function AccountsView() {
+  const [selectedSegment, setSelectedSegment] = useState(ACCOUNT_SEGMENTS[0]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -194,7 +189,15 @@ export default function AccountsView() {
 
   return (
     <div className="relative flex flex-1 flex-col min-h-0 overflow-x-hidden">
-      <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} /> }]} activeTab="table" />
+      <div className="flex items-center gap-2 px-4 pt-3 shrink-0">
+        <SegmentSelector
+          segments={ACCOUNT_SEGMENTS}
+          selected={selectedSegment}
+          onSelect={setSelectedSegment}
+        />
+        <div className="h-5 w-px shrink-0 bg-stone-200 dark:bg-white/10" />
+        <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} /> }]} activeTab="table" className="flex items-center gap-1" />
+      </div>
 
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
         <DashboardTable

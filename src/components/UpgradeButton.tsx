@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Gem } from "lucide-react";
+import { useLocale } from "../lib/LocaleContext";
 
 const STARS = [
   { left: "10%", color: "#3b82f6", variant: "a", delay: "0ms",  size: 4 },
@@ -13,6 +14,7 @@ const STARS = [
 ] as const;
 
 export default function UpgradeButton() {
+  const { t } = useLocale();
   const [burstKey, setBurstKey] = useState(0);
 
   function burst() {
@@ -41,7 +43,7 @@ export default function UpgradeButton() {
         className="relative flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 select-none active:scale-95 transition-all duration-100 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-300 dark:border-blue-500/40"
       >
         <Gem size={12} className="shrink-0" />
-        Upgrade
+        {t("Upgrade")}
       </button>
     </div>
   );

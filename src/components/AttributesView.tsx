@@ -24,26 +24,16 @@ const COLUMNS: TableColumn[] = [
 ];
 
 function ObjectBadge({ label }: { label: string }) {
-  const colors: Record<string, string> = {
-    User:    "bg-violet-50 text-violet-600 dark:bg-violet-500/12 dark:text-violet-300",
-    Account: "bg-sky-50 text-sky-600 dark:bg-sky-500/12 dark:text-sky-300",
-    Event:   "bg-amber-50 text-amber-600 dark:bg-amber-500/12 dark:text-amber-300",
-  };
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${colors[label] ?? "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300"}`}>
+    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
     </span>
   );
 }
 
 function TypeBadge({ label }: { label: string }) {
-  const colors: Record<string, string> = {
-    Profile:    "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300",
-    Behavioral: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/12 dark:text-emerald-300",
-    Computed:   "bg-pink-50 text-pink-600 dark:bg-pink-500/12 dark:text-pink-300",
-  };
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${colors[label] ?? "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300"}`}>
+    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
     </span>
   );

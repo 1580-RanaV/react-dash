@@ -1,10 +1,10 @@
 
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Mail, MessageSquare, Plus } from "lucide-react";
 import CreateAssetDrawer from "./CreateAssetDrawer";
-import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./DashboardTable";
 import { ASSET_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
@@ -235,6 +235,37 @@ const ASSET_NAME: Record<string, string> = {
   "a12": "change character's pink pants to grey shorts",
 };
 
+// ── row metadata for filter/sort ──────────────────────────────────────────────
+
+const ROW_META: Record<string, { type: string; updatedRank: number }> = {
+  a1:  { type: "Email Plain", updatedRank: 1 },
+  a2:  { type: "SMS",         updatedRank: 2 },
+  a3:  { type: "Email Plain", updatedRank: 3 },
+  a4:  { type: "Image",       updatedRank: 4 },
+  a5:  { type: "Image",       updatedRank: 5 },
+  a6:  { type: "Image",       updatedRank: 6 },
+  a7:  { type: "Image",       updatedRank: 7 },
+  a8:  { type: "Image",       updatedRank: 8 },
+  a9:  { type: "Image",       updatedRank: 9 },
+  a10: { type: "Image",       updatedRank: 10 },
+  a11: { type: "Image",       updatedRank: 11 },
+  a12: { type: "Image",       updatedRank: 12 },
+};
+
+const FILTER_CONFIG: FilterConfig = {
+  sortFields: ["Updated", "Name", "Type"],
+  groups: [
+    {
+      label: "Type",
+      options: [
+        { key: "Email Plain", label: "Email Plain" },
+        { key: "SMS",         label: "SMS" },
+        { key: "Image",       label: "Image" },
+      ],
+    },
+  ],
+};
+
 // ── view ──────────────────────────────────────────────────────────────────────
 
 export default function AssetLibraryView() {
@@ -242,6 +273,9 @@ export default function AssetLibraryView() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   function makeMenu(row: TableRow): ThreeDotsMenuItem[] {
     return ASSET_MENU_ITEMS.map((item) =>
@@ -251,9 +285,22 @@ export default function AssetLibraryView() {
     );
   }
 
-  const displayRows = ROWS
-    .filter((r) => !deletedIds.has(r.id))
-    .map((r) => ({ ...r, menuItems: makeMenu(r) }));
+  const displayRows = useMemo(() => {
+    let rows = ROWS.filter((r) => !deletedIds.has(r.id));
+    if (activeFilters.size > 0) {
+      rows = rows.filter((r) => activeFilters.has(ROW_META[r.id]?.type ?? ""));
+    }
+    if (sortField) {
+      rows = [...rows].sort((a, b) => {
+        let cmp = 0;
+        if (sortField === "Updated") cmp = (ROW_META[a.id]?.updatedRank ?? 99) - (ROW_META[b.id]?.updatedRank ?? 99);
+        else if (sortField === "Name") cmp = (ASSET_NAME[a.id] ?? "").localeCompare(ASSET_NAME[b.id] ?? "");
+        else if (sortField === "Type") cmp = (ROW_META[a.id]?.type ?? "").localeCompare(ROW_META[b.id]?.type ?? "");
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return rows.map((r) => ({ ...r, menuItems: makeMenu(r) }));
+  }, [deletedIds, activeFilters, sortField, sortDir]);
 
   return (
     <div className="relative flex flex-1 flex-col min-h-0 overflow-x-hidden">
@@ -263,6 +310,9 @@ export default function AssetLibraryView() {
           rows={displayRows}
           searchPlaceholder="Search assets..."
           onRowClick={(row) => navigate(`/asset-library/${row.id}`)}
+          filterConfig={FILTER_CONFIG}
+          onFilterChange={(f) => setActiveFilters(f)}
+          onSortChange={(f, d) => { setSortField(f); setSortDir(d); }}
           action={
             <button
               onClick={() => setDrawerOpen(true)}

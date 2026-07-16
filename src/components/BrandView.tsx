@@ -129,34 +129,6 @@ function ThemeSelect() {
   );
 }
 
-const tabs = [
-  { key: "identity", label: "Identity", icon: <Fingerprint size={15} /> },
-  {
-    key: "knowledge",
-    label: "Knowledge Base",
-    icon: <BookOpen size={15} />,
-    emptyIcon: <BookOpen size={20} className="text-stone-300 dark:text-stone-600" />,
-    emptyTitle: "Knowledge base is empty",
-    emptyDesc: "Upload brand guidelines, messaging frameworks, and tone-of-voice documents.",
-  },
-];
-
-const products =
-  "Firearms - Includes handguns, rifles, and shotguns; Tactical Gear - Reliable accessories for officers; Duty Holsters - Customizable storage solutions for firearms; Body Armor - Protection for law enforcement personnel; Handgun Ammunition - ammunition suitable for handguns; Rifle Ammunition - ammunition specifically for rifles; Shotgun Ammunition - rounds designed for shotguns; LE Duty Ammunition - law enforcement duty-grade ammunition; Hunting Ammunition - designed for hunting purposes; Training Ammunition - made for training scenarios; Less Lethal Ammunition - used for lesser force applications; Ammunition - Various types including handgun, rifle, shotgun, LE duty, hunting, training, and less lethal ammunition; Accessories - Includes holsters, optics, cleaning kits, and more.";
-
-const usage =
-  "Supplying tactical gear, body armor, ammunition for duty and training; hunting including small to large game; home defense; personal defense; tactical applications; and recreational shooting and training. Supplying ammunition and equipment for law enforcement, hunting, and shooting sports; facilitating training and preparations for various shooting activities.";
-
-const voiceCards = [
-  { title: "Authoritative", desc: "Expert-led, confident, and data-driven. Commands attention with authority and credibility." },
-  { title: "Approachable", desc: "Warm, accessible, and friendly. Makes complex topics feel simple and inviting.", active: true },
-  { title: "Innovative", desc: "Bold, forward-thinking, and forward-looking. Positions the brand as modern and capable." },
-  { title: "Trustworthy", desc: "Reliable, transparent, and proof-backed. Builds confidence through honesty and evidence." },
-  { title: "Playful", desc: "Light, memorable, and human. Uses personality carefully without weakening authority." },
-];
-
-type IdentitySection = "Company" | "Offer" | "Story" | "Voice";
-
 const KNOWLEDGE_COLUMNS: TableColumn[] = [
   { key: "name", label: "Name", width: "36%" },
   { key: "status", label: "Status", width: "14%" },
@@ -215,6 +187,35 @@ const KNOWLEDGE_ROWS: TableRow[] = [
     ],
   },
 ];
+
+const tabs = [
+  { key: "identity", label: "Identity", icon: <Fingerprint size={15} /> },
+  {
+    key: "knowledge",
+    label: "Knowledge Base",
+    count: KNOWLEDGE_ROWS.length,
+    icon: <BookOpen size={15} />,
+    emptyIcon: <BookOpen size={20} className="text-stone-300 dark:text-stone-600" />,
+    emptyTitle: "Knowledge base is empty",
+    emptyDesc: "Upload brand guidelines, messaging frameworks, and tone-of-voice documents.",
+  },
+];
+
+const products =
+  "Firearms - Includes handguns, rifles, and shotguns; Tactical Gear - Reliable accessories for officers; Duty Holsters - Customizable storage solutions for firearms; Body Armor - Protection for law enforcement personnel; Handgun Ammunition - ammunition suitable for handguns; Rifle Ammunition - ammunition specifically for rifles; Shotgun Ammunition - rounds designed for shotguns; LE Duty Ammunition - law enforcement duty-grade ammunition; Hunting Ammunition - designed for hunting purposes; Training Ammunition - made for training scenarios; Less Lethal Ammunition - used for lesser force applications; Ammunition - Various types including handgun, rifle, shotgun, LE duty, hunting, training, and less lethal ammunition; Accessories - Includes holsters, optics, cleaning kits, and more.";
+
+const usage =
+  "Supplying tactical gear, body armor, ammunition for duty and training; hunting including small to large game; home defense; personal defense; tactical applications; and recreational shooting and training. Supplying ammunition and equipment for law enforcement, hunting, and shooting sports; facilitating training and preparations for various shooting activities.";
+
+const voiceCards = [
+  { title: "Authoritative", desc: "Expert-led, confident, and data-driven. Commands attention with authority and credibility." },
+  { title: "Approachable", desc: "Warm, accessible, and friendly. Makes complex topics feel simple and inviting.", active: true },
+  { title: "Innovative", desc: "Bold, forward-thinking, and forward-looking. Positions the brand as modern and capable." },
+  { title: "Trustworthy", desc: "Reliable, transparent, and proof-backed. Builds confidence through honesty and evidence." },
+  { title: "Playful", desc: "Light, memorable, and human. Uses personality carefully without weakening authority." },
+];
+
+type IdentitySection = "Company" | "Offer" | "Story" | "Voice";
 
 function EditableField({
   label,

@@ -1,7 +1,7 @@
 
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ChevronRight, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronRight, ChevronUp, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThreeDotsMenu, { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 
@@ -134,8 +134,10 @@ export default function DashboardTable({
   actionsLabel,
   onRowClick,
   filterConfig,
+  filterPanel,
   defaultActiveFilters,
   onFilterChange,
+  onSortChange,
   hideToolbar = false,
   selectable = false,
   onDeleteSelected,
@@ -149,19 +151,24 @@ export default function DashboardTable({
   actionsLabel?: string;
   onRowClick?: (row: TableRow) => void;
   filterConfig?: FilterConfig;
+  filterPanel?: React.ReactNode;
   defaultActiveFilters?: string[];
   onFilterChange?: (activeFilters: Set<string>) => void;
+  onSortChange?: (field: string | null, dir: "asc" | "desc") => void;
   hideToolbar?: boolean;
   selectable?: boolean;
   onDeleteSelected?: (ids: string[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(defaultActiveFilters ?? []));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<HTMLDivElement>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
@@ -169,18 +176,18 @@ export default function DashboardTable({
   const [colSearch, setColSearch] = useState("");
   const navigate = useNavigate();
 
-  const hasFilter = !!(filterConfig?.sortFields?.length || filterConfig?.groups?.length);
+  const hasFilter = !!(filterConfig?.groups?.length);
+  const hasSort = !!(filterConfig?.sortFields?.length);
   const singleGroupKeys = new Set(
     filterConfig?.groups?.filter((g) => g.single).flatMap((g) => g.options.map((o) => o.key)) ?? []
   );
-  const activeCount = [...activeFilters].filter((k) => !singleGroupKeys.has(k)).length + (sortField ? 1 : 0);
+  const activeCount = [...activeFilters].filter((k) => !singleGroupKeys.has(k)).length;
   const visibleColumns = columns.filter((c) => !hiddenCols.has(c.key));
 
   useEffect(() => {
     function handle(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -221,7 +228,7 @@ export default function DashboardTable({
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {!hideToolbar && <div className="mb-3 flex shrink-0 flex-wrap items-center gap-2">
+      {!hideToolbar && <div className={`flex shrink-0 flex-wrap items-center gap-2 ${filterPanelOpen ? "mb-2" : "mb-3"}`}>
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
@@ -233,13 +240,16 @@ export default function DashboardTable({
           </div>
           <div ref={filterRef} className="relative">
             <button
-              onClick={() => hasFilter && setFilterOpen((o) => !o)}
+              onClick={() => {
+                if (filterPanel) { setFilterPanelOpen((o) => !o); return; }
+                hasFilter && setFilterOpen((o) => !o);
+              }}
               className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors
-                ${activeCount > 0
+                ${activeCount > 0 || filterPanelOpen
                   ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
                   : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
                 }
-                ${!hasFilter ? "opacity-40 cursor-default" : "cursor-pointer"}`}
+                ${!hasFilter && !filterPanel ? "opacity-40 cursor-default" : "cursor-pointer"}`}
             >
               <ListFilter size={13} />
               <span className="hidden sm:inline">Filter</span>
@@ -260,39 +270,9 @@ export default function DashboardTable({
                   boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
                 }}
               >
-                {/* Sort by */}
-                {filterConfig.sortFields && filterConfig.sortFields.length > 0 && (
-                  <div className="px-3 pt-3 pb-2">
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Sort by</p>
-                    <div className="space-y-0.5">
-                      {filterConfig.sortFields.map((field) => {
-                        const active = sortField === field;
-                        return (
-                          <button
-                            key={field}
-                            onClick={() => {
-                              if (active) setSortDir((d) => d === "asc" ? "desc" : "asc");
-                              else { setSortField(field); setSortDir("asc"); }
-                            }}
-                            className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors
-                              ${active ? "bg-stone-100 text-stone-900 dark:bg-white/8 dark:text-stone-100" : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"}`}
-                          >
-                            <span>{field}</span>
-                            {active && (
-                              <span className="text-xs font-semibold text-stone-400 dark:text-stone-500">
-                                {sortDir === "asc" ? "A-Z" : "Z-A"}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* Filter groups */}
                 {filterConfig.groups?.map((group, gi) => (
-                  <div key={group.label} className={`px-3 pb-2 ${gi === 0 && filterConfig.sortFields?.length ? "pt-2 border-t" : "pt-3"}`} style={gi === 0 && filterConfig.sortFields?.length ? { borderColor: "var(--border)" } : {}}>
+                  <div key={group.label} className={`px-3 pb-2 ${gi === 0 ? "pt-3" : "pt-2 border-t"}`} style={gi > 0 ? { borderColor: "var(--border)" } : {}}>
                     <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">{group.label}</p>
                     <div className="space-y-0.5">
                       {group.options.map((opt) => {
@@ -326,17 +306,87 @@ export default function DashboardTable({
                   </div>
                 ))}
 
-                {/* Clear all */}
                 {activeCount > 0 && (
                   <div className="border-t px-3 py-2" style={{ borderColor: "var(--border)" }}>
                     <button
-                      onClick={() => { setActiveFilters(new Set()); setSortField(null); setFilterOpen(false); }}
+                      onClick={() => { setActiveFilters(new Set()); onFilterChange?.(new Set()); setFilterOpen(false); }}
                       className="w-full text-center text-xs font-medium text-blue-500 transition-colors hover:text-blue-600 py-0.5"
                     >
                       Clear all
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Sort button */}
+          <div ref={sortRef} className="relative">
+            <button
+              onClick={() => hasSort && setSortOpen((o) => !o)}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors
+                ${sortField
+                  ? "border-blue-400 bg-blue-50 text-blue-600 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6 dark:hover:text-stone-100"
+                }
+                ${!hasSort ? "opacity-40 cursor-default" : "cursor-pointer"}`}
+            >
+              <ArrowUpDown size={13} />
+              <span className="hidden sm:inline">Sort</span>
+              {sortField && (
+                <span className="hidden sm:inline text-xs font-semibold opacity-70">· {sortField}</span>
+              )}
+            </button>
+
+            {sortOpen && filterConfig?.sortFields && (
+              <div
+                className="absolute right-0 top-[calc(100%+6px)] z-50 w-44 rounded-xl animate-card-in overflow-hidden"
+                style={{
+                  background: "var(--content-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                <div className="px-2 py-2 space-y-0.5">
+                  {filterConfig.sortFields.map((field) => {
+                    const active = sortField === field;
+                    return (
+                      <button
+                        key={field}
+                        onClick={() => {
+                          if (active) {
+                            const next = sortDir === "asc" ? "desc" : "asc";
+                            setSortDir(next);
+                            onSortChange?.(field, next);
+                          } else {
+                            setSortField(field);
+                            setSortDir("asc");
+                            onSortChange?.(field, "asc");
+                          }
+                        }}
+                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors
+                          ${active ? "bg-stone-100 text-stone-900 dark:bg-white/8 dark:text-stone-100" : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"}`}
+                      >
+                        <span>{field}</span>
+                        {active && (
+                          sortDir === "asc"
+                            ? <ChevronUp size={13} className="text-stone-400 dark:text-stone-500" />
+                            : <ChevronDown size={13} className="text-stone-400 dark:text-stone-500" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  {sortField && (
+                    <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
+                      <button
+                        onClick={() => { setSortField(null); setSortDir("asc"); onSortChange?.(null, "asc"); setSortOpen(false); }}
+                        className="w-full text-center text-xs font-medium text-blue-500 hover:text-blue-600 py-1 transition-colors"
+                      >
+                        Clear sort
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -414,6 +464,9 @@ export default function DashboardTable({
         </div>
         {action ? <div className="shrink-0 ml-auto">{action}</div> : null}
       </div>}
+      {filterPanel && filterPanelOpen && (
+        <div className="mb-3 shrink-0">{filterPanel}</div>
+      )}
       {hideToolbar && action && <div className="mb-3 flex justify-end shrink-0">{action}</div>}
       {selectable && selected.size > 0 && (() => {
         const visibleSelected = rows.filter((r) => selected.has(r.id));

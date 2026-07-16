@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+import { LocaleProvider } from "./lib/LocaleContext";
 import DashboardShell from "./components/DashboardShell";
 import DashboardView from "./components/DashboardView";
 import SettingsLayout, { contentMap } from "./components/SettingsLayout";
@@ -93,6 +94,7 @@ function SettingsPage() {
 
 export default function App() {
   return (
+    <LocaleProvider>
     <BrowserRouter>
       <div className="h-full" style={{ fontFamily: "Inter, sans-serif" }}>
         <Routes>
@@ -135,5 +137,6 @@ export default function App() {
         </Routes>
       </div>
     </BrowserRouter>
+    </LocaleProvider>
   );
 }

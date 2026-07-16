@@ -60,31 +60,51 @@ export default function AvatarDetailView({ avatar, onBack }: { avatar: GridCard;
       {/* Body */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         {/* Image + prev/next */}
-        <div className="flex items-center justify-center gap-3 px-6 py-6 md:p-8 md:w-1/2 md:shrink-0">
+        <div className="flex items-center justify-center gap-3 md:px-6 md:py-8 md:w-[55%] md:shrink-0">
+          {/* Desktop-only side buttons */}
           <button
             onClick={() => setImgIdx((i) => (i - 1 + IMAGES.length) % IMAGES.length)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
+            className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
           >
             <ChevronLeft size={15} />
           </button>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-full max-w-55 md:w-100 overflow-hidden rounded-2xl shadow-md" style={{ aspectRatio: "3/4" }}>
+
+          <div className="relative flex flex-col items-center gap-3 w-full md:w-auto">
+            {/* Mobile overlay buttons */}
+            <button
+              onClick={() => setImgIdx((i) => (i - 1 + IMAGES.length) % IMAGES.length)}
+              className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/75 backdrop-blur-sm text-stone-700 shadow-md active:scale-95 transition-transform"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setImgIdx((i) => (i + 1) % IMAGES.length)}
+              className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/75 backdrop-blur-sm text-stone-700 shadow-md active:scale-95 transition-transform"
+            >
+              <ChevronRight size={16} />
+            </button>
+
+            <div
+              className="w-full md:w-auto overflow-hidden md:rounded-2xl shadow-lg"
+              style={{ aspectRatio: "3/4", height: "clamp(280px, 72vh, 600px)" }}
+            >
               <img src={IMG} alt={IMAGES[imgIdx].label} className="h-full w-full object-cover object-top" />
             </div>
             <span className="text-xs text-stone-400 dark:text-stone-500">
               {IMAGES[imgIdx].label} · {imgIdx + 1} / {IMAGES.length}
             </span>
           </div>
+
           <button
             onClick={() => setImgIdx((i) => (i + 1) % IMAGES.length)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
+            className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:hover:bg-white/10"
           >
             <ChevronRight size={15} />
           </button>
         </div>
 
         {/* Details */}
-        <div className="px-6 pb-8 md:w-1/2 md:overflow-y-auto md:px-8 md:py-6">
+        <div className="px-6 pb-8 md:w-[45%] md:overflow-y-auto md:px-8 md:py-6">
           <div className="flex flex-col gap-7">
             <Section title="Identity">
               <Row label="Name"        value={avatar.name} />

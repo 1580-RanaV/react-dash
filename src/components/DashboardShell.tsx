@@ -7,6 +7,7 @@ import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
 import Sidebar from "./Sidebar";
 import UpgradeButton from "./UpgradeButton";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const SIDEBAR_DEFAULT      = 196;
 const SIDEBAR_MIN          = 52;
@@ -273,6 +274,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <NotificationsMenu />
           <UpgradeButton />
+          <LanguageSwitcher />
           <ProfileMenu />
         </div>
 
