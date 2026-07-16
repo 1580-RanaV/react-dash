@@ -52,7 +52,7 @@ export default function CreateApiKeyDrawer({
           </button>
           <button
             onClick={handleCreate}
-            className="inline-flex h-9 items-center rounded-lg px-4 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex h-9 items-center rounded-lg px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: "#0080FF" }}
           >
             Create key

@@ -437,7 +437,7 @@ function KnowledgeBaseView({ onUpload }: { onUpload: () => void }) {
         action={
           <button
             onClick={onUpload}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 h-9 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 h-9 text-xs font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: "#0080FF" }}
           >
             <Plus size={14} />

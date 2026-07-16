@@ -129,21 +129,28 @@ function MonthGrid({
   );
 }
 
+type Granularity = "Day" | "Week" | "Month";
+const GRANULARITIES: Granularity[] = ["Day", "Week", "Month"];
+
 // ─── Main component ───────────────────────────────────────────
 export default function DateRangePicker({ className }: { className?: string }) {
   const today = new Date(2026, 5, 2); // Jun 2, 2026 (matches session date)
-  const [start, setStart]     = useState(addDays(today, -29));
-  const [end,   setEnd]       = useState(today);
-  const [picking, setPicking] = useState(false); // waiting for end click
-  const [hover,   setHover]   = useState<Date | null>(null);
-  const [preset,  setPreset]  = useState("30D");
-  const [open,    setOpen]    = useState(false);
-  const [leftBase, setLeft]   = useState(addMonths(today, -1));
-  const ref = useRef<HTMLDivElement>(null);
+  const [start, setStart]       = useState(addDays(today, -29));
+  const [end,   setEnd]         = useState(today);
+  const [picking, setPicking]   = useState(false);
+  const [hover,   setHover]     = useState<Date | null>(null);
+  const [preset,  setPreset]    = useState("30D");
+  const [open,    setOpen]      = useState(false);
+  const [leftBase, setLeft]     = useState(addMonths(today, -1));
+  const [granularity, setGran]  = useState<Granularity>("Day");
+  const [granOpen, setGranOpen] = useState(false);
+  const ref     = useRef<HTMLDivElement>(null);
+  const granRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function outside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (granRef.current && !granRef.current.contains(e.target as Node)) setGranOpen(false);
     }
     document.addEventListener("mousedown", outside);
     return () => document.removeEventListener("mousedown", outside);
@@ -195,9 +202,39 @@ export default function DateRangePicker({ className }: { className?: string }) {
               <span className="hidden sm:inline">{p.label}</span>
             </button>
           ))}
-          <button className="ml-2 flex h-7 items-center gap-1.5 px-2.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors">
-            Day <ChevronDown size={11} className="text-stone-400" />
-          </button>
+          <div ref={granRef} className="relative ml-2">
+            <button
+              onClick={() => setGranOpen((o) => !o)}
+              className="flex h-9 items-center gap-1.5 px-2.5 rounded-lg border border-stone-200 dark:border-(--border) text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
+            >
+              {granularity} <ChevronDown size={11} className="text-stone-400" />
+            </button>
+
+            {granOpen && (
+              <div
+                className="absolute right-0 top-[calc(100%+4px)] z-50 w-28 overflow-hidden rounded-xl animate-card-in"
+                style={{
+                  background: "var(--content-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                {GRANULARITIES.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => { setGran(g); setGranOpen(false); }}
+                    className={`flex w-full items-center px-4 py-2.5 text-sm text-left transition-colors
+                      ${granularity === g
+                        ? "bg-stone-50 text-stone-900 font-medium dark:bg-white/5 dark:text-stone-100"
+                        : "text-stone-600 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/5"
+                      }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

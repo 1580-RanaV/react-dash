@@ -1,7 +1,7 @@
 
 
 import { useState } from "react";
-import { Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Code2, Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import Toggle from "./Toggle";
 import CreateBookingDrawer from "./CreateBookingDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
@@ -60,10 +60,10 @@ const COLUMNS: TableColumn[] = [
 
 
 const ROW_MENU: ThreeDotsMenuItem[] = [
-  { label: "Open booking page", icon: ExternalLink },
-  { label: "Copy link",         icon: Copy         },
-  { label: "Rename",            icon: Pencil       },
-  { label: "Delete",            icon: Trash2, tone: "danger" },
+  { label: "Edit",      icon: Pencil },
+  { label: "Embed",     icon: Code2  },
+  { label: "Copy link", icon: Copy   },
+  { label: "Delete",    icon: Trash2, tone: "danger" },
 ];
 
 // ── Main view ──────────────────────────────────────────────────────────────────
@@ -79,6 +79,16 @@ export default function SchedulerView() {
       mi.label === "Delete"
         ? { ...mi, onClick: () => setDeleteTarget({ id: item.id, name: item.name }) }
         : mi
+    ),
+    rowActions: (
+      <a
+        href="#"
+        title="Open booking page"
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+      >
+        <ExternalLink size={14} />
+      </a>
     ),
     cells: {
       name: (
@@ -107,7 +117,7 @@ export default function SchedulerView() {
         action={
           <button
             onClick={() => setShowCreateBooking(true)}
-            className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 shrink-0"
+            className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
             style={{ background: "#0080FF" }}
           >
             <Plus size={14} />

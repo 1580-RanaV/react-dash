@@ -26,6 +26,18 @@ import {
 
 const MEETING_DURATION = 5633;
 
+const SUMMARY_TYPES = [
+  "General Summary",
+  "Deal Intelligence Operator",
+  "Retention Intelligence",
+  "BANT Qualification Instrument",
+  "MEDDIC Enterprise Deal Anatomy",
+  "Hiring Signal Intelligence",
+  "Product Signal Extractor",
+  "Learning Effectiveness Analyzer",
+  "High-Stakes Executive Brief",
+];
+
 const TOPIC_ITEMS = [
   {
     time: "00:00",
@@ -164,6 +176,9 @@ function formatPlayerTime(seconds: number) {
 export default function MeetingDetailView() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [summaryType, setSummaryType] = useState("General Summary");
+  const [showSummaryMenu, setShowSummaryMenu] = useState(false);
+  const summaryRef = useRef<HTMLSpanElement>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function copyLink() {
@@ -177,6 +192,14 @@ export default function MeetingDetailView() {
   const [volume, setVolume] = useState(72);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [seekNudge, setSeekNudge] = useState<null | "-10" | "+10">(null);
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (summaryRef.current && !summaryRef.current.contains(e.target as Node)) setShowSummaryMenu(false);
+    }
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, []);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -281,82 +304,128 @@ export default function MeetingDetailView() {
 
   return (
     <div className="flex flex-1 min-h-0 flex-col animate-fade-up">
-      <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-2.5">
-        <div className="flex min-w-0 items-center gap-2 text-sm">
-          <BackButton href="/meetings" />
-          <span className="truncate font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
-        </div>
+      <div
+        className="flex shrink-0 items-center gap-2 border-b px-5 py-2.5"
+        style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
+      >
+        <BackButton href="/meetings" />
+        <span className="truncate text-sm font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
       </div>
 
       <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,900px)_minmax(420px,1fr)] gap-0">
-        <div className="flex min-h-0 flex-col overflow-hidden px-4 pb-4">
-          <div className="mb-4 flex w-full max-w-[875px] shrink-0 flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span className="inline-flex items-center gap-2">
-                <CalendarDays size={14} className="text-slate-400 dark:text-slate-500" />
-                Jun 5, 2026 8:00-9:35 PM
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <Clock size={14} className="text-slate-400 dark:text-slate-500" />
-                01:33:53
-              </span>
-              <span className="flex items-center -space-x-1.5">
-                <Initial label="SC" className="bg-slate-100 text-slate-500 ring-2 ring-white dark:bg-white/8 dark:text-stone-300 dark:ring-[#1a1a1a]" />
-                <Initial label="RB" className="bg-slate-100 text-slate-500 ring-2 ring-white dark:bg-white/8 dark:text-stone-300 dark:ring-[#1a1a1a]" />
-                <Initial label="AT" className="bg-blue-500 text-white ring-2 ring-white dark:ring-[#1a1a1a]" />
-              </span>
-              <span className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowParticipants((open) => !open)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-stone-900 dark:text-slate-400 dark:hover:text-stone-100"
-                >
-                  +8 others
-                  <ChevronDown size={12} className={`transition-transform ${showParticipants ? "rotate-180" : ""}`} />
-                </button>
-                {showParticipants ? (
-                  <div
-                    className="absolute left-0 top-[calc(100%+8px)] z-20 w-56 overflow-hidden rounded-lg shadow-xl"
-                    style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
-                  >
-                    <div className="max-h-56 overflow-y-auto py-2">
-                      {MORE_PARTICIPANTS.map((participant) => (
-                        <div key={participant.name} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-stone-100">
-                          <Initial label={participant.initials} className={`h-6 w-6 text-xs ${participant.color}`} />
-                          <span className="truncate">{participant.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </span>
-            </div>
-            <div className="flex shrink-0 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-(--input)">
-              <a
-                href="https://intempt.com/share/meeting/rd-check-in"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-stone-500 transition-all duration-100 hover:bg-white hover:text-stone-900 hover:shadow-sm dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
-              >
-                <ExternalLink size={12} />
-                View public link
-              </a>
+        <div className="flex min-h-0 flex-col overflow-y-auto px-5 pb-8 pt-4">
+          {/* Metadata — all items together, aligned to video width */}
+          <div className="mb-4 flex w-full max-w-[875px] shrink-0 flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays size={13} className="text-slate-400 dark:text-slate-500" />
+              Jun 5, 2026 8:00-9:35 PM
+            </span>
+            <span className="h-3 w-px bg-stone-200 dark:bg-white/10" />
+            <span className="inline-flex items-center gap-1.5">
+              <Clock size={13} className="text-slate-400 dark:text-slate-500" />
+              01:33:53
+            </span>
+            <span className="h-3 w-px bg-stone-200 dark:bg-white/10" />
+            <span className="flex items-center -space-x-1.5">
+              <Initial label="SC" className="bg-slate-100 text-slate-500 ring-2 ring-white dark:bg-white/8 dark:text-stone-300 dark:ring-[#1a1a1a]" />
+              <Initial label="RB" className="bg-slate-100 text-slate-500 ring-2 ring-white dark:bg-white/8 dark:text-stone-300 dark:ring-[#1a1a1a]" />
+              <Initial label="AT" className="bg-blue-500 text-white ring-2 ring-white dark:ring-[#1a1a1a]" />
+            </span>
+            <span className="relative">
               <button
                 type="button"
-                onClick={copyLink}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-stone-500 transition-all duration-100 hover:bg-white hover:text-stone-900 hover:shadow-sm dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
+                onClick={() => setShowParticipants((open) => !open)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-stone-900 dark:text-slate-400 dark:hover:text-stone-100"
               >
-                {linkCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                {linkCopied ? "Copied" : "Copy link"}
+                +8 others
+                <ChevronDown size={12} className={`transition-transform ${showParticipants ? "rotate-180" : ""}`} />
               </button>
-            </div>
+              {showParticipants ? (
+                <div
+                  className="absolute left-0 top-[calc(100%+8px)] z-20 w-56 overflow-hidden rounded-lg shadow-xl"
+                  style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+                >
+                  <div className="max-h-56 overflow-y-auto py-2">
+                    {MORE_PARTICIPANTS.map((participant) => (
+                      <div key={participant.name} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-900 dark:text-stone-100">
+                        <Initial label={participant.initials} className={`h-6 w-6 text-xs ${participant.color}`} />
+                        <span className="truncate">{participant.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </span>
+            <span className="h-3 w-px bg-stone-200 dark:bg-white/10" />
+            {/* Summary type selector */}
+            <span ref={summaryRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setShowSummaryMenu((o) => !o)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-stone-900 dark:text-slate-400 dark:hover:text-stone-100"
+              >
+                <span className="max-w-32 truncate">{summaryType}</span>
+                <ChevronDown size={12} className={`shrink-0 transition-transform ${showSummaryMenu ? "rotate-180" : ""}`} />
+              </button>
+              {showSummaryMenu && (
+                <div
+                  className="absolute left-0 top-[calc(100%+8px)] z-30 w-64 overflow-hidden rounded-xl shadow-xl animate-card-in"
+                  style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+                >
+                  <div className="py-1">
+                    {SUMMARY_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => { setSummaryType(type); setShowSummaryMenu(false); }}
+                        className={`flex w-full items-center px-4 py-2.5 text-sm text-left transition-colors ${
+                          summaryType === type
+                            ? "bg-blue-50/60 font-medium text-blue-600 dark:bg-blue-500/8 dark:text-blue-300"
+                            : "text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ borderTop: "1px solid var(--border)" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSummaryMenu(false)}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-500 transition-colors hover:bg-stone-50 dark:text-blue-400 dark:hover:bg-white/5"
+                    >
+                      Customize sections
+                    </button>
+                  </div>
+                </div>
+              )}
+            </span>
+            <span className="h-3 w-px bg-stone-200 dark:bg-white/10" />
+            <a
+              href="https://intempt.com/share/meeting/rd-check-in"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-stone-900 dark:hover:text-stone-100"
+            >
+              <ExternalLink size={12} />
+              View public link
+            </a>
+            <span className="h-3 w-px bg-stone-200 dark:bg-white/10" />
+            <button
+              type="button"
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-stone-900 dark:hover:text-stone-100"
+            >
+              {linkCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+              {linkCopied ? "Copied" : "Copy link"}
+            </button>
           </div>
 
           <div className="w-full max-w-[875px] shrink-0 rounded-2xl bg-black p-3 shadow-sm">
             {renderPlayer()}
           </div>
 
-          <section className="mt-6 min-h-0 w-full max-w-[875px] flex-1 overflow-y-auto pr-2">
+          <section className="mt-6 w-full max-w-[875px]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-stone-950 dark:text-stone-100">Topics</h2>
               <button className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-stone-100 dark:text-slate-400 dark:hover:bg-white/8">

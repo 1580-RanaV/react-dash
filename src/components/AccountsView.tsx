@@ -1,6 +1,7 @@
 
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Table2, TableRowsSplit, Trash2 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import CreateAccountDrawer from "./CreateAccountDrawer";
@@ -170,6 +171,7 @@ const ACCOUNT_SEGMENTS: Segment[] = [
 // ── view ──────────────────────────────────────────────────────────────────────
 
 export default function AccountsView() {
+  const navigate = useNavigate();
   const [selectedSegment, setSelectedSegment] = useState(ACCOUNT_SEGMENTS[0]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -196,7 +198,7 @@ export default function AccountsView() {
           onSelect={setSelectedSegment}
         />
         <div className="h-5 w-px shrink-0 bg-stone-200 dark:bg-white/10" />
-        <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} /> }]} activeTab="table" className="flex items-center gap-1" />
+        <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayRows.length }]} activeTab="table" className="flex items-center gap-1" />
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 animate-fade-up">
@@ -204,10 +206,11 @@ export default function AccountsView() {
           columns={COLUMNS}
           rows={displayRows}
           searchPlaceholder="Search accounts..."
+          onRowClick={(row) => navigate(`/accounts/${row.id}/overview`)}
           action={
             <button
               onClick={() => setDrawerOpen(true)}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 h-9 text-xs font-medium text-white transition-opacity hover:opacity-90"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 h-9 text-xs font-semibold text-white transition-opacity hover:opacity-90"
               style={{ background: "#0080FF" }}
             >
               <Plus size={14} />

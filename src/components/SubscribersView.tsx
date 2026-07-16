@@ -42,7 +42,7 @@ export default function SubscribersView() {
             emptyState="No subscribers yet."
             action={
               <button
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />

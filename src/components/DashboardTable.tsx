@@ -32,6 +32,7 @@ export type TableRow = {
   cells: Record<string, React.ReactNode | TableCell | TableStatus>;
   children?: TableRow[];
   menuItems?: ThreeDotsMenuItem[];
+  rowActions?: React.ReactNode;
 };
 
 function isCell(value: React.ReactNode | TableCell | TableStatus): value is TableCell {
@@ -605,8 +606,9 @@ export default function DashboardTable({
                         </div>
                       </td>
                     ))}
-                    <td className="border-b border-(--border) px-3 py-3" style={{ width: 44, minWidth: 44 }}>
-                      <div className="flex items-center justify-center">
+                    <td className="border-b border-(--border) px-3 py-3" style={{ width: row.rowActions ? 80 : 44, minWidth: row.rowActions ? 80 : 44 }}>
+                      <div className="flex items-center justify-center gap-1">
+                        {row.rowActions}
                         <ThreeDotsMenu items={row.menuItems ?? menuItems} />
                       </div>
                     </td>

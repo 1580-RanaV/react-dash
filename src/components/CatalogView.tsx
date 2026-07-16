@@ -343,7 +343,7 @@ export default function CatalogView() {
               action={
                 <button
                   onClick={() => setCreateSourceOpen(true)}
-                  className="flex h-9 items-center gap-1.5 px-3.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 shrink-0"
+                  className="flex h-9 items-center gap-1.5 px-3.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
                   style={{ background: "#0080FF" }}
                 >
                   <Plus size={13} />

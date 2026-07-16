@@ -14,6 +14,7 @@ import DashboardCanvasView from "./components/DashboardCanvasView";
 import AssetCreatorView from "./components/AssetCreatorView";
 import AssetDetailView from "./components/AssetDetailView";
 import UserDetailView from "./components/UserDetailView";
+import AccountDetailView from "./components/AccountDetailView";
 import { AvatarDetailPage } from "./components/AvatarDetailView";
 import { SceneDetailPage } from "./components/SceneDetailView";
 import { PoseDetailPage } from "./components/PoseDetailView";
@@ -114,6 +115,7 @@ export default function App() {
                 <Routes>
                   <Route path="/home" element={<DashboardView view="home" />} />
                   <Route path="/users/:id/*" element={<UserDetailView />} />
+                  <Route path="/accounts/:id/*" element={<AccountDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />
                   <Route path="/journeys/new" element={<JourneyNewCanvas />} />
                   <Route path="/journeys/:id" element={<JourneyDetailPage />} />

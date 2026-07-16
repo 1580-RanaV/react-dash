@@ -34,7 +34,7 @@ function MeetingName({ name }: { name: string }) {
 function Participant({ initial, name, more, color }: { initial: string; name: string; more: string; color: string }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white ${color}`}>{initial}</span>
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${color}`}>{initial}</span>
       <span className="truncate">{name}</span>
       <span className="shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400">{more}</span>
     </span>
@@ -304,7 +304,7 @@ export default function MeetingsView() {
             action={
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />

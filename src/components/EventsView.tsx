@@ -525,7 +525,7 @@ function EventDetailSidebar({ row, onClose }: { row: LiveRow; onClose: () => voi
       onClose={onClose}
       footerBorder={false}
       footer={
-        <button className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-medium text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
+        <button className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0080FF" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           View Event JSON
         </button>
@@ -648,7 +648,7 @@ export default function EventsView() {
             action={
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90 shrink-0"
+                className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
                 style={{ background: "#0080FF" }}
               >
                 <Plus size={14} />
