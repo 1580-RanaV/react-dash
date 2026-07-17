@@ -217,7 +217,8 @@ export default function LanguageSwitcher() {
       <button
         ref={btnRef}
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 select-none active:scale-95 transition-all duration-100 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+        className="relative flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-bold select-none active:scale-95 transition-all duration-100 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+        style={{ color: "#0080FF" }}
         aria-label="Switch language"
       >
         <svg width="16" height="16" viewBox="0 0 100 100" aria-hidden style={{ display: "block", flexShrink: 0 }}>
@@ -234,17 +235,21 @@ export default function LanguageSwitcher() {
       {open && (
         <div
           ref={menuRef}
-          className="absolute right-0 z-200 mt-1.5 w-52 rounded-xl border shadow-lg overflow-hidden"
-          style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
+          className="absolute right-0 z-200 mt-2 w-56 rounded-2xl overflow-hidden"
+          style={{
+            background: "var(--content-bg)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04)",
+          }}
         >
-          <div className="max-h-72 overflow-y-auto py-1">
+          <div className="max-h-72 overflow-y-auto py-1.5">
             {LOCALES.map((locale) => {
               const active = locale.code === selected.code;
               return (
                 <button
                   key={locale.code}
                   onClick={() => handleSelect(locale)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6 ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6 ${
                     active ? "bg-stone-50 dark:bg-white/4" : ""
                   }`}
                 >
@@ -253,11 +258,11 @@ export default function LanguageSwitcher() {
                       d={toPath(parseGlyph(locale.code))}
                       fill="#0080FF"
                       fillRule="nonzero"
-                      opacity={active ? 1 : 0.5}
+                      opacity={active ? 1 : 0.4}
                     />
                   </svg>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-xs font-medium text-stone-800 dark:text-stone-200 truncate">
+                    <span className="block text-xs font-semibold text-stone-800 dark:text-stone-200 truncate">
                       {locale.native}
                     </span>
                     <span className="block text-[10px] text-stone-400 dark:text-stone-500 truncate">
@@ -265,7 +270,7 @@ export default function LanguageSwitcher() {
                     </span>
                   </span>
                   <span className="shrink-0 text-[10px] font-mono text-stone-400 dark:text-stone-500 uppercase">
-                    {locale.code}
+                    {locale.code === "pt-BR" ? "PT" : locale.code.toUpperCase()}
                   </span>
                 </button>
               );

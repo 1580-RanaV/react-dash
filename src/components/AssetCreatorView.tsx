@@ -3,6 +3,7 @@
 import { useNavigate } from "react-router-dom";
 import { AlignLeft, Bell, Braces, Code, FileText, Image, Mail, MessageCircle, MessageSquare, Upload } from "lucide-react";
 import ImageCanvasView from "./ImageCanvasView";
+import DesktopOnlyGate from "./DesktopOnlyGate";
 
 const TYPE_META: Record<string, { label: string; icon: React.ElementType }> = {
   "image":       { label: "New Image",    icon: Image },
@@ -18,6 +19,10 @@ const TYPE_META: Record<string, { label: string; icon: React.ElementType }> = {
 };
 
 export default function AssetCreatorView({ type }: { type: string }) {
+  return <DesktopOnlyGate><AssetCreatorViewInner type={type} /></DesktopOnlyGate>;
+}
+
+function AssetCreatorViewInner({ type }: { type: string }) {
   const navigate = useNavigate();
 
   function goBack() {

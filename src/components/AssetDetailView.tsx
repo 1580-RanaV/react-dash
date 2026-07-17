@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import BackButton from "./BackButton";
+import DesktopOnlyGate from "./DesktopOnlyGate";
 
 const ASSET_NAMES: Record<string, string> = {
   "a1":  "Claude design - Email 1",
@@ -18,6 +19,10 @@ const ASSET_NAMES: Record<string, string> = {
 };
 
 export default function AssetDetailView({ id, onBack }: { id: string; onBack: () => void }) {
+  return <DesktopOnlyGate><AssetDetailViewInner id={id} onBack={onBack} /></DesktopOnlyGate>;
+}
+
+function AssetDetailViewInner({ id, onBack }: { id: string; onBack: () => void }) {
   const title = ASSET_NAMES[id] ?? "Untitled asset";
   const dragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });

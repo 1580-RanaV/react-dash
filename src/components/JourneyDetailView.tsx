@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import DesktopOnlyGate from "./DesktopOnlyGate";
 import {
   BarChart2, CalendarDays, ChevronDown, CheckCircle2, Clock,
   Copy, Filter, GitFork, Minus, Pause, Plus, Route, Settings, SlidersHorizontal, Trash2, Upload, Zap, Circle, X,
@@ -934,6 +935,10 @@ function JourneySettings() {
 // ── Main view ──────────────────────────────────────────────────────────────────
 
 export default function JourneyDetailView({ id }: { id: string }) {
+  return <DesktopOnlyGate><JourneyDetailViewInner id={id} /></DesktopOnlyGate>;
+}
+
+function JourneyDetailViewInner({ id }: { id: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as TabKey) ?? "journey";

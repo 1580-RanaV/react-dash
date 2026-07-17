@@ -40,7 +40,8 @@ export default function UpgradeButton() {
 
       <button
         onClick={burst}
-        className="relative flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 select-none active:scale-95 transition-all duration-100 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-blue-300 dark:border-blue-500/40"
+        className="relative flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-bold select-none active:scale-95 transition-all duration-100 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+        style={{ color: "#0080FF" }}
       >
         <Gem size={12} className="shrink-0" />
         {t("Upgrade")}

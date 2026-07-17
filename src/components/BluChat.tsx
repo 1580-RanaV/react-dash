@@ -276,7 +276,7 @@ export default function BluChat({
   onBackToPanel?: () => void;
   onHeaderMouseDown?: (e: React.MouseEvent) => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(SAMPLE);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
@@ -931,6 +931,12 @@ export default function BluChat({
           style={{ opacity: msgBottomFade ? 1 : 0, background: "linear-gradient(to top, var(--content-bg) 0%, transparent 100%)" }}
         />
         <div ref={messagesRef} onScroll={checkMsgFades} className="h-full overflow-y-auto px-4 py-4 space-y-5 chat-scroll">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full gap-1 pb-8 select-none text-center">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Ask Blu anything</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500">What are you working on today?</p>
+          </div>
+        )}
         {messages.map((msg) => (
           <div key={msg.id} className="flex gap-2.5 items-start animate-fade-up">
             {/* Avatar */}
