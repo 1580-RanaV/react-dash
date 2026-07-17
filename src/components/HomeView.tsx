@@ -1,6 +1,7 @@
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Greeting from "./Greeting";
@@ -20,6 +21,7 @@ import {
   AlertTriangle, AlertCircle, MessageSquare, Bell, Smartphone, Bot,
   ArrowDown, Check, Wand2, FileImage, Route,
   Clapperboard, PenTool, Shuffle, Package, Handshake, CalendarClock,
+  Play, X, ClipboardList,
 } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 
@@ -1216,7 +1218,7 @@ function DesignDashboard() {
 
       <div className="max-w-2xl"><BrandSetupChecklist /></div>
       <HeroVideo />
-      <div className="max-w-2xl"><RecentDesigns /></div>
+      <RecentDesigns />
     </div>
   );
 }
@@ -1795,7 +1797,7 @@ function SetupChecklist({ title, steps, initialCompleted = new Set() }: SetupChe
       }}
       onTransitionEnd={() => { if (closing) setClosed(true); }}
     >
-      <div className="mt-6 mb-2 rounded-xl border border-stone-200 dark:border-(--border) overflow-hidden" style={{ background: "var(--content-bg)" }}>
+      <div className="mt-0 mb-4 rounded-xl border border-stone-200 dark:border-(--border) overflow-hidden" style={{ background: "var(--content-bg)" }}>
         {/* Header */}
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-4 mb-2.5">
@@ -1902,6 +1904,44 @@ function SalesSetupChecklist() {
   );
 }
 
+// ── Marketing checklist ───────────────────────────────────────────────────────
+
+const MARKETING_SETUP_STEPS: SetupStepDef[] = [
+  { id: "connect-catalog",  title: "Connect your catalog",      desc: "Sync products and feeds for personalization",        action: "Connect" },
+  { id: "create-journey",   title: "Create your first journey", desc: "Design a multi-step automation in the canvas",       action: "Open"    },
+  { id: "launch-experience",title: "Launch an experience",      desc: "Deploy an onboarding flow or popup to your product", action: "Open"    },
+  { id: "setup-segment",    title: "Define an audience segment",desc: "Target users by behavior, attributes, or lifecycle", action: "Open"    },
+];
+
+function MarketingSetupChecklist() {
+  return (
+    <SetupChecklist
+      title="Get your marketing engine ready"
+      steps={MARKETING_SETUP_STEPS}
+      initialCompleted={new Set(["connect-catalog"])}
+    />
+  );
+}
+
+// ── Analytics checklist ───────────────────────────────────────────────────────
+
+const ANALYTICS_SETUP_STEPS: SetupStepDef[] = [
+  { id: "connect-tracking",  title: "Connect event tracking",     desc: "Install the Intempt SDK on your web or app",       action: "Connect" },
+  { id: "create-board",      title: "Create your first board",    desc: "Build a custom analytics dashboard",               action: "Open"    },
+  { id: "setup-funnel",      title: "Set up a funnel",            desc: "Track conversion steps from signup to paid",       action: "Open"    },
+  { id: "review-retention",  title: "Review your retention chart",desc: "Understand where users drop off after activation", action: "Open"    },
+];
+
+function AnalyticsSetupChecklist() {
+  return (
+    <SetupChecklist
+      title="Set up analytics to unlock insights"
+      steps={ANALYTICS_SETUP_STEPS}
+      initialCompleted={new Set(["connect-tracking"])}
+    />
+  );
+}
+
 // ── main export ───────────────────────────────────────────────────────────────
 
 const HOME_TABS = [
@@ -1921,6 +1961,8 @@ type HomeBentoCard = {
   action?: string;
   icon: LucideIcon;
   signal?: string;
+  href?: string;
+  status?: "warning" | "good";
   chart?: {
     type: "bars" | "line" | "stack" | "progress";
     label?: string;
@@ -1934,11 +1976,10 @@ const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeB
     title: "Design wrapped",
     subtitle: "What Blu saw across Brand, Asset Library, Avatars, Scenes, Poses, and Design System in the last 24 hours.",
     cards: [
-      { id: "assets", perspective: "summary", eyebrow: "Summary", title: "127 assets generated", value: "127", body: "Packshots and email banners carried most of the creative output today.", icon: FileImage, signal: "+24%" },
-      { id: "recipes", perspective: "summary", eyebrow: "Summary", title: "8 recipes stayed active", value: "8", body: "White-bg packshot and email hero banner are doing most of the repeat work.", icon: Wand2 },
-      { id: "brand", perspective: "summary", eyebrow: "Summary", title: "Brand kit is almost ready", value: "80%", body: "Colors, primary font, and light logo are set. Dark logo is still missing.", icon: Palette },
-      { id: "credits", perspective: "summary", eyebrow: "Summary", title: "Credits are getting tight", value: "77%", body: "3,840 of 5,000 credits used this cycle.", icon: Zap },
-      { id: "avatars", perspective: "summary", eyebrow: "Summary", title: "Avatar usage is concentrated", value: "79%", body: "Avatar A and B are driving most generated visuals.", icon: Users },
+      { id: "assets", perspective: "summary", eyebrow: "Asset Library", title: "Assets generated", value: "127", body: "Packshots and email banners carried most of the creative output today.", icon: FileImage, signal: "+24%", href: "/asset-library" },
+      { id: "recipes", perspective: "summary", eyebrow: "Recipes", title: "Active recipes", value: "8", body: "Reusable generation recipes currently producing brand assets.", icon: Wand2 },
+      { id: "brand", perspective: "summary", eyebrow: "Brand", title: "Brand readiness", value: "80%", body: "Brand colors, font, and theme are set. Dark logo is still missing.", icon: Palette, signal: "Missing logo", href: "/brand-kit" },
+      { id: "creative-variety", perspective: "summary", eyebrow: "Creative", title: "Creative variety", value: "Warning", body: "Most generations are coming from the same avatars and scenes.", icon: AlertTriangle, signal: "2 avatars", status: "warning" },
       { id: "rec-logo", perspective: "blu", eyebrow: "Blu recommendation", title: "Upload the dark logo today", body: "Dark-mode email previews and generated creatives need the missing logo to keep branding consistent.", action: "Open Brand", icon: Bot, signal: "High impact" },
       { id: "rec-social", perspective: "blu", eyebrow: "Blu recommendation", title: "Turn packshots into social ads", body: "Social ad recipes are underused. Recycle the highest-performing packshots into square placements.", action: "Create recipe", icon: Target },
       { id: "rec-avatars", perspective: "blu", eyebrow: "Blu recommendation", title: "Add two more personas", body: "Reduce visual fatigue by adding a B2B buyer and retail shopper avatar.", action: "Add avatar", icon: UserPlus },
@@ -1954,7 +1995,7 @@ const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeB
       { id: "sent-mails", perspective: "summary", eyebrow: "Journeys", title: "Sent mails", value: "3.4k", body: "Journey emails sent across active flows.", icon: Send, signal: "+12%" },
       { id: "opens", perspective: "summary", eyebrow: "Journeys", title: "Opens", value: "3.2k", body: "Email opens from active journeys.", icon: MailOpen, signal: "+8%" },
       { id: "clicks-replies", perspective: "summary", eyebrow: "Journeys", title: "Clicks / replies", value: "1.6k", body: "Combined clicks and replies from journey messages.", icon: MousePointerClick, signal: "+6%" },
-      { id: "journey-health", perspective: "summary", eyebrow: "Journeys", title: "Journey health", value: "Warning", body: "Revenue spiked sharply on May 26.", icon: AlertTriangle, signal: "+140%" },
+      { id: "journey-health", perspective: "summary", eyebrow: "Journeys", title: "Journey health", value: "Warning", body: "Revenue spiked sharply on May 26.", icon: AlertTriangle, signal: "+140%", status: "warning" },
       { id: "journeys", perspective: "summary", eyebrow: "Summary", title: "Journey revenue", value: "$15,047,484.74", body: "Total revenue from running journeys over the current period.", icon: Route, chart: { type: "line", label: "journey-revenue", values: [0, 12000, 175000, 230000, 260000, 290000, 310000, 340000, 370000, 400000, 430000, 460000, 490000, 510000, 530000, 560000, 900000, 1300000, 3600000, 4700000, 5400000, 6100000, 6200000, 14900000, 15047484, 15047484, 15047484, 15047484, 15047484, 15047484] } },
       { id: "ab", perspective: "summary", eyebrow: "Summary", title: "Experience attributed revenue", value: "$7,523,742.37", body: "Intempt attributed revenue from active experiences and personalization.", icon: Shuffle, chart: { type: "line", label: "experience-revenue", values: [0, 6000, 87500, 115000, 130000, 145000, 155000, 170000, 185000, 200000, 215000, 230000, 245000, 255000, 265000, 280000, 450000, 650000, 1800000, 2350000, 2700000, 3050000, 3100000, 7450000, 7523742, 7523742, 7523742, 7523742, 7523742, 7523742] } },
       { id: "bounce", perspective: "summary", eyebrow: "Summary", title: "Deliverability needs attention", value: "4.8%", body: "Bounce rate is above the safe range.", icon: AlertCircle },
@@ -1969,13 +2010,13 @@ const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeB
     title: "Sales wrapped",
     subtitle: "A 24-hour read across Accounts, Deals, Meetings, Scheduler, and revenue movement.",
     cards: [
-      { id: "sales-users", perspective: "summary", eyebrow: "Users", title: "Tracked users", value: "3.79K", body: "Known users available for sales follow-up and segmentation.", icon: Users, signal: "+118" },
+      { id: "sales-users", perspective: "summary", eyebrow: "Accounts", title: "Active accounts", value: "142", body: "Known accounts with recent activity available for follow-up.", icon: Users, signal: "+8" },
       { id: "attended-meetings", perspective: "summary", eyebrow: "Meetings", title: "Meetings attended", value: "7", body: "Meetings attended in the last 7 days.", icon: Calendar, signal: "Last 7d" },
-      { id: "popular-event", perspective: "summary", eyebrow: "Events", title: "Top fired event", value: "Add to cart", body: "Most common buying-intent event in the last 24 hours.", icon: ShoppingCart, signal: "8.4k" },
+      { id: "deals-won", perspective: "summary", eyebrow: "Deals", title: "Deals won this week", value: "4", body: "4 deals moved to Closed Won — $68k in recognized revenue.", icon: Handshake, signal: "$68k" },
       { id: "pipeline", perspective: "summary", eyebrow: "Deals", title: "Active pipeline", value: "$284k", body: "Most value sits between Qualified and Proposal.", icon: Briefcase, signal: "+12%" },
-      { id: "sales-health", perspective: "summary", eyebrow: "Health", title: "Sales health", value: "Warning", body: "Meeting attendance is lagging behind qualified deal growth.", icon: AlertTriangle, signal: "Watch" },
+      { id: "sales-health", perspective: "summary", eyebrow: "Health", title: "Sales health", value: "Warning", body: "Meeting attendance is lagging behind qualified deal growth.", icon: AlertTriangle, signal: "Watch", status: "warning" },
       { id: "upcoming-meetings", perspective: "summary", eyebrow: "Meetings", title: "Upcoming 3 meetings", value: "3", body: "Next meetings from your scheduler with join actions.", icon: Calendar },
-      { id: "popular-events", perspective: "summary", eyebrow: "Events", title: "Popular fired events", value: "8.4k", body: "Buying-intent events ranked by activity.", icon: Activity },
+      { id: "pipeline-stages", perspective: "summary", eyebrow: "Pipeline", title: "Pipeline by stage", value: "194", body: "Active deals distributed across all pipeline stages.", icon: Briefcase },
       { id: "rec-followup", perspective: "blu", eyebrow: "Blu recommendation", title: "Touch FieldsUSA today", body: "Send a crisp next-step email and book the final decision call while the deal is warm.", action: "Schedule follow-up", icon: Bot, signal: "Urgent" },
       { id: "rec-reminders", perspective: "blu", eyebrow: "Blu recommendation", title: "Enable meeting reminders", body: "Add 24h and 1h reminders to recover no-shows with minimal effort.", action: "Enable reminders", icon: Bell },
       { id: "rec-sequence", perspective: "blu", eyebrow: "Blu recommendation", title: "Create a qualified-deal sequence", body: "A 4-step follow-up path should move more qualified deals into Proposal.", action: "Build sequence", icon: MailOpen },
@@ -2192,6 +2233,7 @@ function LargeBentoChart({ chart }: { chart: NonNullable<HomeBentoCard["chart"]>
 }
 
 function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
+  const navigate = useNavigate();
   const Icon = card.icon;
   const displayValue = card.value === "$15,047,484.74"
     ? "$15.0M"
@@ -2199,27 +2241,45 @@ function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
       ? "$7.5M"
       : card.value;
 
+  const statusBg =
+    card.status === "warning" ? "rgba(239,68,68,0.05)"
+    : card.status === "good"  ? "rgba(34,197,94,0.05)"
+    : "var(--content-bg)";
+
+  const iconClass =
+    card.status === "warning" ? "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400"
+    : card.status === "good"  ? "bg-green-50 text-green-500 dark:bg-green-500/10 dark:text-green-400"
+    : "bg-stone-100 text-blue-500 dark:bg-white/8";
+
+  const valueClass =
+    card.status === "warning" ? "text-red-600 dark:text-red-400"
+    : card.status === "good"  ? "text-green-600 dark:text-green-400"
+    : "text-stone-900 dark:text-stone-50";
+
+  const watermarkClass =
+    card.status === "warning" ? "text-red-500"
+    : card.status === "good"  ? "text-green-500"
+    : "text-blue-500";
+
   return (
     <div
-      className="relative min-h-[116px] overflow-hidden rounded-xl p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
-      style={{
-        background: "var(--content-bg)",
-        border: "1px solid var(--border)",
-      }}
+      onClick={card.href ? () => navigate(card.href!) : undefined}
+      className={`relative min-h-[116px] overflow-hidden rounded-xl p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm ${card.href ? "cursor-pointer" : ""}`}
+      style={{ background: statusBg, border: "1px solid var(--border)" }}
     >
       <div className="relative z-10 flex h-full flex-col justify-between gap-2.5">
         <div className="flex items-start justify-between gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8">
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
             <Icon size={15} />
           </span>
           {card.signal && <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{card.signal}</span>}
         </div>
         <div>
-          {displayValue && <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-50">{displayValue}</p>}
+          {displayValue && <p className={`text-2xl font-semibold leading-none tracking-tight ${valueClass}`}>{displayValue}</p>}
           <p className="mt-2 truncate text-sm font-medium leading-snug text-stone-700 dark:text-stone-200">{card.title}</p>
         </div>
       </div>
-      <span className="pointer-events-none absolute -bottom-5 -right-5 text-blue-500 opacity-[0.05]">
+      <span className={`pointer-events-none absolute -bottom-5 -right-5 opacity-[0.05] ${watermarkClass}`}>
         <Icon size={86} />
       </span>
     </div>
@@ -2234,7 +2294,7 @@ function GraphPanel({ card }: { card: HomeBentoCard }) {
     card.id === "mrr" ? "Analytics" :
     card.id === "active-users" ? "Out-of-the-box" :
     card.id === "upcoming-meetings" ? "Meetings" :
-    card.id === "popular-events" ? "Events" :
+    card.id === "pipeline-stages" ? "Deals" :
     card.eyebrow;
 
   if (card.id === "upcoming-meetings") {
@@ -2283,13 +2343,22 @@ function GraphPanel({ card }: { card: HomeBentoCard }) {
     );
   }
 
-  if (card.id === "popular-events") {
-    const events = [
-      { name: "Added to cart", count: "8.4k", pct: 100 },
-      { name: "Checkout started", count: "3.1k", pct: 68 },
-      { name: "Product viewed", count: "21.7k", pct: 54 },
-      { name: "Book-a-demo", count: "428", pct: 31 },
+  if (card.id === "pipeline-stages") {
+    const STAGE_COLORS: Record<string, string> = {
+      "Prospect":    "#0080FF",
+      "Qualified":   "#0080FF",
+      "Proposal":    "#0080FF",
+      "Negotiation": "#0080FF",
+      "Closed Won":  "#0080FF",
+    };
+    const stages = [
+      { name: "Prospect",    deals: 84, value: "$420k", pct: 100 },
+      { name: "Qualified",   deals: 52, value: "$312k", pct: 74  },
+      { name: "Proposal",    deals: 28, value: "$224k", pct: 53  },
+      { name: "Negotiation", deals: 12, value: "$108k", pct: 26  },
+      { name: "Closed Won",  deals: 18, value: "$126k", pct: 30  },
     ];
+    const totalDeals = stages.reduce((s, r) => s + r.deals, 0);
 
     return (
       <div
@@ -2298,26 +2367,27 @@ function GraphPanel({ card }: { card: HomeBentoCard }) {
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-3xl font-extrabold leading-none tracking-tight text-stone-900 dark:text-stone-100">33.6k</p>
-            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Total buying-intent events</p>
-            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-500">Top event: Added to cart</p>
+            <p className="text-3xl font-extrabold leading-none tracking-tight text-stone-900 dark:text-stone-100">{totalDeals}</p>
+            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Active deals across all stages</p>
+            <p className="mt-2 text-xs font-medium text-blue-600 dark:text-blue-400">$284k weighted pipeline value</p>
           </div>
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{graphBadge}</span>
         </div>
         <div className="space-y-3">
-          {events.map((event, index) => (
-            <div key={event.name}>
+          {stages.map((stage) => (
+            <div key={stage.name}>
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-stone-700 dark:text-stone-300">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-stone-100 text-[10px] font-semibold text-stone-500 dark:bg-white/8 dark:text-stone-400">
-                    {index + 1}
-                  </span>
-                  <span className="truncate">{event.name}</span>
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STAGE_COLORS[stage.name] }} />
+                  <span className="truncate">{stage.name}</span>
                 </span>
-                <span className="text-xs font-semibold text-stone-900 dark:text-stone-100">{event.count}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-stone-400">{stage.value}</span>
+                  <span className="w-6 text-right text-xs font-semibold text-stone-900 dark:text-stone-100">{stage.deals}</span>
+                </div>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: `${event.pct}%` }} />
+                <div className="h-full rounded-full transition-all" style={{ width: `${stage.pct}%`, background: STAGE_COLORS[stage.name] }} />
               </div>
             </div>
           ))}
@@ -2365,17 +2435,15 @@ function GraphPanel({ card }: { card: HomeBentoCard }) {
       }}
     >
       <div className="relative z-10 flex h-full flex-col">
-        <div className="mb-5">
-          <div className="mb-3 flex justify-end">
-            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-              {graphBadge}
-            </span>
-          </div>
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             {card.value && <p className="text-3xl font-extrabold leading-none tracking-tight text-stone-900 dark:text-stone-100">{card.value}</p>}
-            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">{card.title}</p>
-            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-500">{card.signal ? `${card.signal} vs. previous period` : "-- vs. previous period"}</p>
+            <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{card.title}</p>
+            <p className="mt-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">{card.signal ? `${card.signal} vs. previous period` : "-- vs. previous period"}</p>
           </div>
+          <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+            {graphBadge}
+          </span>
         </div>
 
         {card.chart && <div className="min-h-0 flex-1"><LargeBentoChart chart={card.chart} /></div>}
@@ -2391,57 +2459,40 @@ function BluSuggestionCard({ card }: { card: HomeBentoCard }) {
       ? "#f59e0b"
       : "#0080FF";
 
-  function askBlu() {
-    const prompt = [
-      `Act on this recommendation: ${card.title}`,
-      card.body,
-      card.action ? `Recommended action: ${card.action}` : "",
-      "Use the current project context and suggest the next concrete steps.",
-    ].filter(Boolean).join("\n\n");
-
-    window.dispatchEvent(new Event("open-blu-chat"));
-    window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt } }));
-  }
-
   return (
-    <button
-      type="button"
-      onClick={askBlu}
-      className="group relative min-h-[116px] overflow-hidden rounded-xl py-4 pl-5 pr-4 text-left transition-colors hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:hover:bg-white/4"
-      style={{
-        background: "var(--content-bg)",
-        border: "1px solid var(--border)",
-      }}
+    <div
+      className="group flex min-h-[116px] flex-col overflow-hidden rounded-xl p-4 transition-all duration-150"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
     >
-      <span className="absolute left-0 top-0 h-full w-1.5" style={{ background: toneColor }} />
-      <div className="flex h-full">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <span className="truncate text-xs font-medium text-stone-400 dark:text-stone-500">
-              Recommendation
-            </span>
-            {card.signal && (
-              <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-                {card.signal}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{card.title}</p>
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{card.body}</p>
-          </div>
-          <div className="mt-auto flex justify-end pt-3">
-            <span className="shrink-0 text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700 dark:text-blue-300 dark:group-hover:text-blue-200">
-              Ask Blu
-            </span>
-          </div>
-        </div>
+      {/* Top row: priority badge + mascot */}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {card.signal ? (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            style={{ background: `${toneColor}18`, color: toneColor }}
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: toneColor }} />
+            {card.signal}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-white/8 dark:text-stone-400">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-stone-500" />
+            Suggestion
+          </span>
+        )}
+        <img src="/mascot.png" alt="Blu" width={20} height={20} className="shrink-0 object-contain opacity-40 dark:opacity-30" />
       </div>
-    </button>
+
+      {/* Title + body */}
+      <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{card.title}</p>
+      <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{card.body}</p>
+
+    </div>
   );
 }
 
 function LatestGenerationsCard() {
+  const navigate = useNavigate();
   const items = [
     { name: "Claude design - Email 1", type: "Email", ago: "2 days ago", icon: MailOpen },
     { name: "Flash sale SMS with Liquid variables", type: "SMS", ago: "3 days ago", icon: MessageSquare },
@@ -2451,19 +2502,13 @@ function LatestGenerationsCard() {
   ];
 
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        background: "var(--content-bg)",
-        border: "1px solid var(--border)",
-      }}
-    >
+    <div className="rounded-xl px-5 py-4">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Latest generations</p>
           <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Recent assets generated from Blu and the asset library</p>
         </div>
-        <button className="h-8 rounded-md bg-blue-500 px-3 text-xs font-semibold text-white transition-colors hover:bg-blue-600">
+        <button onClick={() => navigate("/asset-library")} className="h-8 rounded-md bg-blue-500 px-3 text-xs font-semibold text-white transition-colors hover:bg-blue-600">
           Show all
         </button>
       </div>
@@ -2491,27 +2536,126 @@ function LatestGenerationsCard() {
   );
 }
 
+const TAB_VIDEOS: Record<string, string> = {
+  design:     "https://www.youtube.com/embed/XAyYkqmHzhc?autoplay=1&rel=0&modestbranding=1",
+  sales:      "https://www.youtube.com/embed/UQNNQb7JPvw?autoplay=1&rel=0&modestbranding=1",
+  marketing:  "https://www.youtube.com/embed/9LuIOESoiCc?autoplay=1&rel=0&modestbranding=1",
+  analytics:  "https://www.youtube.com/embed/Z0KjV40InIo?autoplay=1&rel=0&modestbranding=1",
+};
+
+function VideoOverlay({ src, onClose }: { src: string; onClose: () => void }) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-300 flex items-center justify-center p-4 sm:p-8"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl"
+        style={{
+          background: "rgba(255,255,255,0.07)",
+          border: "1px solid rgba(255,255,255,0.16)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+          style={{ background: "rgba(255,255,255,0.14)", color: "#fff" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.24)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.14)")}
+          aria-label="Close"
+        >
+          <X size={14} />
+        </button>
+        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src={src}
+            title="Introduction video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+const TAB_CHECKLIST: Record<string, React.ReactNode> = {
+  design:    <BrandSetupChecklist />,
+  sales:     <SalesSetupChecklist />,
+  marketing: <MarketingSetupChecklist />,
+  analytics: <AnalyticsSetupChecklist />,
+};
+
 function HomeBentoDashboard({ tab }: { tab: string }) {
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const dashboard = HOME_BENTO[tab] ?? HOME_BENTO.design;
   const allSummaryCards = dashboard.cards.filter((card) => card.perspective === "summary");
-  const summaryCount = tab === "analytics" ? 6 : 5;
+  const summaryCount = tab === "analytics" ? 6 : tab === "design" ? 4 : 5;
   const summaryCards = allSummaryCards.slice(0, summaryCount);
-  const preferredChartIds = tab === "marketing" ? new Set(["journeys", "ab"]) : tab === "sales" ? new Set(["upcoming-meetings", "popular-events"]) : null;
+  const preferredChartIds = tab === "marketing" ? new Set(["journeys", "ab"]) : tab === "sales" ? new Set(["upcoming-meetings", "pipeline-stages"]) : null;
   const chartCards = (preferredChartIds
     ? allSummaryCards.filter((card) => preferredChartIds.has(card.id))
     : allSummaryCards.filter((card) => card.chart)
   ).slice(0, 2);
   const fallbackChartCards = chartCards.length >= 2 ? chartCards : allSummaryCards.slice(0, 2);
   const bluCards = dashboard.cards.filter((card) => card.perspective === "blu").slice(0, 4);
+  const videoSrc = TAB_VIDEOS[tab];
 
   return (
     <div className="px-6 pt-6 pb-8 animate-fade-up">
-      <div className="mb-5">
+      {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
+
+      <div className="mb-4 flex items-start justify-between gap-4">
         <Greeting />
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setChecklistOpen((o) => !o)}
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${checklistOpen ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400" : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"}`}
+            style={{ borderColor: "var(--border)" }}
+            title="Setup checklist"
+          >
+            <ClipboardList size={14} />
+          </button>
+          {videoSrc && (
+            <button
+              onClick={() => setVideoOpen(true)}
+              className="flex items-center gap-1.5 h-8 rounded-lg px-3 text-xs font-medium border transition-colors hover:bg-stone-50 dark:hover:bg-white/6 text-stone-600 dark:text-stone-400"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <Play size={11} className="fill-current text-blue-500" />
+              Watch intro
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Collapsible checklist */}
+      <div
+        style={{
+          maxHeight: checklistOpen ? 600 : 0,
+          opacity: checklistOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+        }}
+      >
+        {TAB_CHECKLIST[tab]}
       </div>
 
       <div className="space-y-3">
-        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tab === "analytics" ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tab === "analytics" ? "lg:grid-cols-6" : tab === "design" ? "lg:grid-cols-4" : "lg:grid-cols-5"}`}>
           {summaryCards.map((card) => (
             <SummaryKpiCard key={card.id} card={card} />
           ))}

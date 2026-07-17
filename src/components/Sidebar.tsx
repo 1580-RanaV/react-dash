@@ -593,6 +593,7 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
           )}
         </div>
 
+
         {/* Expand toggle — only in collapsed mode */}
         {collapsed && (
           <div className="pb-1">
