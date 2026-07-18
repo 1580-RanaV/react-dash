@@ -10,6 +10,7 @@ import SlidingSidebar from "./SlidingSidebar";
 import AddIntegrationDrawer from "./AddIntegrationDrawer";
 import CreateApiKeyDrawer from "./CreateApiKeyDrawer";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import GmailConnectModal from "./GmailConnectModal";
 
 const tabs = [
   { key: "connections", label: "Connections", icon: <Workflow size={15} /> },
@@ -43,6 +44,7 @@ const INTEGRATION_DOMAIN: Record<string, string> = {
   "Amplitude":        "amplitude.com",
   "Auth0":            "auth0.com",
   "Pipedrive":        "pipedrive.com",
+  "Gmail":            "gmail.com",
 };
 
 const INTEGRATION_FALLBACK: Record<string, { bg: string; text: string; initials: string }> = {
@@ -304,6 +306,8 @@ export default function ConnectionsView() {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab") ?? "connections";
   const [addOpen, setAddOpen] = useState(false);
+  const [gmailModalOpen, setGmailModalOpen] = useState(false);
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [createKeyOpen, setCreateKeyOpen] = useState(false);
   const [selectedConnId, setSelectedConnId] = useState<string | null>(null);
 
@@ -342,7 +346,21 @@ export default function ConnectionsView() {
     const statusFilters = [...connActiveFilters].filter((k) => STATUS_KEYS.has(k));
     const typeFilters   = [...connActiveFilters].filter((k) => TYPE_KEYS.has(k));
 
-    let rows = connRows;
+    const gmailRow: TableRow = {
+      id: "gmail-workspace",
+      cells: {
+        name: "Gmail Workspace",
+        integration: <IntegrationLogo name="Gmail" />,
+        type: "Destination",
+        status: gmailConnected
+          ? { label: "Active",        tone: "green" }
+          : { label: "Not connected", tone: "gray"  },
+        lastUpdated: { value: gmailConnected ? "Just now" : "—", muted: true },
+        createdBy: gmailConnected ? createdByCell("Rana V") : "—",
+      },
+    };
+
+    let rows = [gmailRow, ...connRows];
     if (connActiveFilters.size > 0) {
       rows = rows.filter((r) => {
         const rowStatus = (r.cells.status as TableStatus).label;
@@ -355,7 +373,7 @@ export default function ConnectionsView() {
 
     return rows.map((row) => ({
       ...row,
-      menuItems: makeConnMenuItems(row),
+      menuItems: row.id === "gmail-workspace" ? [] : makeConnMenuItems(row),
       cells: {
         ...row.cells,
         name: renamingConnId === row.id ? (
@@ -374,7 +392,7 @@ export default function ConnectionsView() {
         ) : row.cells.name,
       },
     }));
-  }, [connRows, connActiveFilters, renamingConnId, renameConnValue]);
+  }, [connRows, connActiveFilters, renamingConnId, renameConnValue, gmailConnected]);
 
   // API key rows state
   const [apiKeyRows, setApiKeyRows] = useState<TableRow[]>(INITIAL_API_KEYS);
@@ -444,7 +462,10 @@ export default function ConnectionsView() {
             columns={CONNECTION_COLUMNS}
             rows={displayConnRows}
             searchPlaceholder="Search connections..."
-            onRowClick={(row) => setSelectedConnId(row.id)}
+            onRowClick={(row) => {
+              if (row.id === "gmail-workspace") { setGmailModalOpen(true); return; }
+              setSelectedConnId(row.id);
+            }}
             filterConfig={CONN_FILTER_CONFIG}
             onFilterChange={(f) => setConnActiveFilters(f)}
             action={
@@ -509,7 +530,18 @@ export default function ConnectionsView() {
         );
       })()}
 
-      {addOpen && <AddIntegrationDrawer onClose={() => setAddOpen(false)} />}
+      {addOpen && (
+        <AddIntegrationDrawer
+          onClose={() => setAddOpen(false)}
+          onGoogleConnect={() => { setAddOpen(false); setGmailModalOpen(true); }}
+        />
+      )}
+      {gmailModalOpen && (
+        <GmailConnectModal
+          onClose={() => setGmailModalOpen(false)}
+          onConnected={() => setGmailConnected(true)}
+        />
+      )}
       {createKeyOpen && (
         <CreateApiKeyDrawer
           onClose={() => setCreateKeyOpen(false)}

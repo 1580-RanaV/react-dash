@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import SubTabCorner from "./SubTabCorner";
 import Toggle from "./Toggle";
+import GmailConnectModal from "./GmailConnectModal";
+import GoogleCalendarModal from "./GoogleCalendarModal";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -545,10 +547,25 @@ function OOOSection() {
   );
 }
 
-function ConnRow({ logo, name }: { logo: string; name: string }) {
+function ConnRow({
+  logo,
+  name,
+  onConnectOverride,
+  isConnected: externalConnected,
+}: {
+  logo: string;
+  name: string;
+  onConnectOverride?: () => void;
+  isConnected?: boolean;
+}) {
   const [state, setState] = useState<"idle" | "loading" | "connected">("idle");
+  const connected = externalConnected !== undefined ? externalConnected : state === "connected";
 
   function handleConnect() {
+    if (onConnectOverride) {
+      onConnectOverride();
+      return;
+    }
     setState("loading");
     setTimeout(() => setState("connected"), 1400);
   }
@@ -560,7 +577,7 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
           <img src={logo} alt={name} width={20} height={20} className="rounded shrink-0 object-contain" />
           <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{name}</span>
         </div>
-        {state === "connected" ? (
+        {connected ? (
           <button
             onClick={() => setState("idle")}
             className="h-9 px-3 rounded-md border border-stone-200 dark:border-(--border) text-xs font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors"
@@ -586,7 +603,7 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
           </button>
         )}
       </div>
-      {state === "connected" && (
+      {connected && (
         <div className="mt-1.5 flex flex-col gap-0.5">
           <p className="text-xs text-stone-400 dark:text-stone-500">
             Connected as <span className="font-medium text-stone-600 dark:text-stone-400">rana@intempt.com</span>
@@ -601,11 +618,38 @@ function ConnRow({ logo, name }: { logo: string; name: string }) {
 }
 
 function ConnectionsSettingsView() {
+  const [gmailModalOpen, setGmailModalOpen] = useState(false);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+
   return (
     <div>
       <SectionHeader title="Connections" sub="Connect your calendar and mail integrations used for booking, scheduling, and AI-assisted replies." />
-      <ConnRow logo="https://cdn.brandfetch.io/gmail.com/icon?c=1idhE0Bg4BXpFRYkYnt" name="Gmail" />
-      <ConnRow logo="/gmeet.png" name="Google Calendar" />
+      <ConnRow
+        logo="https://cdn.brandfetch.io/gmail.com/icon?c=1idhE0Bg4BXpFRYkYnt"
+        name="Gmail"
+        onConnectOverride={() => setGmailModalOpen(true)}
+        isConnected={gmailConnected}
+      />
+      <ConnRow
+        logo="/gmeet.png"
+        name="Google Calendar"
+        onConnectOverride={() => setCalendarModalOpen(true)}
+        isConnected={calendarConnected}
+      />
+      {gmailModalOpen && (
+        <GmailConnectModal
+          onClose={() => setGmailModalOpen(false)}
+          onConnected={() => { setGmailConnected(true); setGmailModalOpen(false); }}
+        />
+      )}
+      {calendarModalOpen && (
+        <GoogleCalendarModal
+          onClose={() => setCalendarModalOpen(false)}
+          onConnected={() => { setCalendarConnected(true); setCalendarModalOpen(false); }}
+        />
+      )}
     </div>
   );
 }

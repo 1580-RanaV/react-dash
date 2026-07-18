@@ -15,6 +15,7 @@ interface Integration {
   domain: string;
   type: IntegrationType;
   logoOverride?: React.ReactNode;
+  onConnect?: () => void;
 }
 
 const TYPE_LABEL: Record<IntegrationType, string> = {
@@ -56,19 +57,29 @@ const DESTINATIONS: Integration[] = [
   { name: "Amazon SES",       description: "Email sending via verified SES domain.",          domain: "amazon.com",   type: "destination" },
 ];
 
-export default function AddIntegrationDrawer({ onClose }: { onClose: () => void }) {
+export default function AddIntegrationDrawer({
+  onClose,
+  onGoogleConnect,
+}: {
+  onClose: () => void;
+  onGoogleConnect?: () => void;
+}) {
+  const destinations = DESTINATIONS.map((d) =>
+    d.name === "Workspace" ? { ...d, onConnect: onGoogleConnect } : d
+  );
+
   return (
     <SlidingSidebar title="Add Integration" onClose={onClose}>
       <div className="flex flex-col gap-7">
         <IntegrationSection title="Sources" items={SOURCES} />
         <IntegrationSection title="Platforms" badge="Mapping Enabled" items={PLATFORMS} />
-        <IntegrationSection title="Destinations" items={DESTINATIONS} />
+        <IntegrationSection title="Destinations" items={destinations} />
       </div>
     </SlidingSidebar>
   );
 }
 
-function IntegrationSection({ title, badge, items }: { title: string; badge?: string; items: Integration[] }) {
+function IntegrationSection({ title, badge, items }: { title: string; badge?: string; items: readonly Integration[] }) {
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
@@ -105,6 +116,7 @@ function IntegrationCard({ item }: { item: Integration }) {
     <>
       <div
         ref={cardRef}
+        onClick={item.onConnect}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setTooltipPos(null)}
         className="flex flex-col items-center gap-2 rounded-xl border border-transparent p-3 text-center cursor-pointer transition-all hover:border-stone-100 hover:bg-stone-50 dark:hover:border-white/8 dark:hover:bg-white/4"
