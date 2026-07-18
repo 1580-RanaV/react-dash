@@ -97,7 +97,7 @@ export default function App() {
   return (
     <LocaleProvider>
     <BrowserRouter>
-      <div className="h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+<div className="h-full" style={{ fontFamily: "Inter, sans-serif" }}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
 
