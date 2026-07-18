@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Toggle from "./Toggle";
-import { CalendarDays, ChevronDown, Clock3, Shield, Sparkles, Users } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
 
 type Option = {
@@ -104,26 +104,37 @@ function Select({
 
 
 function Section({
-  icon,
   title,
   description,
   children,
+  inline = false,
 }: {
-  icon: React.ReactNode;
   title: string;
   description?: string;
   children?: React.ReactNode;
+  inline?: boolean;
 }) {
+  if (inline) {
+    return (
+      <section className="py-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h3>
+            {description ? <p className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">{description}</p> : null}
+          </div>
+          {children ? <div className="shrink-0">{children}</div> : null}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-2">
-      <div className="mb-3 flex items-start gap-3">
-        <span className="mt-0.5 text-stone-500 dark:text-stone-400">{icon}</span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h3>
-          {description ? <p className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">{description}</p> : null}
-        </div>
+      <div className="mb-3 min-w-0">
+        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h3>
+        {description ? <p className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">{description}</p> : null}
       </div>
-      {children ? <div className="pl-7">{children}</div> : null}
+      {children}
     </section>
   );
 }
@@ -137,7 +148,7 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
   const [notice, setNotice] = useState("1");
 
   const durationOptions = [
-    { value: "30", label: "30 min" },
+    { value: "30", label: "30 minutes" },
     { value: "60", label: "1 hour" },
     { value: "120", label: "2 hours" },
     { value: "240", label: "4 hours" },
@@ -170,17 +181,15 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
     >
       <div className="space-y-4">
         <Field label="Event name *">
-          <TextInput placeholder="e.g., Product Demo" />
+          <TextInput placeholder="Individual (one-on-one)" />
         </Field>
 
         <Section
-          icon={<Sparkles size={16} />}
           title="Blu Codewords"
           description="Configure how Blu recognizes this booking type in conversation threads."
         >
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-stone-100">
-              <Shield size={15} className="text-stone-500 dark:text-stone-400" />
+            <div className="text-sm font-semibold text-stone-900 dark:text-stone-100">
               When I say:
             </div>
             <p className="text-xs leading-5 text-stone-500 dark:text-stone-400">
@@ -190,8 +199,7 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
           </div>
 
           <div className="mt-5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-stone-100">
-              <CalendarDays size={15} className="text-stone-500 dark:text-stone-400" />
+            <div className="text-sm font-semibold text-stone-900 dark:text-stone-100">
               Meeting Confirmation
             </div>
             <Toggle on={meetingConfirmation} onClick={() => setMeetingConfirmation(v => !v)} size="md" />
@@ -199,7 +207,6 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
         </Section>
 
         <Section
-          icon={<Clock3 size={16} />}
           title="Meeting Hours"
           description="Set custom hours for this booking type or inherit your global availability."
         >
@@ -209,28 +216,24 @@ export default function CreateBookingDrawer({ onClose }: { onClose: () => void }
           </div>
         </Section>
 
-        <Section icon={<Users size={16} />} title="Event Type">
-          <div className="flex justify-start">
-            <Select
-              value={eventType}
-              onChange={setEventType}
-              width="w-[206px]"
-              options={[
-                { value: "individual", label: "Individual (one-on-one)" },
-                { value: "round-robin", label: "Round robin" },
-                { value: "group", label: "Group" },
-              ]}
-            />
-          </div>
+        <Section title="Event Type" inline>
+          <Select
+            value={eventType}
+            onChange={setEventType}
+            width="w-[206px]"
+            options={[
+              { value: "individual", label: "Individual (one-on-one)" },
+              { value: "round-robin", label: "Round robin" },
+              { value: "group", label: "Group" },
+            ]}
+          />
         </Section>
 
-        <Section icon={<Clock3 size={16} />} title="Duration">
-          <div className="flex justify-start">
-            <Select value={duration} onChange={setDuration} options={durationOptions} width="w-[120px]" />
-          </div>
+        <Section title="Duration" inline>
+          <Select value={duration} onChange={setDuration} options={durationOptions} width="w-[120px]" />
         </Section>
 
-        <Section icon={<CalendarDays size={16} />} title="Booking window">
+        <Section title="Booking window">
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400">
             <span>Invitees can schedule</span>
             <Select

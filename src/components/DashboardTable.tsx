@@ -111,7 +111,7 @@ function ColInfoBtn({ text }: { text: string }) {
       </span>
       {show && (
         <span
-          className="pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-52 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
+          className="animate-tooltip-in pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-52 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
           style={{ background: "rgba(24,24,27,0.93)", backdropFilter: "blur(4px)" }}
         >
           <span

@@ -1508,8 +1508,14 @@ function DeleteConfirmModal({ target, onClose }: { target: DeleteTarget; onClose
         className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-(--raised) shadow-2xl border border-stone-100 dark:border-(--border) p-6 animate-fade-up"
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
+        >
+          <X size={15} />
+        </button>
         {/* Header */}
-        <div className="flex items-start gap-3 mb-5">
+        <div className="flex items-start gap-3 mb-5 pr-8">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "#fde8e8" }}>
             <AlertTriangle size={16} style={{ color: "#cc0000" }} />
           </div>
@@ -1837,7 +1843,7 @@ function DomainsSection() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
-            <button onClick={() => setModalOpen(false)} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+            <button onClick={() => setModalOpen(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
               <X size={15} />
             </button>
 
@@ -1950,7 +1956,7 @@ function MFASetupModal({ onClose, onVerified }: { onClose: () => void; onVerifie
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4">
-          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
             <X size={15} />
           </button>
           <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">Enable two-factor authentication</h2>
@@ -2260,7 +2266,7 @@ function InviteOrgMemberModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 shrink-0">
-          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
             <X size={15} />
           </button>
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Invite org member</h2>
@@ -2529,7 +2535,7 @@ function CreateCustomRoleModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 shrink-0">
-          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
             <X size={15} />
           </button>
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create custom role</h2>
@@ -2777,7 +2783,7 @@ function ApiKeysSection() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex-1 overflow-y-auto px-6 pt-6 pb-5">
-              <button onClick={closeModal} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8">
+              <button onClick={closeModal} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
                 <X size={15} />
               </button>
               <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create API key</h2>
@@ -3076,7 +3082,7 @@ function InviteMemberModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-5 shrink-0">
-          <button onClick={onClose} className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors">
+          <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100">
             <X size={15} />
           </button>
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Invite project member</h2>

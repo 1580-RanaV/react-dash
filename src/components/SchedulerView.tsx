@@ -8,6 +8,7 @@ import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import { Plus } from "lucide-react";
+import ViewTabs from "./ViewTabs";
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
@@ -17,16 +18,16 @@ const BOOKING_TYPES: {
   tags: string[];
   duration: string;
 }[] = [
-  { id: "1",  name: "test-meeting",     tags: ["Individual"],                    duration: "30m" },
-  { id: "2",  name: "Test Meeting",     tags: ["Round robin", "Product Team"],   duration: "15m" },
-  { id: "3",  name: "Product Demo",     tags: ["All",         "Product Team"],   duration: "30m" },
-  { id: "4",  name: "Test Booking 123", tags: ["Round robin", "Product Team"],   duration: "30m" },
-  { id: "5",  name: "Discovery Call",   tags: ["Round robin", "Product Team"],   duration: "30m" },
-  { id: "6",  name: "Onboarding-2",     tags: ["Round robin", "Product Team"],   duration: "1h"  },
-  { id: "7",  name: "Test meeting 3",   tags: ["Round robin", "Product Team"],   duration: "30m" },
-  { id: "8",  name: "Business",         tags: ["Round robin", "Product Team"],   duration: "30m" },
-  { id: "9",  name: "Onboarding",       tags: ["All",         "Product Team"],   duration: "1h"  },
-  { id: "10", name: "Product Query",    tags: ["Round robin", "Product Team"],   duration: "30m" },
+  { id: "1",  name: "test-meeting",     tags: ["Individual"],                    duration: "30 minutes" },
+  { id: "2",  name: "Test Meeting",     tags: ["Round robin", "Product Team"],   duration: "15 minutes" },
+  { id: "3",  name: "Product Demo",     tags: ["All",         "Product Team"],   duration: "30 minutes" },
+  { id: "4",  name: "Test Booking 123", tags: ["Round robin", "Product Team"],   duration: "30 minutes" },
+  { id: "5",  name: "Discovery Call",   tags: ["Round robin", "Product Team"],   duration: "30 minutes" },
+  { id: "6",  name: "Onboarding-2",     tags: ["Round robin", "Product Team"],   duration: "1 hour"  },
+  { id: "7",  name: "Test meeting 3",   tags: ["Round robin", "Product Team"],   duration: "30 minutes" },
+  { id: "8",  name: "Business",         tags: ["Round robin", "Product Team"],   duration: "30 minutes" },
+  { id: "9",  name: "Onboarding",       tags: ["All",         "Product Team"],   duration: "1 hour"  },
+  { id: "10", name: "Product Query",    tags: ["Round robin", "Product Team"],   duration: "30 minutes" },
 ];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -53,9 +54,10 @@ function VisibilityToggle() {
 
 const COLUMNS: TableColumn[] = [
   { key: "name",       label: "Name",       width: "28%"   },
-  { key: "tags",       label: "Type / Team", width: "280px" },
+  { key: "tags",       label: "Type / Team", width: "260px" },
   { key: "duration",   label: "Duration",   width: "120px" },
   { key: "visibility", label: "Visibility", width: "100px", align: "center" },
+  { key: "link",       label: "Link",       width: "80px",  align: "center" },
 ];
 
 
@@ -80,16 +82,6 @@ export default function SchedulerView() {
         ? { ...mi, onClick: () => setDeleteTarget({ id: item.id, name: item.name }) }
         : mi
     ),
-    rowActions: (
-      <a
-        href="#"
-        title="Open booking page"
-        onClick={(e) => e.stopPropagation()}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
-      >
-        <ExternalLink size={14} />
-      </a>
-    ),
     cells: {
       name: (
         <span className="truncate text-sm font-medium text-stone-900 dark:text-stone-100">
@@ -105,26 +97,40 @@ export default function SchedulerView() {
       ),
       duration: <DurationBadge value={item.duration} />,
       visibility: <VisibilityToggle />,
+      link: (
+        <a
+          href="#"
+          title="Open booking page"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+        >
+          <ExternalLink size={14} />
+        </a>
+      ),
     },
   }));
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 px-4 py-4 animate-fade-up">
-      <DashboardTable
-        columns={COLUMNS}
-        rows={rows}
-        searchPlaceholder="Search booking types..."
-        action={
-          <button
-            onClick={() => setShowCreateBooking(true)}
-            className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
-            style={{ background: "#0080FF" }}
-          >
-            <Plus size={14} />
-            <span className="hidden sm:inline">Create a booking</span>
-          </button>
-        }
-      />
+    <div className="relative flex flex-1 min-h-0 flex-col overflow-x-hidden">
+      <ViewTabs tabs={[{ key: "table", label: "Table", count: rows.length }]} activeTab="table" />
+
+      <div className="flex flex-1 flex-col min-h-0 px-4 pb-4 pt-4 animate-fade-up">
+        <DashboardTable
+          columns={COLUMNS}
+          rows={rows}
+          searchPlaceholder="Search booking types..."
+          action={
+            <button
+              onClick={() => setShowCreateBooking(true)}
+              className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
+              style={{ background: "#0080FF" }}
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">Create a booking</span>
+            </button>
+          }
+        />
+      </div>
       {showCreateBooking && <CreateBookingDrawer onClose={() => setShowCreateBooking(false)} />}
       {deleteTarget && (
         <DeleteConfirmDialog

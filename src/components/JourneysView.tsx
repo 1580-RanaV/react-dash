@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Code, Copy, Edit3, Plus, Trash2 } from "lucide-react";
+import { Code, Copy, Edit3, Plus, Table2, Trash2 } from "lucide-react";
 import DateRangePicker from "./DateRangePicker";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import MetricCard from "./MetricCard";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import ViewTabs from "./ViewTabs";
 
 const CHART_DATA = [
   { date:"May 3",  value:0 },       { date:"May 4",  value:12000 },
@@ -255,6 +256,11 @@ export default function JourneysView() {
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
+      <ViewTabs
+        tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayRows.length }]}
+        activeTab="table"
+      />
+
       {/* Topbar */}
       <div className="flex items-center shrink-0 pr-3 pt-3">
         <div className="flex-1"><DateRangePicker /></div>
@@ -277,6 +283,7 @@ export default function JourneysView() {
       </div>
 
       <div className="sticky top-0 flex flex-col px-4 pb-4" style={{ height: "calc(100vh - 60px)" }}>
+        <div className="flex flex-1 min-h-0 flex-col">
         <DashboardTable
           columns={JOURNEY_COLUMNS}
           rows={displayRows}
@@ -291,7 +298,9 @@ export default function JourneysView() {
             </Link>
           }
         />
+        </div>
       </div>
+
 
       {deleteTarget && (
         <DeleteConfirmDialog

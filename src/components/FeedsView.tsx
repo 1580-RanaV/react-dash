@@ -1,10 +1,11 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Plus, LayoutList, Megaphone, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Info, Plus, Table2, X, ChevronDown, ChevronUp, Search } from "lucide-react";
 import DashboardTable, { TableColumn, TableRow, FilterConfig } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import SlidingSidebar from "./SlidingSidebar";
+import ViewTabs from "./ViewTabs";
 
 const FEED_COLUMNS: TableColumn[] = [
   { key: "name", label: "Name", width: "48%" },
@@ -240,6 +241,7 @@ function AlgorithmDropdown({
 export default function FeedsView() {
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<TableRow | null>(null);
   const [typeFilter, setTypeFilter] = useState("all");
 
   // Sidebar state
@@ -255,6 +257,8 @@ export default function FeedsView() {
   const [adFeedName, setAdFeedName] = useState("");
   const [sourceFeed, setSourceFeed] = useState("");
   const [autoUpdate, setAutoUpdate] = useState(true);
+
+  const editFeedName = editTarget ? String(editTarget.cells.name) : "";
 
   function openCreate() {
     setStep(1);
@@ -289,25 +293,126 @@ export default function FeedsView() {
     .map((r) => ({ ...r, menuItems: makeMenu(r) }));
 
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col px-4 pb-4 pt-4 overflow-hidden">
-      <DashboardTable
-        columns={FEED_COLUMNS}
-        rows={displayRows}
-        searchPlaceholder="Search feeds..."
-        filterConfig={FEED_FILTER_CONFIG}
-        defaultActiveFilters={["all"]}
-        onFilterChange={(filters) => setTypeFilter([...filters][0] ?? "all")}
-        action={
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
-            style={{ background: "#0080FF" }}
-          >
-            <Plus size={14} />
-            <span className="hidden sm:inline">Create feed</span>
-          </button>
-        }
-      />
+    <div className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
+      <ViewTabs tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayRows.length }]} activeTab="table" />
+
+      <div className="flex flex-1 min-h-0 flex-col px-4 pb-4 pt-4">
+        <DashboardTable
+          columns={FEED_COLUMNS}
+          rows={displayRows}
+          searchPlaceholder="Search feeds..."
+          filterConfig={FEED_FILTER_CONFIG}
+          defaultActiveFilters={["all"]}
+          onFilterChange={(filters) => setTypeFilter([...filters][0] ?? "all")}
+          onRowClick={(row) => setEditTarget(row)}
+          action={
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 shrink-0"
+              style={{ background: "#0080FF" }}
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">Create feed</span>
+            </button>
+          }
+        />
+      </div>
+
+      {editTarget && (
+        <SlidingSidebar
+          title="Edit feed"
+          description="Configure the recommendation feed algorithm and filters."
+          onClose={() => setEditTarget(null)}
+          footer={(close) => (
+            <button
+              onClick={close}
+              className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: "#0080FF" }}
+            >
+              Save changes
+            </button>
+          )}
+        >
+          <div className="flex flex-col gap-6">
+            <div>
+              <FieldLabel required>Feed name</FieldLabel>
+              <input
+                autoFocus
+                defaultValue={editFeedName}
+                className="h-10 w-full rounded-lg border px-3 text-sm text-stone-700 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 dark:text-stone-200 dark:placeholder:text-stone-500"
+                style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
+              />
+            </div>
+
+            <div>
+              <p className="mb-0.5 text-sm font-semibold text-stone-800 dark:text-stone-100">
+                What products should the customers view first?
+              </p>
+              <p className="mb-4 text-sm leading-5 text-stone-500 dark:text-stone-400">
+                Choose an algorithm that determines which items to recommend.
+              </p>
+              <FieldLabel required>Sorting strategy</FieldLabel>
+              <AlgorithmDropdown
+                value={editTarget.id === "cart" ? "Similar to What You Bought Before" : "Popular Right Now"}
+                onChange={() => {}}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Filters</FieldLabel>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/4 dark:text-stone-200 dark:hover:bg-white/8"
+              >
+                <Plus size={15} />
+                Add filter
+              </button>
+            </div>
+
+            <div>
+              <FieldLabel>Attributes</FieldLabel>
+              <button
+                type="button"
+                className="flex h-10 w-full items-center justify-between rounded-lg border px-3 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5"
+                style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
+              >
+                <span>3 selected</span>
+                <ChevronDown size={14} className="text-stone-400" />
+              </button>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {["published_scope", "image", "last_updated"].map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex h-6 items-center gap-1 rounded-md border border-stone-200 bg-stone-50 px-2 text-xs font-medium text-stone-700 dark:border-white/10 dark:bg-white/6 dark:text-stone-300"
+                  >
+                    {item}
+                    <X size={12} className="text-stone-400" />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="flex gap-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4 dark:border-white/10 dark:bg-white/4"
+            >
+              <Info size={15} className="mt-0.5 shrink-0 text-stone-400" />
+              <div className="text-sm leading-5 text-stone-600 dark:text-stone-300">
+                <p className="italic text-stone-500 dark:text-stone-400">
+                  “{editFeedName}.”
+                </p>
+                <p className="mt-3 text-xs">
+                  <span className="font-semibold text-stone-800 dark:text-stone-100">Best for:</span>{" "}
+                  Homepage, Product Page
+                </p>
+                <p className="mt-1 text-xs">
+                  <span className="font-semibold text-stone-800 dark:text-stone-100">Fallback:</span>{" "}
+                  Fills with Viewed with Recently Viewed, Most Popular and Newest
+                </p>
+              </div>
+            </div>
+          </div>
+        </SlidingSidebar>
+      )}
 
       {createOpen && (
         <SlidingSidebar

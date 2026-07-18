@@ -1,6 +1,7 @@
 
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
@@ -19,6 +20,7 @@ import {
   Sparkles,
   Target,
   Upload,
+  X,
 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
@@ -323,17 +325,101 @@ function AccordionSection({
 }
 
 function LogoEditor() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setSizeError(true);
+      e.target.value = "";
+      return;
+    }
+    setSizeError(false);
+    const url = URL.createObjectURL(file);
+    setPhoto(url);
+  }
+
   return (
-    <div className="flex items-center justify-center">
-      <div className="text-center">
-        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-stone-200 bg-stone-100 text-xl font-bold tracking-tight text-stone-400 shadow-sm dark:border-(--border) dark:bg-(--muted)">
-          F
-          <button className="absolute bottom-1 right-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-stone-700 shadow-sm ring-1 ring-stone-200 transition-colors hover:bg-stone-50 dark:bg-(--raised) dark:text-stone-200 dark:ring-stone-700 dark:hover:bg-white/6">
+    <>
+      <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+
+      <div className="flex flex-col items-center gap-1">
+        {/* Avatar circle */}
+        <div
+          className="relative"
+          onMouseEnter={() => setTooltipVisible(true)}
+          onMouseLeave={() => setTooltipVisible(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-stone-200 bg-stone-100 text-xl font-bold tracking-tight text-stone-400 shadow-sm overflow-hidden transition-opacity hover:opacity-90 dark:border-(--border) dark:bg-(--muted)"
+          >
+            {photo
+              ? <img src={photo} alt="Brand logo" className="w-full h-full object-cover" />
+              : "F"
+            }
+          </button>
+
+          {/* Pencil button */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setSizeError(false); fileRef.current?.click(); }}
+            className="absolute bottom-1 right-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-stone-700 shadow-sm ring-1 ring-stone-200 transition-colors hover:bg-stone-50 dark:bg-(--raised) dark:text-stone-200 dark:ring-stone-700 dark:hover:bg-white/6"
+          >
             <Pencil size={15} />
           </button>
+
+          {/* Tooltip */}
+          {tooltipVisible && (
+            <div
+              className="absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-white pointer-events-none z-10"
+              style={{ background: "rgba(20,20,20,0.88)", boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }}
+            >
+              Up to 5 MB · PNG, JPG, SVG
+            </div>
+          )}
         </div>
+
+        {/* Inline error */}
+        {sizeError && (
+          <p className="mt-2 text-xs text-red-500">
+            Photo exceeds 5 MB limit — please choose a smaller file.
+          </p>
+        )}
       </div>
-    </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && createPortal(
+        <div
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-black/85 p-6 backdrop-blur-sm"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute right-6 top-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur transition hover:scale-105 hover:bg-white/20"
+          >
+            <X size={22} />
+          </button>
+          <div
+            className="flex h-64 w-64 items-center justify-center rounded-full border-4 border-white/20 bg-stone-200 text-6xl font-bold text-stone-400 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {photo
+              ? <img src={photo} alt="Brand logo" className="w-full h-full object-cover" />
+              : "F"
+            }
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 

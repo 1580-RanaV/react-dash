@@ -1,13 +1,14 @@
 
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ExternalLink, PenLine, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ExternalLink, PenLine, Plus, Table2, Trash2 } from "lucide-react";
 import CreateExperienceDrawer from "./CreateExperienceDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DateRangePicker from "./DateRangePicker";
 import MetricCard from "./MetricCard";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import ViewTabs from "./ViewTabs";
 
 const CHART_DATA = [
   { date:"May 3",  value:0 },       { date:"May 4",  value:12000 },
@@ -278,6 +279,11 @@ export default function ExperiencesView() {
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto relative overflow-x-hidden">
+      <ViewTabs
+        tabs={[{ key: "table", label: "Table", icon: <Table2 size={14} />, count: displayRows.length }]}
+        activeTab="table"
+      />
+
       {/* Topbar */}
       <div className="flex items-center shrink-0 pr-3 pt-3 gap-2">
         <div className="flex-1"><DateRangePicker /></div>
