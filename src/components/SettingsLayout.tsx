@@ -8,9 +8,29 @@ import GmailConnectModal from "./GmailConnectModal";
 import GoogleCalendarModal from "./GoogleCalendarModal";
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { LOCALES } from "../lib/locales";
+
+const REGIONS = [
+  { value: "UTC",                 label: "UTC (Coordinated Universal Time)" },
+  { value: "America/New_York",    label: "Eastern Time (US & Canada)" },
+  { value: "America/Chicago",     label: "Central Time (US & Canada)" },
+  { value: "America/Denver",      label: "Mountain Time (US & Canada)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (US & Canada)" },
+  { value: "America/Sao_Paulo",   label: "Brasilia Time" },
+  { value: "Europe/London",       label: "London (GMT/BST)" },
+  { value: "Europe/Paris",        label: "Central European Time" },
+  { value: "Europe/Vilnius",      label: "Eastern European Time" },
+  { value: "Africa/Nairobi",      label: "East Africa Time" },
+  { value: "Asia/Dubai",          label: "Gulf Standard Time" },
+  { value: "Asia/Kolkata",        label: "India Standard Time" },
+  { value: "Asia/Singapore",      label: "Singapore Time" },
+  { value: "Asia/Tokyo",          label: "Japan Standard Time" },
+  { value: "Australia/Sydney",    label: "Australian Eastern Time" },
+  { value: "Pacific/Auckland",    label: "New Zealand Time" },
+];
 import {
   AlertTriangle, Bot, CalendarDays, ChevronDown, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FileText, FolderOpen, Globe,
-  Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, RotateCcw, Search, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
+  Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, RotateCcw, Search, Settings2, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
 } from "lucide-react";
 
 type SettingsItem = {
@@ -43,6 +63,7 @@ const settingsNav: SettingsSection[] = [
   {
     heading: "Organization",
     items: [
+      { label: "General",   icon: <Settings2 size={14} />,     key: "org-general" },
       { label: "Domains",   icon: <Globe size={14} />,         key: "domains" },
       { label: "Team",      icon: <Users size={14} />,         key: "team" },
       { label: "Roles",     icon: <ShieldCheck size={14} />,   key: "roles" },
@@ -4421,8 +4442,159 @@ function BluSection() {
   );
 }
 
-export const contentMap: Record<string, React.ReactNode> = {
-  about: (
+function SettingsSelect({ value, onChange, children, className = "" }: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="h-9 w-full appearance-none pl-3 pr-8 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-blue-400 cursor-pointer"
+      >
+        {children}
+      </select>
+      <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+    </div>
+  );
+}
+
+// ── Org default lang/region (admin only) ──────────────────────────────────────
+
+type OrgConfirmPending = { field: "lang" | "region"; newValue: string; label: string };
+
+function OrgChangeConfirmDialog({
+  pending,
+  onConfirm,
+  onCancel,
+}: {
+  pending: OrgConfirmPending;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const fieldLabel = pending.field === "lang" ? "language" : "region";
+  return createPortal(
+    <div className="fixed inset-0 z-9999 flex items-end sm:items-center justify-center p-4 sm:p-4">
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" onClick={onCancel} />
+      <div
+        className="relative w-full max-w-sm rounded-2xl animate-card-in overflow-hidden"
+        style={{
+          background: "var(--content-bg)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.08)",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onCancel}
+          className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-400 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-700 dark:border-white/10 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10 dark:hover:text-stone-200"
+        >
+          <X size={14} />
+        </button>
+
+        <div className="px-6 pt-6 pb-4 pr-14">
+          <p className="text-base font-bold text-stone-900 dark:text-stone-100">
+            Update organization {fieldLabel}?
+          </p>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Changing default {fieldLabel} to{" "}
+            <span className="font-semibold text-stone-700 dark:text-stone-200">{pending.label}</span>
+          </p>
+        </div>
+
+        <p className="px-6 pb-5 text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+          This will apply to <span className="font-semibold text-stone-700 dark:text-stone-300">all organization members</span> as their default {fieldLabel}. Members who have set their own preference will not be affected.
+        </p>
+
+        <div className="px-6 pb-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-1/4 text-sm font-semibold text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors text-center"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="w-3/4 flex items-center justify-center rounded-xl h-11 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: "#0080FF" }}
+          >
+            Yes, update for everyone
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function OrgGeneralSection() {
+  const [lang, setLang] = useState("en");
+  const [region, setRegion] = useState("UTC");
+  const [pending, setPending] = useState<OrgConfirmPending | null>(null);
+
+  function requestChange(field: "lang" | "region", newValue: string) {
+    const label =
+      field === "lang"
+        ? (LOCALES.find(l => l.code === newValue)?.native ?? newValue)
+        : (REGIONS.find(r => r.value === newValue)?.label ?? newValue);
+    setPending({ field, newValue, label });
+  }
+
+  function confirmChange() {
+    if (!pending) return;
+    if (pending.field === "lang") setLang(pending.newValue);
+    else setRegion(pending.newValue);
+    setPending(null);
+  }
+
+  return (
+    <div>
+      {pending && (
+        <OrgChangeConfirmDialog
+          pending={pending}
+          onConfirm={confirmChange}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      <SectionHeader title="General" sub="Organization-wide defaults for language and region." />
+
+      <SettingsRow label="Default language" description="Used across the organization unless overridden by individual members">
+        <SettingsSelect value={lang} onChange={v => requestChange("lang", v)} className="min-w-52">
+          {LOCALES.map(l => (
+            <option key={l.code} value={l.code}>{l.native}{l.native !== l.name ? ` (${l.name})` : ""}</option>
+          ))}
+        </SettingsSelect>
+      </SettingsRow>
+      <SettingsRow label="Default region" description="Timezone and regional format defaults for the organization">
+        <SettingsSelect value={region} onChange={v => requestChange("region", v)} className="min-w-52">
+          {REGIONS.map(r => (
+            <option key={r.value} value={r.value}>{r.label}</option>
+          ))}
+        </SettingsSelect>
+      </SettingsRow>
+    </div>
+  );
+}
+
+// ── Profile: about me ─────────────────────────────────────────────────────────
+
+const ORG_DEFAULT_LANG = "en";
+const ORG_DEFAULT_REGION = "UTC";
+
+function AboutSection() {
+  const [userLang, setUserLang] = useState("");
+  const [userRegion, setUserRegion] = useState("");
+
+  const effectiveLang = LOCALES.find(l => l.code === (userLang || ORG_DEFAULT_LANG));
+  const effectiveRegion = REGIONS.find(r => r.value === (userRegion || ORG_DEFAULT_REGION));
+
+  return (
     <div>
       <SectionHeader title="Profile" sub="Manage your profile information, display name, and personal handle." />
       <div className="flex items-center gap-5 mb-8 pb-6 border-b border-stone-100 dark:border-(--border)">
@@ -4453,16 +4625,6 @@ export const contentMap: Record<string, React.ReactNode> = {
             </span>
           </div>
         </SettingsRow>
-        {/* <div className="py-4 border-b border-stone-100 dark:border-(--border)">
-          <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Welcome message</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 mb-3">Your personalized greeting for visitors</p>
-          <textarea
-            className="w-full rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) px-3 py-2.5 text-sm text-stone-700 dark:text-stone-200 placeholder:text-stone-300 dark:placeholder:text-stone-600 outline-none focus:border-blue-400 transition resize-none"
-            rows={3}
-            placeholder="e.g. Welcome to the team! Feel free to reach out if you have any questions."
-            defaultValue=""
-          />
-        </div> */}
         <SettingsRow label="Display name" description="Short name shown in conversations">
           <input className="px-3 h-9 rounded-md border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm text-stone-700 dark:text-stone-200 w-48 outline-none focus:border-blue-400" defaultValue="rana" />
         </SettingsRow>
@@ -4473,9 +4635,52 @@ export const contentMap: Record<string, React.ReactNode> = {
           </div>
         </SettingsRow>
       </div>
+
+      {/* Language & Region */}
+      <div className="mt-8 pt-6 border-t border-stone-100 dark:border-(--border)">
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Language & Region</p>
+        <p className="mt-0.5 mb-6 text-xs text-stone-400 dark:text-stone-500">
+          Your personal preferences. When set to "Follow org default", your organization's settings apply automatically.
+        </p>
+        <SettingsRow label="Language" description="Interface language for your account">
+          <div className="flex flex-col gap-1.5">
+            <SettingsSelect value={userLang} onChange={setUserLang} className="min-w-52">
+              <option value="">Follow org default</option>
+              {LOCALES.map(l => (
+                <option key={l.code} value={l.code}>{l.native}{l.native !== l.name ? ` (${l.name})` : ""}</option>
+              ))}
+            </SettingsSelect>
+            {!userLang && (
+              <p className="text-xs text-stone-400 dark:text-stone-500">
+                Currently using org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveLang?.native}{effectiveLang?.native !== effectiveLang?.name ? ` (${effectiveLang?.name})` : ""}</span>
+              </p>
+            )}
+          </div>
+        </SettingsRow>
+        <SettingsRow label="Region" description="Timezone and date / number format preferences">
+          <div className="flex flex-col gap-1.5">
+            <SettingsSelect value={userRegion} onChange={setUserRegion} className="min-w-52">
+              <option value="">Follow org default</option>
+              {REGIONS.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </SettingsSelect>
+            {!userRegion && (
+              <p className="text-xs text-stone-400 dark:text-stone-500">
+                Currently using org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveRegion?.label}</span>
+              </p>
+            )}
+          </div>
+        </SettingsRow>
+      </div>
+
       <DeleteRow target="account" label="Delete account" desc="Permanently delete your personal account and remove all your data from the platform." />
     </div>
-  ),
+  );
+}
+
+export const contentMap: Record<string, React.ReactNode> = {
+  about: <AboutSection />,
   availability: <AvailabilitySection />,
   connections: <ConnectionsSettingsView />,
   inbox: <InboxSection />,
@@ -4485,6 +4690,7 @@ export const contentMap: Record<string, React.ReactNode> = {
   team: <TeamSection />,
   roles: <RolesSection />,
   apikeys: <ApiKeysSection />,
+  "org-general": <OrgGeneralSection />,
   "org-security": <OrgSecuritySection />,
   auditlog: <AuditLogSection />,
   projects: <ProjectsSection />,
