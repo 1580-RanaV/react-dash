@@ -341,28 +341,33 @@ const SUBS_PLAN_ROWS: TableRow[] = PLANS.map((p) => ({
 function MrrTab() {
   const progressPct = (25212.46 / 100000) * 100;
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* 4 metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "CURRENT MRR",      value: "$25.21K",  sub: "Jun 2026", subCls: "text-stone-400" },
-          { label: "NET MRR MOVEMENT", value: "+$644.43", sub: "+2.62%",   subCls: "text-emerald-500" },
-          { label: "NEW BUSINESS MRR", value: "$1.00K",   sub: undefined,  subCls: "" },
-          { label: "CHURN MRR",        value: "$639.40",  sub: undefined,  subCls: "" },
-        ].map(({ label, value, sub, subCls }) => (
-          <div key={label} className="rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-            <div className="mb-2 flex items-center gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
-              <Info size={11} className="text-stone-400" />
+          { label: "CURRENT MRR",      value: "$25.21K",  sub: "June 2026", subCls: "text-stone-400", badge: undefined },
+          { label: "NET MRR MOVEMENT", value: "+$644.43", sub: undefined,   subCls: "",               badge: "+2.62%" },
+          { label: "NEW BUSINESS MRR", value: "$1.00K",   sub: undefined,   subCls: "",               badge: undefined },
+          { label: "CHURN MRR",        value: "$639.40",  sub: undefined,   subCls: "",               badge: undefined },
+        ].map(({ label, value, sub, subCls, badge }) => (
+          <div key={label} className="relative rounded-xl p-3 sm:p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-1 sm:pr-10">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 leading-tight">{label}</span>
+              <Info size={10} className="text-stone-400 shrink-0" />
             </div>
-            <p className="text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
-            {sub && <p className={`mt-1 text-xs ${subCls}`}>{sub}</p>}
+            <p className="text-lg sm:text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
+            {badge && (
+              <span className="mt-1.5 inline-block sm:absolute sm:mt-0 sm:right-2.5 sm:top-2.5 rounded-md px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400" style={{ background: "rgba(16,185,129,0.1)" }}>
+                {badge}
+              </span>
+            )}
+            {sub && <p className={`mt-1 text-[10px] sm:text-xs ${subCls}`}>{sub}</p>}
           </div>
         ))}
       </div>
 
       {/* MRR Trend + Goal + Churn Rate */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-[2fr_1fr]">
         <Card>
           <SectionLabel>MRR Trend</SectionLabel>
           <ResponsiveContainer width="100%" height={260}>
@@ -416,7 +421,11 @@ function MrrTab() {
       {/* MRR Movements */}
       <div>
         <SectionLabel>MRR Movements</SectionLabel>
-        <DashboardTable columns={MOV_COLUMNS} rows={MOV_ROWS} searchPlaceholder="Search movements..." menuItems={[]} />
+        <div className="overflow-x-auto">
+          <div className="min-w-160">
+            <DashboardTable columns={MOV_COLUMNS} rows={MOV_ROWS} searchPlaceholder="Search movements..." menuItems={[]} />
+          </div>
+        </div>
       </div>
 
       {/* MRR by Plan chart */}
@@ -445,7 +454,11 @@ function MrrTab() {
       {/* Plan Breakdown */}
       <div>
         <SectionLabel>Plan Breakdown</SectionLabel>
-        <DashboardTable columns={PLAN_COLUMNS} rows={PLAN_ROWS} searchPlaceholder="Search plans..." menuItems={[]} />
+        <div className="overflow-x-auto">
+          <div className="min-w-160">
+            <DashboardTable columns={PLAN_COLUMNS} rows={PLAN_ROWS} searchPlaceholder="Search plans..." menuItems={[]} />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -454,28 +467,28 @@ function MrrTab() {
 function SubscribersTab() {
   const progressPct = (1940 / 5000) * 100;
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* 4 metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "TOTAL SUBSCRIBERS", value: "1,940",   sub: "Jun 2026", subCls: "text-stone-400" },
-          { label: "NET MOVEMENT",      value: "+34",      sub: "-3.04%",   subCls: "text-rose-500" },
-          { label: "NEW SUBSCRIBERS",   value: "70",       sub: undefined,  subCls: "" },
-          { label: "CHURNED",           value: "44",       sub: undefined,  subCls: "" },
+          { label: "TOTAL SUBSCRIBERS", value: "1,940", sub: "Jun 2026", subCls: "text-stone-400" },
+          { label: "NET MOVEMENT",      value: "+34",    sub: "-3.04%",   subCls: "text-rose-500" },
+          { label: "NEW SUBSCRIBERS",   value: "70",     sub: undefined,  subCls: "" },
+          { label: "CHURNED",           value: "44",     sub: undefined,  subCls: "" },
         ].map(({ label, value, sub, subCls }) => (
-          <div key={label} className="rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-            <div className="mb-2 flex items-center gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</span>
-              <Info size={11} className="text-stone-400" />
+          <div key={label} className="rounded-xl p-3 sm:p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 leading-tight">{label}</span>
+              <Info size={10} className="text-stone-400 shrink-0" />
             </div>
-            <p className="text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
-            {sub && <p className={`mt-1 text-xs ${subCls}`}>{sub}</p>}
+            <p className="text-lg sm:text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
+            {sub && <p className={`mt-1 text-[10px] sm:text-xs ${subCls}`}>{sub}</p>}
           </div>
         ))}
       </div>
 
       {/* Subscriber Trend + Goal + Churn Rate */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-[2fr_1fr]">
         <Card>
           <SectionLabel>Subscriber Trend</SectionLabel>
           <ResponsiveContainer width="100%" height={260}>
@@ -529,7 +542,11 @@ function SubscribersTab() {
       {/* Subscriber Movements */}
       <div>
         <SectionLabel>Subscriber Movements</SectionLabel>
-        <DashboardTable columns={SUBS_MOV_COLUMNS} rows={SUBS_MOV_ROWS} searchPlaceholder="Search movements..." menuItems={[]} />
+        <div className="overflow-x-auto">
+          <div className="min-w-160">
+            <DashboardTable columns={SUBS_MOV_COLUMNS} rows={SUBS_MOV_ROWS} searchPlaceholder="Search movements..." menuItems={[]} />
+          </div>
+        </div>
       </div>
 
       {/* Subscribers by Plan chart */}
@@ -558,7 +575,11 @@ function SubscribersTab() {
       {/* Subscribers by Plan table */}
       <div>
         <SectionLabel>Plan Breakdown</SectionLabel>
-        <DashboardTable columns={SUBS_PLAN_COLUMNS} rows={SUBS_PLAN_ROWS} searchPlaceholder="Search plans..." menuItems={[]} />
+        <div className="overflow-x-auto">
+          <div className="min-w-160">
+            <DashboardTable columns={SUBS_PLAN_COLUMNS} rows={SUBS_PLAN_ROWS} searchPlaceholder="Search plans..." menuItems={[]} />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -584,14 +605,14 @@ export default function SubscriptionView() {
       <ViewTabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
       {/* Tab content */}
-      <div key={tab} className="px-4 pt-4 animate-fade-up">
+      <div key={tab} className="px-3 sm:px-4 pt-3 sm:pt-4 animate-fade-up">
         {tab === "mrr" ? <MrrTab /> : <SubscribersTab />}
       </div>
 
       {/* Shared section */}
-      <div className="px-4 pb-4 pt-2">
-        <div className="my-4" style={{ borderTop: "1px solid var(--border)" }} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="px-3 sm:px-4 pb-4 pt-2">
+        <div className="my-3 sm:my-4" style={{ borderTop: "1px solid var(--border)" }} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {/* NRR */}
           <Card>
             <SectionLabel>Net Revenue Retention</SectionLabel>
