@@ -10,7 +10,7 @@ import GoogleCalendarModal from "./GoogleCalendarModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LOCALES } from "../lib/locales";
 
-const REGIONS = [
+const TZ_OPTIONS = [
   { value: "UTC",                 label: "UTC (Coordinated Universal Time)" },
   { value: "America/New_York",    label: "Eastern Time (US & Canada)" },
   { value: "America/Chicago",     label: "Central Time (US & Canada)" },
@@ -28,6 +28,62 @@ const REGIONS = [
   { value: "Australia/Sydney",    label: "Australian Eastern Time" },
   { value: "Pacific/Auckland",    label: "New Zealand Time" },
 ];
+
+const COUNTRIES = [
+  { value: "US", label: "United States" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "CA", label: "Canada" },
+  { value: "AU", label: "Australia" },
+  { value: "DE", label: "Germany" },
+  { value: "FR", label: "France" },
+  { value: "ES", label: "Spain" },
+  { value: "IT", label: "Italy" },
+  { value: "NL", label: "Netherlands" },
+  { value: "PT", label: "Portugal" },
+  { value: "BR", label: "Brazil" },
+  { value: "MX", label: "Mexico" },
+  { value: "AR", label: "Argentina" },
+  { value: "CO", label: "Colombia" },
+  { value: "IN", label: "India" },
+  { value: "JP", label: "Japan" },
+  { value: "SG", label: "Singapore" },
+  { value: "AE", label: "United Arab Emirates" },
+  { value: "ZA", label: "South Africa" },
+  { value: "NG", label: "Nigeria" },
+  { value: "KE", label: "Kenya" },
+  { value: "SE", label: "Sweden" },
+  { value: "NO", label: "Norway" },
+  { value: "PL", label: "Poland" },
+  { value: "UA", label: "Ukraine" },
+];
+
+const COUNTRY_FORMAT: Record<string, { date: string; number: string; timeFormat: "12h" | "24h" }> = {
+  US: { date: "07/23/2026",  number: "1,234.56", timeFormat: "12h" },
+  GB: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  CA: { date: "2026-07-23",  number: "1,234.56", timeFormat: "12h" },
+  AU: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  DE: { date: "23.07.2026",  number: "1.234,56", timeFormat: "24h" },
+  FR: { date: "23/07/2026",  number: "1 234,56", timeFormat: "24h" },
+  ES: { date: "23/07/2026",  number: "1.234,56", timeFormat: "24h" },
+  IT: { date: "23/07/2026",  number: "1.234,56", timeFormat: "24h" },
+  NL: { date: "23-07-2026",  number: "1.234,56", timeFormat: "24h" },
+  PT: { date: "23/07/2026",  number: "1.234,56", timeFormat: "24h" },
+  BR: { date: "23/07/2026",  number: "1.234,56", timeFormat: "24h" },
+  MX: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  AR: { date: "23/07/2026",  number: "1.234,56", timeFormat: "12h" },
+  CO: { date: "23/07/2026",  number: "1.234,56", timeFormat: "12h" },
+  IN: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  JP: { date: "2026/07/23",  number: "1,234.56", timeFormat: "24h" },
+  SG: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  AE: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  ZA: { date: "2026/07/23",  number: "1 234.56", timeFormat: "24h" },
+  NG: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  KE: { date: "23/07/2026",  number: "1,234.56", timeFormat: "12h" },
+  SE: { date: "2026-07-23",  number: "1 234,56", timeFormat: "24h" },
+  NO: { date: "23.07.2026",  number: "1 234,56", timeFormat: "24h" },
+  PL: { date: "23.07.2026",  number: "1 234,56", timeFormat: "24h" },
+  UA: { date: "23.07.2026",  number: "1 234,56", timeFormat: "24h" },
+};
 import {
   AlertTriangle, Bot, CalendarDays, ChevronDown, ChevronLeft, Clock, ClipboardList, Copy, CreditCard, FileText, FolderOpen, Globe,
   Download, Eye, Image, Inbox, Info, KeyRound, Link2, Lock, LogOut, MessageSquare, PanelLeftOpen, Plus, RotateCcw, Search, Settings2, Shield, ShieldCheck, Smartphone, Trash2, User, Users, X,
@@ -102,7 +158,7 @@ function SettingsRow({
   noBorder,
 }: {
   label: React.ReactNode;
-  description?: string;
+  description?: React.ReactNode;
   children?: React.ReactNode;
   noBorder?: boolean;
 }) {
@@ -111,7 +167,7 @@ function SettingsRow({
       <div className="flex-1 min-w-0 sm:pr-8">
         <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{label}</p>
         {description && (
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{description}</p>
+          <div className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{description}</div>
         )}
       </div>
       <div className="shrink-0">{children}</div>
@@ -4535,14 +4591,14 @@ function OrgChangeConfirmDialog({
 
 function OrgGeneralSection() {
   const [lang, setLang] = useState("en");
-  const [region, setRegion] = useState("UTC");
+  const [region, setRegion] = useState("US");
   const [pending, setPending] = useState<OrgConfirmPending | null>(null);
 
   function requestChange(field: "lang" | "region", newValue: string) {
     const label =
       field === "lang"
         ? (LOCALES.find(l => l.code === newValue)?.native ?? newValue)
-        : (REGIONS.find(r => r.value === newValue)?.label ?? newValue);
+        : (COUNTRIES.find(c => c.value === newValue)?.label ?? newValue);
     setPending({ field, newValue, label });
   }
 
@@ -4571,10 +4627,10 @@ function OrgGeneralSection() {
           ))}
         </SettingsSelect>
       </SettingsRow>
-      <SettingsRow label="Default region" description="Timezone and regional format defaults for the organization">
+      <SettingsRow label="Default region" description="Date and number format defaults for the organization">
         <SettingsSelect value={region} onChange={v => requestChange("region", v)} className="min-w-52">
-          {REGIONS.map(r => (
-            <option key={r.value} value={r.value}>{r.label}</option>
+          {COUNTRIES.map(c => (
+            <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </SettingsSelect>
       </SettingsRow>
@@ -4585,14 +4641,21 @@ function OrgGeneralSection() {
 // ── Profile: about me ─────────────────────────────────────────────────────────
 
 const ORG_DEFAULT_LANG = "en";
-const ORG_DEFAULT_REGION = "UTC";
+const ORG_DEFAULT_REGION = "US";
+const ORG_DEFAULT_TZ = "America/New_York";
+
 
 function AboutSection() {
   const [userLang, setUserLang] = useState("");
   const [userRegion, setUserRegion] = useState("");
+  const [userTz, setUserTz] = useState("");
+  const [userTimeFormat, setUserTimeFormat] = useState<"" | "12h" | "24h">("");
 
   const effectiveLang = LOCALES.find(l => l.code === (userLang || ORG_DEFAULT_LANG));
-  const effectiveRegion = REGIONS.find(r => r.value === (userRegion || ORG_DEFAULT_REGION));
+  const effectiveRegion = COUNTRIES.find(c => c.value === (userRegion || ORG_DEFAULT_REGION));
+  const effectiveTz = TZ_OPTIONS.find(t => t.value === (userTz || ORG_DEFAULT_TZ));
+  const fmt = COUNTRY_FORMAT[effectiveRegion?.value ?? "US"] ?? COUNTRY_FORMAT["US"];
+  const resolvedTimeFormat = userTimeFormat || fmt.timeFormat;
 
   return (
     <div>
@@ -4642,34 +4705,74 @@ function AboutSection() {
         <p className="mt-0.5 mb-6 text-xs text-stone-400 dark:text-stone-500">
           Your personal preferences. When set to "Follow org default", your organization's settings apply automatically.
         </p>
-        <SettingsRow label="Language" description="Interface language for your account">
-          <div className="flex flex-col gap-1.5">
-            <SettingsSelect value={userLang} onChange={setUserLang} className="min-w-52">
-              <option value="">Follow org default</option>
-              {LOCALES.map(l => (
-                <option key={l.code} value={l.code}>{l.native}{l.native !== l.name ? ` (${l.name})` : ""}</option>
-              ))}
-            </SettingsSelect>
-            {!userLang && (
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                Currently using org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveLang?.native}{effectiveLang?.native !== effectiveLang?.name ? ` (${effectiveLang?.name})` : ""}</span>
-              </p>
-            )}
-          </div>
+
+        {/* Language */}
+        <SettingsRow
+          label="Language"
+          description={<>
+            Interface language for your account
+            {!userLang && <><br /><span className="text-stone-500 dark:text-stone-400">Org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveLang?.native}{effectiveLang?.native !== effectiveLang?.name ? ` (${effectiveLang?.name})` : ""}</span></span></>}
+          </>}
+        >
+          <SettingsSelect value={userLang} onChange={setUserLang} className="min-w-52">
+            <option value="">Follow org default</option>
+            {LOCALES.map(l => (
+              <option key={l.code} value={l.code}>{l.native}{l.native !== l.name ? ` (${l.name})` : ""}</option>
+            ))}
+          </SettingsSelect>
         </SettingsRow>
-        <SettingsRow label="Region" description="Timezone and date / number format preferences">
-          <div className="flex flex-col gap-1.5">
-            <SettingsSelect value={userRegion} onChange={setUserRegion} className="min-w-52">
-              <option value="">Follow org default</option>
-              {REGIONS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </SettingsSelect>
-            {!userRegion && (
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                Currently using org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveRegion?.label}</span>
-              </p>
-            )}
+
+        {/* Region */}
+        <SettingsRow
+          label="Region"
+          description={<>
+            Date and number format preferences
+            {!userRegion && <><br /><span className="text-stone-500 dark:text-stone-400">Org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveRegion?.label}</span></span></>}
+            <br /><span className="text-stone-500 dark:text-stone-400">{fmt.date} · {fmt.number}</span>
+          </>}
+        >
+          <SettingsSelect value={userRegion} onChange={setUserRegion} className="min-w-52">
+            <option value="">Follow org default</option>
+            {COUNTRIES.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </SettingsSelect>
+        </SettingsRow>
+
+        {/* Timezone */}
+        <SettingsRow
+          label={<span className="flex items-center gap-2">Timezone<span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(0,128,255,0.1)", color: "#0080FF" }}>Beta</span></span>}
+          description={<>
+            Used for scheduling, reminders, and reports
+            {!userTz && <><br /><span className="text-stone-500 dark:text-stone-400">Org default: <span className="font-medium text-stone-600 dark:text-stone-300">{effectiveTz?.label}</span></span></>}
+          </>}
+        >
+          <SettingsSelect value={userTz} onChange={setUserTz} className="min-w-52">
+            <option value="">Follow org default</option>
+            {TZ_OPTIONS.map(t => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </SettingsSelect>
+        </SettingsRow>
+
+        {/* Time format */}
+        <SettingsRow
+          label="Time format"
+          description={<>
+            12-hour or 24-hour clock
+            {!userTimeFormat && <><br /><span className="text-stone-500 dark:text-stone-400">Region default: <span className="font-medium text-stone-600 dark:text-stone-300">{fmt.timeFormat === "12h" ? "12-hour" : "24-hour"}</span></span></>}
+          </>}
+        >
+          <div className="flex items-center gap-1 rounded-lg border border-stone-200 dark:border-(--border) bg-stone-50 dark:bg-(--muted) p-0.5">
+            {(["12h", "24h"] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setUserTimeFormat(userTimeFormat === f ? "" : f)}
+                className={`h-7 px-3.5 rounded-md text-sm font-medium transition-colors ${resolvedTimeFormat === f && (userTimeFormat === f || !userTimeFormat) ? "bg-white dark:bg-(--input) text-stone-800 dark:text-stone-100 shadow-sm" : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"}`}
+              >
+                {f === "12h" ? "12-hour" : "24-hour"}
+              </button>
+            ))}
           </div>
         </SettingsRow>
       </div>

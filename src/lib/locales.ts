@@ -17,20 +17,11 @@ export interface Locale {
  * uniquely owns. Order matters — it is the order of the menu.
  */
 export const LOCALES: Locale[] = [
-  { code: "en",    name: "English",         native: "English",    script: "Latin",    glyph: "A" },
-  { code: "lt",    name: "Lithuanian",      native: "Lietuvių",   script: "Latin",    glyph: "Ą" },
-  { code: "ru",    name: "Russian",         native: "Русский",    script: "Cyrillic", glyph: "Я" },
-  { code: "uk",    name: "Ukrainian",       native: "Українська", script: "Cyrillic", glyph: "Ї" },
-  { code: "pl",    name: "Polish",          native: "Polski",     script: "Latin",    glyph: "Ł" },
-  { code: "lv",    name: "Latvian",         native: "Latviešu",   script: "Latin",    glyph: "Ā" },
-  { code: "de",    name: "German",          native: "Deutsch",    script: "Latin",    glyph: "ß" },
-  { code: "et",    name: "Estonian",        native: "Eesti",      script: "Latin",    glyph: "Õ" },
-  { code: "nl",    name: "Dutch",           native: "Nederlands", script: "Latin",    glyph: "Ĳ" },
-  { code: "be",    name: "Belarusian",      native: "Беларуская", script: "Cyrillic", glyph: "Ў" },
-  { code: "es",    name: "Spanish",         native: "Español",    script: "Latin",    glyph: "Ñ" },
-  { code: "fr",    name: "French",          native: "Français",   script: "Latin",    glyph: "Ç" },
-  { code: "ja",    name: "Japanese",        native: "日本語",      script: "Kana",     glyph: "あ" },
-  { code: "pt-BR", name: "Portuguese (BR)", native: "Português",  script: "Latin",    glyph: "Ã" },
+  { code: "en",    name: "English",              native: "English",    script: "Latin", glyph: "A" },
+  { code: "es",    name: "Spanish",              native: "Español",    script: "Latin", glyph: "Ñ" },
+  { code: "fr",    name: "French",               native: "Français",   script: "Latin", glyph: "Ç" },
+  { code: "de",    name: "German",               native: "Deutsch",    script: "Latin", glyph: "ß" },
+  { code: "pt-BR", name: "Portuguese (Brazil)",  native: "Português",  script: "Latin", glyph: "Ã" },
 ];
 
 export const SCRIPT_COLOR: Record<Script, string> = {

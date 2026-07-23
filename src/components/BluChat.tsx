@@ -48,8 +48,10 @@ import {
   Type,
   Zap,
   Eye,
+  ChefHat,
 } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
 import TypingDots from "./TypingDots";
 import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
@@ -104,6 +106,143 @@ const RECENT_HISTORY: HistoryItem[] = [
   { id: "h9", title: "Abandoned cart — footwear", preview: "Recovery email for the footwear category with size-specific urgency copy and CTA", time: "Last week" },
 ];
 
+const PLAN_SAMPLE = `Create a new brand avatar: a distinguished South Asian male healthcare spokesperson in his 50s+ with a sharp, commanding personality, traditional-modern wardrobe blend, and authoritative yet approachable tone.
+
+Use this avatar across email campaigns, social media content, and product shot backgrounds.
+
+Steps:
+1. Generate base avatar in 3 poses — standing neutral, seated professional, casual lean
+2. Apply brand color palette and wardrobe guidelines
+3. Export in square and portrait formats for all channels
+4. Review against brand identity guidelines before publishing
+
+Target: medical professionals aged 40–65, South Asian market.`;
+
+function PlanCard({ content, onApprove, onSkip }: {
+  content: string;
+  onApprove: () => void;
+  onSkip: () => void;
+}) {
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [decided, setDecided] = useState<"approved" | "skipped" | null>(null);
+
+  function handleApprove() {
+    setDecided("approved");
+    onApprove();
+  }
+  function handleSkip() {
+    setDecided("skipped");
+    onSkip();
+  }
+
+  return (
+    <>
+      <div className="shrink-0 px-3 pb-2 pt-2">
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Plan</p>
+          </div>
+          <div className="relative px-4 pb-1" style={{ minHeight: "4.5rem" }}>
+            <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed line-clamp-4 whitespace-pre-wrap">
+              {content.split("\n")[0]}
+            </p>
+            <div
+              className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none"
+              style={{ background: "linear-gradient(to bottom, transparent, var(--content-bg))", backdropFilter: "blur(1px)", WebkitBackdropFilter: "blur(1px)", maskImage: "linear-gradient(to bottom, transparent, black)" }}
+            />
+          </div>
+          <div className="px-4 pt-3 pb-3 flex items-center gap-2">
+            <button
+              onClick={handleSkip}
+              className="text-sm font-medium text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
+            >
+              Skip
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={() => setReviewOpen(true)}
+              className="h-8 px-4 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/8 transition-colors"
+            >
+              Review
+            </button>
+            <button
+              onClick={handleApprove}
+              className="h-8 px-4 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ background: "#0080FF" }}
+            >
+              Approve
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {reviewOpen && createPortal(
+        <div className="fixed inset-0 z-9999 flex bg-white dark:bg-stone-950">
+          {/* Scrollable content — centered with comfortable reading width */}
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="w-full max-w-xl mx-auto px-10 py-16">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-5">Plan</p>
+              <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">{content}</p>
+            </div>
+          </div>
+
+          {/* Right action panel */}
+          <div className="shrink-0 w-52 flex flex-col">
+            <div className="flex justify-end p-4">
+              <button
+                type="button"
+                onClick={() => setReviewOpen(false)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition hover:bg-stone-200 hover:text-stone-800 dark:bg-white/8 dark:text-stone-400 dark:hover:bg-white/14 dark:hover:text-stone-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1" />
+            {!decided && (
+              <div className="flex flex-col gap-2.5 p-5">
+                <button
+                  onClick={() => { setReviewOpen(false); handleApprove(); }}
+                  className="w-full h-10 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "#0080FF" }}
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => { setReviewOpen(false); handleSkip(); }}
+                  className="w-full h-10 text-sm font-medium text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+function RecipeRow({ recipe, onSelect }: { recipe: SlashRecipe; onSelect: (r: SlashRecipe) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(recipe)}
+      className="flex w-full items-center gap-3 px-3.5 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+    >
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+        style={{ background: "rgb(239,246,255)", color: "rgb(37,99,235)" }}
+      >
+        {recipe.icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{recipe.label}</p>
+        <p className="text-xs text-stone-400 dark:text-stone-500">{recipe.desc}</p>
+      </div>
+    </button>
+  );
+}
+
 function getMentionIcon(key: string, size = 13): React.ReactNode {
   switch (key) {
     case "journeys": return <Route size={size} />;
@@ -125,14 +264,20 @@ type ReferenceAttachment = {
   bg: string;
 };
 
+type RecipeChip = { key: string; label: string };
+
 type ChatMessage = {
   id: string;
   role: "user" | "blu";
   text: string;
   attachments?: ReferenceAttachment[];
   mentions?: MentionChip[];
+  recipes?: RecipeChip[];
   feedbackForm?: boolean;
   isTyping?: boolean;
+  isError?: boolean;
+  isPlan?: boolean;
+  planContent?: string;
   journeyChip?: { name: string };
 };
 
@@ -220,6 +365,17 @@ const PLACEHOLDERS: Placeholder[] = [
   { text: "Generate a banner, email, or product shot..." },
 ];
 
+const CONTEXT_RECIPE_KEYS: { match: RegExp; keys: string[] }[] = [
+  { match: /\/journeys/,     keys: ["nurture", "welcome", "email", "subject"] },
+  { match: /\/experiences/,  keys: ["banner", "email", "push", "landing"] },
+  { match: /\/users/,        keys: ["email", "sms", "push", "subject"] },
+  { match: /\/accounts/,     keys: ["email", "sms", "subject"] },
+  { match: /\/catalog/,      keys: ["product", "banner", "social"] },
+  { match: /\/subscription/, keys: ["email", "subject", "sms"] },
+  { match: /\/home/,         keys: ["email", "banner", "subject"] },
+  { match: /\/connections/,  keys: ["email", "push"] },
+];
+
 type SlashRecipe = { key: string; icon: React.ReactNode; label: string; desc: string };
 const SLASH_RECIPES: SlashRecipe[] = [
   { key: "email",    icon: <Mail size={13} />,           label: "Email campaign",      desc: "Campaign or transactional email"     },
@@ -276,7 +432,14 @@ export default function BluChat({
   onBackToPanel?: () => void;
   onHeaderMouseDown?: (e: React.MouseEvent) => void;
 }) {
+  const { pathname } = useLocation();
+  const contextKeys = CONTEXT_RECIPE_KEYS.find(c => c.match.test(pathname))?.keys ?? [];
+  const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
+  const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionTime, setSessionTime] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
@@ -551,8 +714,8 @@ export default function BluChat({
     chip.dataset.recipe = "true";
     chip.dataset.recipeKey = recipe.key;
     chip.dataset.label = recipe.label;
-    chip.style.cssText = "display:inline-flex;align-items:center;gap:3px;background:rgb(245,243,255);color:rgb(109,40,217);border-radius:4px;padding:1px 7px 1px 5px;font-size:12px;font-weight:600;white-space:nowrap;cursor:default;user-select:none;";
-    chip.textContent = "/" + recipe.label;
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:3px;background:rgb(239,246,255);color:rgb(37,99,235);border-radius:4px;padding:1px 7px 1px 5px;font-size:12px;font-weight:600;white-space:nowrap;cursor:default;user-select:none;";
+    chip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/></svg>${recipe.label}`;
     range.insertNode(chip);
     const sel = window.getSelection();
     const after = document.createRange();
@@ -576,12 +739,23 @@ export default function BluChat({
         text += node.textContent ?? "";
       } else if (node instanceof HTMLElement && node.dataset.mention) {
         text += `@${node.dataset.label}`;
+      } else if (node instanceof HTMLElement && node.dataset.recipe) {
+        // skip — recipes render as chips, not inline text
       } else {
         node.childNodes.forEach(walk);
       }
     }
     walk(editor);
     return text.trim();
+  }
+
+  function getEditorRecipes(): RecipeChip[] {
+    const editor = editorRef.current;
+    if (!editor) return [];
+    return Array.from(editor.querySelectorAll("[data-recipe]")).map((el) => {
+      const e = el as HTMLElement;
+      return { key: e.dataset.recipeKey ?? "", label: e.dataset.label ?? "" };
+    });
   }
 
   function getEditorMentions(): MentionChip[] {
@@ -668,7 +842,8 @@ export default function BluChat({
   function sendMessage(overrideText?: string) {
     const text = overrideText ?? getEditorText();
     const currentMentions = overrideText ? [] : getEditorMentions();
-    if (!text && attachments.length === 0 && currentMentions.length === 0) return;
+    const currentRecipes = overrideText ? [] : getEditorRecipes();
+    if (!text && attachments.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0) return;
 
     // Queue intercept — "q1", "q2", etc.
     if (!overrideText && /^q\d+$/i.test(text.trim()) && queue.length < 4) {
@@ -677,15 +852,40 @@ export default function BluChat({
       return;
     }
 
+    if (!sessionTime) {
+      const now = new Date();
+      setSessionTime(now.toLocaleDateString("en-US", { weekday: "long" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+    }
     const isFeedback = !overrideText && text.toLowerCase() === "feedback";
+    const isFailed = !overrideText && text.toLowerCase() === "failed";
+    const isError = !overrideText && text.toLowerCase() === "error";
+    const isPlan = !overrideText && text.toLowerCase() === "plan";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
 
     setMessages((current) => {
       const ts = Date.now();
-      const userMsg: ChatMessage = { id: `user-${ts}`, role: "user", text, attachments, mentions: currentMentions };
+      const userMsg: ChatMessage = { id: `user-${ts}`, role: "user", text, attachments, mentions: currentMentions, recipes: currentRecipes.length ? currentRecipes : undefined };
       const next: ChatMessage[] = [...current, userMsg];
-      if (isFeedback) {
+      if (isPlan) {
+        next.push({
+          id: `blu-plan-${ts}`,
+          role: "blu",
+          text: "Here's a plan based on your request.",
+          isPlan: true,
+          planContent: PLAN_SAMPLE,
+        });
+        setTimeout(() => setPendingPlan({ content: PLAN_SAMPLE }), 50);
+      } else if (isFailed || isError) {
+        next.push({
+          id: `blu-error-${ts}`,
+          role: "blu",
+          text: isFailed
+            ? "Something went wrong while processing your request."
+            : "Blu didn't respond properly. This might be a temporary issue — try again or report it if it keeps happening.",
+          isError: true,
+        });
+      } else if (isFeedback) {
         next.push({
           id: `blu-feedback-${ts}`,
           role: "blu",
@@ -921,7 +1121,7 @@ export default function BluChat({
       )}
 
       {/* Messages */}
-      {!historyOpen && <div className="relative flex-1 min-h-0">
+      {!historyOpen && <div className="relative flex-1 min-h-0" style={{ filter: pendingPlan ? "blur(2px)" : "none", transition: "filter 0.2s", pointerEvents: pendingPlan ? "none" : undefined }}>
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgTopFade ? 1 : 0, background: "linear-gradient(to bottom, var(--content-bg) 0%, transparent 100%)" }}
@@ -935,6 +1135,11 @@ export default function BluChat({
           <div className="flex flex-col items-center justify-center h-full gap-1 pb-8 select-none text-center">
             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Ask Blu anything</p>
             <p className="text-xs text-stone-400 dark:text-stone-500">What are you working on today?</p>
+          </div>
+        )}
+        {sessionTime && (
+          <div className="flex items-center justify-center">
+            <span className="text-xs text-stone-400 dark:text-stone-500">{sessionTime}</span>
           </div>
         )}
         {messages.map((msg) => (
@@ -952,10 +1157,32 @@ export default function BluChat({
                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
                   {msg.role === "user" ? "Rana" : "Blu"}
                 </span>
-                <span className="text-xs text-stone-400 dark:text-stone-500">Just now</span>
               </div>
               {msg.isTyping ? (
                 <TypingDots />
+              ) : msg.isError ? (
+                <div
+                  className="inline-flex flex-col gap-2.5 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgb(239,68,68)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400">{msg.text}</p>
+                  </div>
+                  <button
+                    onClick={() => window.open("mailto:support@intempt.com?subject=Bug+Report", "_blank")}
+                    className="self-start inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:opacity-90"
+                    style={{ background: "rgba(239,68,68,0.1)", color: "rgb(220,38,38)" }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/>
+                      <path d="M18.5 2.5a2.5 2.5 0 0 1 3 3L12 15l-4 1 1-4Z"/>
+                    </svg>
+                    Report bug
+                  </button>
+                </div>
               ) : (
                 <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
                   {msg.text}
@@ -1001,6 +1228,19 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
+              {msg.recipes?.length ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {msg.recipes.map((r) => (
+                    <span
+                      key={r.key}
+                      className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/12"
+                    >
+                      <ChefHat size={11} strokeWidth={2.5} className="shrink-0" />
+                      {r.label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               {msg.attachments?.length ? (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {msg.attachments.map((item) => (
@@ -1013,7 +1253,7 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {msg.role === "blu" && !msg.feedbackForm && !msg.isTyping && (
+              {msg.role === "blu" && !msg.feedbackForm && !msg.isTyping && !msg.isError && !msg.isPlan && (
                 <div className="mt-2 flex items-center gap-0.5">
                   {/* Copy */}
                   <div className="group/tip relative">
@@ -1075,8 +1315,25 @@ export default function BluChat({
         </div>
       </div>}
 
+      {/* Pending plan card */}
+      {!historyOpen && pendingPlan && (
+        <PlanCard
+          content={pendingPlan.content}
+          onApprove={() => {
+            setPendingPlan(null);
+            const ts = Date.now();
+            setMessages(c => [...c, { id: `blu-plan-approved-${ts}`, role: "blu", text: "Plan approved. Starting execution now." }]);
+          }}
+          onSkip={() => {
+            setPendingPlan(null);
+            const ts = Date.now();
+            setMessages(c => [...c, { id: `blu-plan-skipped-${ts}`, role: "blu", text: "Got it, plan skipped. Let me know how you'd like to proceed." }]);
+          }}
+        />
+      )}
+
       {/* Input */}
-      {!historyOpen && <div ref={mentionRef} className="relative px-3 pb-3 shrink-0">
+      {!historyOpen && <div ref={mentionRef} className="relative px-3 pb-3 shrink-0" style={{ opacity: pendingPlan ? 0.4 : 1, pointerEvents: pendingPlan ? "none" : undefined }}>
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -1132,35 +1389,43 @@ export default function BluChat({
           >
             <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
               <span
-                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold"
-                style={{ background: "rgb(245,243,255)", color: "rgb(109,40,217)" }}
+                className="flex h-5 w-5 items-center justify-center rounded"
+                style={{ background: "rgb(239,246,255)", color: "rgb(37,99,235)" }}
               >
-                /
+                <ChefHat size={11} strokeWidth={2.5} />
               </span>
               <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Recipes</p>
             </div>
-            <div className="pb-2 max-h-60 overflow-y-auto">
-              {SLASH_RECIPES.filter((r) => !slashQuery || r.label.toLowerCase().includes(slashQuery)).map((recipe) => (
-                <button
-                  key={recipe.key}
-                  onClick={() => selectRecipe(recipe)}
-                  className="flex w-full items-center gap-3 px-3.5 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
-                >
-                  <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
-                    style={{ background: "rgb(245,243,255)", color: "rgb(109,40,217)" }}
-                  >
-                    {recipe.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{recipe.label}</p>
-                    <p className="text-xs text-stone-400 dark:text-stone-500">{recipe.desc}</p>
-                  </div>
-                </button>
-              ))}
-              {SLASH_RECIPES.filter((r) => !slashQuery || r.label.toLowerCase().includes(slashQuery)).length === 0 && (
-                <p className="px-4 py-3 text-sm text-stone-400 dark:text-stone-500">No recipes match "{slashQuery}"</p>
-              )}
+            <div className="pb-2 max-h-64 overflow-y-auto">
+              {(() => {
+                const filtered = slashQuery
+                  ? SLASH_RECIPES.filter(r => r.label.toLowerCase().includes(slashQuery))
+                  : null;
+
+                if (filtered) {
+                  return filtered.length === 0
+                    ? <p className="px-4 py-3 text-sm text-stone-400 dark:text-stone-500">No recipes match "{slashQuery}"</p>
+                    : filtered.map(recipe => <RecipeRow key={recipe.key} recipe={recipe} onSelect={selectRecipe} />);
+                }
+
+                if (suggestedRecipes.length === 0) {
+                  return SLASH_RECIPES.map(recipe => <RecipeRow key={recipe.key} recipe={recipe} onSelect={selectRecipe} />);
+                }
+
+                return (
+                  <>
+                    <p className="px-3.5 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Suggested for this page</p>
+                    {suggestedRecipes.map(recipe => <RecipeRow key={recipe.key} recipe={recipe} onSelect={selectRecipe} />)}
+                    {otherRecipes.length > 0 && (
+                      <>
+                        <div className="mx-3.5 my-1.5 border-t border-stone-100 dark:border-(--border)" />
+                        <p className="px-3.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">All recipes</p>
+                        {otherRecipes.map(recipe => <RecipeRow key={recipe.key} recipe={recipe} onSelect={selectRecipe} />)}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
