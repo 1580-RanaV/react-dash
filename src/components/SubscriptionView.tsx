@@ -1,6 +1,5 @@
 
 
-import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, Info, Target } from "lucide-react";
 import ViewTabs from "./ViewTabs";
@@ -338,7 +337,7 @@ const SUBS_PLAN_ROWS: TableRow[] = PLANS.map((p) => ({
 
 // ── sub-sections ──────────────────────────────────────────────────────────────
 
-function MrrTab() {
+export function MrrTab() {
   const progressPct = (25212.46 / 100000) * 100;
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -464,7 +463,7 @@ function MrrTab() {
   );
 }
 
-function SubscribersTab() {
+export function SubscribersTab() {
   const progressPct = (1940 / 5000) * 100;
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -585,6 +584,110 @@ function SubscribersTab() {
   );
 }
 
+// ── shared section (NRR / Trial-to-Paid / Expansion) ─────────────────────────
+
+function SharedSection() {
+  return (
+    <div className="px-3 sm:px-4 pb-4 pt-2">
+      <div className="my-3 sm:my-4" style={{ borderTop: "1px solid var(--border)" }} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* NRR */}
+        <Card>
+          <SectionLabel>Net Revenue Retention</SectionLabel>
+          <div className="mb-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">97.0%</span>
+            <span className="text-xs font-semibold text-emerald-500">+0.6pp</span>
+            <span className="text-xs text-stone-400">vs last month</span>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={NRR_DATA} margin={{ top: 5, right: 8, left: -10, bottom: 5 }}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="m" tick={TICK} {...AXIS} />
+              <YAxis domain={[80, 120]} tickFormatter={(v) => `${v}%`} tick={TICK} {...AXIS} />
+              <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `${v.toFixed(1)}%`} />} />
+              <Line type="monotone" dataKey="v" name="NRR" stroke="#59B277" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Trial-to-Paid */}
+        <Card>
+          <SectionLabel>Trial-to-Paid Funnel</SectionLabel>
+          <div className="mb-4 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">41.2%</span>
+            <span className="text-xs text-stone-400">overall conversion</span>
+          </div>
+          <div className="flex items-end gap-5">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">1.13K</p>
+              <p className="text-xs text-stone-400 mb-1">Trial Started</p>
+              <div className="h-16 w-full rounded-lg bg-blue-500" />
+            </div>
+            <div className="w-px self-end h-16 bg-stone-200 dark:bg-white/10" />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">467</p>
+              <p className="text-xs text-stone-400 mb-1">Converted · 41.2%</p>
+              <div className="flex h-16 w-full gap-1">
+                <div className="flex-1 rounded-lg bg-blue-100 dark:bg-blue-400/20" />
+                <div className="flex-1 self-end rounded-lg bg-blue-500" style={{ height: "55%" }} />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Expansion Revenue */}
+        <Card>
+          <SectionLabel>Expansion Revenue</SectionLabel>
+          <div className="mb-3">
+            <span className="text-xl font-bold text-stone-900 dark:text-stone-100">$1.18</span>
+            <span className="ml-2 text-xs text-stone-400">last 6 months</span>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={EXPANSION_DATA} margin={{ top: 5, right: 8, left: -10, bottom: 5 }}>
+              <defs>
+                <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#3F8CB2" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#3F8CB2" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="m" tick={TICK} {...AXIS} />
+              <YAxis tickFormatter={(v) => `$${v}`} tick={TICK} {...AXIS} />
+              <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `$${v}`} />} />
+              <Area type="monotone" dataKey="v" name="Revenue" stroke="#3F8CB2" strokeWidth={2} fill="url(#expGrad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ── embeddable content (used by BoardsView Subscription tab) ──────────────────
+
+const SUB_TABS = [
+  { key: "mrr",         label: "MRR" },
+  { key: "subscribers", label: "Subscribers" },
+];
+
+export function SubscriptionContent() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const subTab = searchParams.get("subtab") === "subscribers" ? "subscribers" : "mrr";
+  function setSubTab(key: string) {
+    navigate(`/boards?tab=subscription&subtab=${key}`, { replace: true });
+  }
+  return (
+    <>
+      <ViewTabs tabs={SUB_TABS} activeTab={subTab} onChange={setSubTab} />
+      <div key={subTab} className="px-3 sm:px-4 pt-3 sm:pt-4 animate-fade-up">
+        {subTab === "mrr" ? <MrrTab /> : <SubscribersTab />}
+      </div>
+      <SharedSection />
+    </>
+  );
+}
+
 // ── view ──────────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -609,79 +712,7 @@ export default function SubscriptionView() {
         {tab === "mrr" ? <MrrTab /> : <SubscribersTab />}
       </div>
 
-      {/* Shared section */}
-      <div className="px-3 sm:px-4 pb-4 pt-2">
-        <div className="my-3 sm:my-4" style={{ borderTop: "1px solid var(--border)" }} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-          {/* NRR */}
-          <Card>
-            <SectionLabel>Net Revenue Retention</SectionLabel>
-            <div className="mb-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">97.0%</span>
-              <span className="text-xs font-semibold text-emerald-500">+0.6pp</span>
-              <span className="text-xs text-stone-400">vs last month</span>
-            </div>
-            <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={NRR_DATA} margin={{ top: 5, right: 8, left: -10, bottom: 5 }}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="m" tick={TICK} {...AXIS} />
-                <YAxis domain={[80, 120]} tickFormatter={(v) => `${v}%`} tick={TICK} {...AXIS} />
-                <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `${v.toFixed(1)}%`} />} />
-                <Line type="monotone" dataKey="v" name="NRR" stroke="#59B277" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Trial-to-Paid */}
-          <Card>
-            <SectionLabel>Trial-to-Paid Funnel</SectionLabel>
-            <div className="mb-4 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">41.2%</span>
-              <span className="text-xs text-stone-400">overall conversion</span>
-            </div>
-            <div className="flex items-end gap-5">
-              <div className="flex flex-1 flex-col gap-1.5">
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">1.13K</p>
-                <p className="text-xs text-stone-400 mb-1">Trial Started</p>
-                <div className="h-16 w-full rounded-lg bg-blue-500" />
-              </div>
-              <div className="w-px self-end h-16 bg-stone-200 dark:bg-white/10" />
-              <div className="flex flex-1 flex-col gap-1.5">
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">467</p>
-                <p className="text-xs text-stone-400 mb-1">Converted · 41.2%</p>
-                <div className="flex h-16 w-full gap-1">
-                  <div className="flex-1 rounded-lg bg-blue-100 dark:bg-blue-400/20" />
-                  <div className="flex-1 self-end rounded-lg bg-blue-500" style={{ height: "55%" }} />
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Expansion Revenue */}
-          <Card>
-            <SectionLabel>Expansion Revenue</SectionLabel>
-            <div className="mb-3">
-              <span className="text-xl font-bold text-stone-900 dark:text-stone-100">$1.18</span>
-              <span className="ml-2 text-xs text-stone-400">last 6 months</span>
-            </div>
-            <ResponsiveContainer width="100%" height={120}>
-              <AreaChart data={EXPANSION_DATA} margin={{ top: 5, right: 8, left: -10, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3F8CB2" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3F8CB2" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="m" tick={TICK} {...AXIS} />
-                <YAxis tickFormatter={(v) => `$${v}`} tick={TICK} {...AXIS} />
-                <Tooltip content={(p: any) => <ChartTip {...p} fmt={(v) => `$${v}`} />} />
-                <Area type="monotone" dataKey="v" name="Revenue" stroke="#3F8CB2" strokeWidth={2} fill="url(#expGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-      </div>
+      <SharedSection />
     </div>
   );
 }

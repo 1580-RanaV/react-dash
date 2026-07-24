@@ -1,9 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
-import PageLoader from "./PageLoader";
 import BluChat, { type BluMode } from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
@@ -188,17 +186,6 @@ function FloatingBluWindow({
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const [pageLoading, setPageLoading] = useState(true);
-  const [pageFading, setPageFading] = useState(false);
-
-  useEffect(() => {
-    setPageLoading(true);
-    setPageFading(false);
-    const t1 = setTimeout(() => setPageFading(true), 2000);
-    const t2 = setTimeout(() => setPageLoading(false), 2500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [location.pathname]);
 
   const [bluOpen, setBluOpen] = useState(false);
   const [bluMode, setBluMode] = useState<BluMode>("panel");
@@ -316,7 +303,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             }}
           >
             {children}
-            {pageLoading && <PageLoader fading={pageFading} />}
           </div>
         </main>
       </div>

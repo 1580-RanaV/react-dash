@@ -21,4 +21,5 @@ export const DASHBOARD_VIEW_KEYS = [
   "out-of-the-box",
   "boards",
   "subscription",
+  "recipes",
 ] as const;

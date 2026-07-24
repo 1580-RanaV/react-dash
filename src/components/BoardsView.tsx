@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, ChevronDown, Filter, Globe, HandCoins, HistoryIcon, Info, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingDown, TrendingUp, UserPlus, Users } from "lucide-react";
+import { Activity, ChevronDown, CreditCard, Filter, Globe, HandCoins, HistoryIcon, Info, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingDown, TrendingUp, UserPlus, Users } from "lucide-react";
 import {
   AreaChart, Area, ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid,
@@ -13,6 +13,7 @@ import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import SlidingSidebar from "./SlidingSidebar";
 import { BOARDS_DATA, BoardEntry, BoardType } from "./boards/boardsData";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import { SubscriptionContent } from "./SubscriptionView";
 
 // ── Chart data ────────────────────────────────────────────────────────────────
 
@@ -450,7 +451,8 @@ const VIEW_TABS = [
   { key: "traffic",    label: "Traffic",    icon: <Globe size={14} /> },
   { key: "revenue",    label: "Revenue",    icon: <HandCoins size={14} /> },
   { key: "engagement", label: "Engagement", icon: <Activity size={14} /> },
-  { key: "dashboard",  label: "Dashboards", icon: <LayoutDashboard size={14} /> },
+  { key: "dashboard",    label: "Dashboards",   icon: <LayoutDashboard size={14} /> },
+  { key: "subscription", label: "Subscription", icon: <CreditCard size={14} /> },
 ];
 
 function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
@@ -554,7 +556,11 @@ export default function BoardsView() {
 
   const tabsWithCounts = VIEW_TABS.map((t) => ({
     ...t,
-    count: t.key === "all" ? entries.length : entries.filter((e) => e.type === t.key).length || null,
+    count: t.key === "all"
+      ? entries.length
+      : t.key === "subscription"
+        ? null
+        : entries.filter((e) => e.type === t.key).length || null,
   }));
 
   const tableRows: TableRow[] = filtered.map((entry) => ({
@@ -575,7 +581,11 @@ export default function BoardsView() {
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
       <ViewTabs tabs={tabsWithCounts} activeTab={activeTab} onChange={setTab} />
 
-      {activeTab === "traffic" || activeTab === "revenue" || activeTab === "engagement" ? (
+      {activeTab === "subscription" ? (
+        <div key="subscription" className="flex-1 min-h-0 overflow-y-auto animate-fade-up">
+          <SubscriptionContent />
+        </div>
+      ) : activeTab === "traffic" || activeTab === "revenue" || activeTab === "engagement" ? (
         <div key={activeTab} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 animate-fade-up">
           {activeTab === "traffic"    && <TrafficCharts />}
           {activeTab === "revenue"    && <RevenueCharts />}

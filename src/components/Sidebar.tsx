@@ -30,11 +30,11 @@ import {
   CalendarClock,
   Database,
   LayoutDashboard,
-  CreditCard,
   ChevronRight,
   ChevronDown,
   Check,
   PanelLeftOpen,
+  ChefHat,
 } from "lucide-react";
 
 type NavItem = {
@@ -65,6 +65,7 @@ const nav: NavSection[] = [
         ],
       },
       { label: "Integrations", icon: <Plug size={15} /> },
+      { label: "Recipes", icon: <ChefHat size={15} /> },
     ],
   },
   {
@@ -107,7 +108,6 @@ const nav: NavSection[] = [
     heading: "Analytics",
     items: [
       { label: "Boards", icon: <LayoutDashboard size={15} /> },
-      { label: "Subscription", icon: <CreditCard size={15} /> },
     ],
   },
 ];
@@ -270,6 +270,7 @@ const NAV_VIEWS: Record<string, string> = {
   Subscribers: "subscribers",
   Attributes: "attributes",
   Integrations: "integrations",
+  Recipes: "recipes",
   "Asset Library": "asset-library",
   Avatars: "avatars",
   Scenes: "scenes",
@@ -285,7 +286,6 @@ const NAV_VIEWS: Record<string, string> = {
   Scheduler: "scheduler",
   "Out-of-the-box": "out-of-the-box",
   Boards: "boards",
-  Subscription: "subscription",
 };
 
 function NavItemRow({
