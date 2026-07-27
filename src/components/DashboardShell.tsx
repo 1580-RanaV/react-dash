@@ -280,7 +280,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <NotificationsMenu />
           <UpgradeButton />
-          <LanguageSwitcher />
+          {/* <LanguageSwitcher /> */}
           <ProfileMenu />
         </div>
 
