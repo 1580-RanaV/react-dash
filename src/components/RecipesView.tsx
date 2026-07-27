@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, cloneElement } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Search, Plus, Heart, ArrowUpDown, SlidersHorizontal,
+  Search, Plus, ArrowUpDown, SlidersHorizontal,
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
+  Check, Copy, FileText, FileCode,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
+import SubTabCorner from "./SubTabCorner";
+import SlidingSidebar from "./SlidingSidebar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +39,7 @@ type Recipe = {
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-const RECIPES: Recipe[] = [
+export const RECIPES: Recipe[] = [
   {
     id: "1",
     icon: <Users2 size={16} />,
@@ -415,85 +419,97 @@ Cross-reference with your activation metric (e.g. feature_used, project_created,
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatUses(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
-}
+const RECIPE_DATES: Record<string, string> = {
+  "1":  "Jul 14, 2026", "2":  "Jun 28, 2026", "3":  "Jul 3, 2026",  "4":  "May 19, 2026",
+  "5":  "Jun 9, 2026",  "6":  "Apr 22, 2026", "7":  "Jun 17, 2026", "8":  "Mar 31, 2026",
+  "9":  "May 7, 2026",  "10": "Jun 5, 2026",  "11": "Apr 11, 2026", "12": "Jul 1, 2026",
+  "13": "Feb 14, 2026", "14": "May 26, 2026", "15": "Jun 20, 2026",
+};
 
-function AuthorAvatar({ name }: { name: string }) {
-  if (name === "Intempt") {
-    return <img src="/mascot.png" alt="Intempt" className="h-4 w-4 rounded-full object-contain shrink-0" />;
-  }
+type Creator = { name: string; initials: string; color: string };
+
+const RECIPE_CREATORS: Record<string, Creator> = {
+  "1":  { name: "Rana V",        initials: "RV", color: "#0080FF" },
+  "2":  { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
+  "3":  { name: "Maya Patel",    initials: "MP", color: "#818cf8" },
+  "4":  { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
+  "5":  { name: "Tyler Brooks",  initials: "TB", color: "#f97316" },
+  "6":  { name: "April Dunford", initials: "AD", color: "#e05252" },
+  "7":  { name: "Rana V",        initials: "RV", color: "#0080FF" },
+  "8":  { name: "Maya Patel",    initials: "MP", color: "#818cf8" },
+  "9":  { name: "Tyler Brooks",  initials: "TB", color: "#f97316" },
+  "10": { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
+  "11": { name: "April Dunford", initials: "AD", color: "#e05252" },
+  "12": { name: "Rana V",        initials: "RV", color: "#0080FF" },
+  "13": { name: "Maya Patel",    initials: "MP", color: "#818cf8" },
+  "14": { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
+  "15": { name: "Tyler Brooks",  initials: "TB", color: "#f97316" },
+};
+
+function CreatorChip({ id }: { id: string }) {
+  const c = RECIPE_CREATORS[id];
+  if (!c) return null;
   return (
-    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-stone-200 dark:bg-stone-700 text-[9px] font-bold text-stone-600 dark:text-stone-300">
-      {name[0]}
-    </span>
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+        style={{ background: c.color }}
+      >
+        {c.initials}
+      </span>
+      <span className="text-xs text-stone-600 dark:text-stone-400 truncate">{c.name}</span>
+    </div>
   );
 }
 
 // ── Recipe card ───────────────────────────────────────────────────────────────
 
 function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
-  const [liked, setLiked] = useState(false);
-
   return (
     <div
       onClick={onOpen}
-      className="rounded-xl p-5 flex flex-col cursor-pointer transition-shadow"
+      className="relative rounded-xl p-5 flex flex-col gap-3 cursor-pointer overflow-hidden"
       style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
     >
-      <div className="flex items-start justify-between mb-3">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400">
-          {recipe.icon}
-        </span>
-        <button
-          onClick={e => { e.stopPropagation(); setLiked(l => !l); }}
-          className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${liked ? "text-red-500" : "text-stone-300 dark:text-stone-600 hover:text-stone-400"}`}
-        >
-          <Heart size={13} fill={liked ? "currentColor" : "none"} />
-        </button>
+      <span className="pointer-events-none absolute -right-3 -bottom-3 select-none text-stone-900 dark:text-stone-100 opacity-[0.045] dark:opacity-[0.06]">
+        {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
+      </span>
+      {/* Creator + date */}
+      <div className="flex items-center justify-between">
+        <CreatorChip id={recipe.id} />
+        <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">{RECIPE_DATES[recipe.id]}</span>
       </div>
 
-      {recipe.category && (
-        <span className="mb-2 self-start inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-          {recipe.category}
-        </span>
-      )}
-
-      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1.5">
-        {recipe.title}
-      </p>
-
-      <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3 flex-1 mb-3">
-        {recipe.description}
-      </p>
-
-      {recipe.tags.length > 0 && (
-        <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">
-          {recipe.tags.join(" · ")}
+      {/* Title + description */}
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1.5">
+          {recipe.title}
         </p>
+        <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3">
+          {recipe.description}
+        </p>
+      </div>
+
+      {/* Area chips */}
+      {recipe.spec.areas.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {recipe.spec.areas.map(area => (
+            <span key={area} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+              {area}
+            </span>
+          ))}
+        </div>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <AuthorAvatar name={recipe.author} />
-          <span className="text-xs text-stone-400 dark:text-stone-500 truncate">{recipe.author}</span>
-          <span className="text-stone-200 dark:text-stone-700 shrink-0">·</span>
-          <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">
-            {recipe.steps} {recipe.steps === 1 ? "step" : "steps"}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500 shrink-0 ml-2">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
-          </svg>
-          {formatUses(recipe.uses)}
-        </div>
-      </div>
     </div>
   );
 }
 
 // ── Recipe detail ─────────────────────────────────────────────────────────────
+
+function toSlashCommand(title: string) {
+  return "/" + title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");
+}
 
 function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -504,21 +520,94 @@ function SpecRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
+const MOCK_STEPS = [
+  {
+    title: "Define your audience",
+    body: "Create a segment or apply filters to target the right users or accounts. Set the criteria — event frequency, attribute values, or time windows — that qualify someone for this recipe.",
+  },
+  {
+    title: "Configure data sources",
+    body: "Connect the events and attributes your recipe reads from. Map the relevant properties so the logic has accurate signal to act on.",
+  },
+  {
+    title: "Set your trigger",
+    body: "Choose when this recipe activates — in real time as events arrive, on a scheduled cadence, or when a threshold is crossed. Real-time triggers are best for time-sensitive actions; batch suits reporting and rollups.",
+  },
+  {
+    title: "Build the action",
+    body: "Define what happens when conditions are met: send a notification, enroll users into a journey, snapshot a report, update a CRM field, or fire a webhook to an external system.",
+  },
+  {
+    title: "Review and launch",
+    body: "Preview the audience size estimate and validate the action payload. Set run frequency, confirm the destination, and activate. Monitor results from the recipe's analytics panel.",
+  },
+];
+
+const RECIPE_TABS = [
+  { key: "details", label: "Details",   icon: <FileText size={13} /> },
+  { key: "md",      label: ".md file",  icon: <FileCode size={13} /> },
+];
+
+export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
+  const [activeTab, setActiveTab] = useState("details");
+  const [cmdCopied, setCmdCopied] = useState(false);
+  const mdOpen = activeTab === "md";
+  const slashCmd = toSlashCommand(recipe.title);
+
+  function handleCopyCmd() {
+    navigator.clipboard.writeText(slashCmd);
+    setCmdCopied(true);
+    setTimeout(() => setCmdCopied(false), 2000);
+  }
+
   return (
-    <div className="flex flex-1 flex-col min-h-0 overflow-hidden animate-fade-up">
+    <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden animate-fade-up">
       {/* Top bar */}
       <div
-        className="shrink-0 flex items-center gap-3 px-5 py-2.5 border-b"
+        className="shrink-0 flex items-center justify-between gap-3 px-5 py-2.5 border-b"
         style={{ borderColor: "var(--border)" }}
       >
-        <BackButton onClick={onBack} />
-        <span className="font-medium text-stone-900 dark:text-stone-100 truncate">{recipe.title}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <BackButton onClick={onBack} />
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium text-stone-900 dark:text-stone-100 truncate">{recipe.title}</span>
+            <span
+              className="shrink-0 hidden sm:inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-medium text-blue-600 dark:text-blue-400"
+              style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
+            >
+              {slashCmd}
+            </span>
+          </div>
+        </div>
+        <div className="shrink-0">
+          <SubTabCorner tabs={RECIPE_TABS} active={activeTab} onChange={setActiveTab} />
+        </div>
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
+
+          {/* Slash command block */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+              Slash command
+            </p>
+            <button
+              onClick={handleCopyCmd}
+              className="group flex w-full items-center justify-between gap-4 rounded-lg px-4 py-3 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
+              style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
+            >
+              <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 select-all">
+                {slashCmd}
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500 group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors">
+                {cmdCopied
+                  ? <><Check size={12} className="text-emerald-500" /><span className="text-emerald-500">Copied</span></>
+                  : <><Copy size={12} />Copy</>}
+              </span>
+            </button>
+          </section>
 
           {/* Why this recipe works */}
           <section>
@@ -564,18 +653,26 @@ function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => vo
 
           {/* Steps */}
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-4">
-              Steps ({recipe.steps})
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-5">
+              Steps
             </p>
-            <div className="flex flex-col gap-6">
-              {recipe.stepDetails.map((detail, i) => (
+            <div className="flex flex-col">
+              {MOCK_STEPS.map((s, i) => (
                 <div key={i} className="flex gap-4">
-                  <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-400 mt-0.5" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-                    {i + 1}
+                  {/* Number + connector */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+                      {i + 1}
+                    </div>
+                    {i < MOCK_STEPS.length - 1 && (
+                      <div className="w-px flex-1 my-1.5" style={{ background: "var(--border)" }} />
+                    )}
                   </div>
-                  <pre className="flex-1 text-sm text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap font-sans">
-                    {detail}
-                  </pre>
+                  {/* Content */}
+                  <div className={i < MOCK_STEPS.length - 1 ? "pb-6" : "pb-0"}>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1">{s.title}</p>
+                    <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -583,6 +680,73 @@ function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => vo
 
         </div>
       </div>
+
+      {mdOpen && (
+        <SlidingSidebar
+          title="recipe.md"
+          description={recipe.title}
+          onClose={() => setActiveTab("details")}
+        >
+          <RecipeMdContent recipe={recipe} />
+        </SlidingSidebar>
+      )}
+    </div>
+  );
+}
+
+// ── recipe.md content ─────────────────────────────────────────────────────────
+
+function RecipeMdContent({ recipe }: { recipe: Recipe }) {
+  const [copied, setCopied] = useState(false);
+
+  const content = [
+    `# ${recipe.title}`,
+    ``,
+    `## Description`,
+    ``,
+    recipe.description,
+    ``,
+    `## Why this works`,
+    ``,
+    recipe.why,
+    ``,
+    `## Specs`,
+    ``,
+    `- **Complexity**: ${recipe.spec.complexity}`,
+    `- **Execution**: ${recipe.spec.execution}`,
+    `- **Agent**: ${recipe.spec.agent}`,
+    `- **Products**: ${recipe.spec.products.join(", ")}`,
+    `- **Mode**: ${recipe.spec.mode}`,
+    `- **Areas**: ${recipe.spec.areas.join(", ")}`,
+    ``,
+    `## Steps`,
+    ``,
+    ...MOCK_STEPS.flatMap((s, i) => [
+      `### Step ${i + 1}: ${s.title}`,
+      ``,
+      s.body,
+      ``,
+    ]),
+  ].join("\n");
+
+  function handleCopy() {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="relative px-5 pb-5">
+      <button
+        onClick={handleCopy}
+        className="absolute right-5 top-0 inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-(--border) dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
+      >
+        {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-stone-700 dark:text-stone-300 pt-10">
+        {content}
+      </pre>
     </div>
   );
 }
@@ -592,15 +756,9 @@ function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => vo
 const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6";
 
 export default function RecipesView() {
+  const navigate = useNavigate();
   const [search, setSearch]       = useState("");
-  const [openId, setOpenId]       = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const openRecipe = RECIPES.find(r => r.id === openId);
-
-  if (openRecipe) {
-    return <RecipeDetailView recipe={openRecipe} onBack={() => setOpenId(null)} />;
-  }
 
   const filtered = RECIPES.filter(r => {
     const q = search.toLowerCase();
@@ -639,7 +797,7 @@ export default function RecipesView() {
       </div>
 
       {/* Card grid */}
-      <div className="px-4 pb-6 pt-4 animate-fade-up">
+      <div className="px-4 pb-6 pt-3 animate-fade-up">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
             <p className="text-sm text-stone-400 dark:text-stone-500">No recipes match your search</p>
@@ -650,7 +808,7 @@ export default function RecipesView() {
               <RecipeCard
                 key={r.id}
                 recipe={r}
-                onOpen={() => setOpenId(r.id)}
+                onOpen={() => navigate(`/recipes/${r.id}`)}
               />
             ))}
           </div>

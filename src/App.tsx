@@ -19,6 +19,26 @@ import { AvatarDetailPage } from "./components/AvatarDetailView";
 import { SceneDetailPage } from "./components/SceneDetailView";
 import { PoseDetailPage } from "./components/PoseDetailView";
 import BluFullscreenView from "./components/BluFullscreenView";
+import { RecipeDetailView, RECIPES } from "./components/RecipesView";
+import RecipeCanvasView from "./components/RecipeCanvasView";
+import DesktopOnlyGate from "./components/DesktopOnlyGate";
+
+function RecipeCanvasPage() {
+  const navigate = useNavigate();
+  return (
+    <DesktopOnlyGate>
+      <RecipeCanvasView onBack={() => navigate("/recipes")} />
+    </DesktopOnlyGate>
+  );
+}
+
+function RecipeDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const recipe = RECIPES.find(r => r.id === id);
+  if (!recipe) return <Navigate to="/recipes" replace />;
+  return <RecipeDetailView recipe={recipe} onBack={() => navigate("/recipes")} />;
+}
 
 function ExperienceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -128,6 +148,8 @@ export default function App() {
                   <Route path="/avatars/:id" element={<AvatarDetailPage />} />
                   <Route path="/scenes/:id" element={<SceneDetailPage />} />
                   <Route path="/poses/:id" element={<PoseDetailPage />} />
+                  <Route path="/recipe-canvas" element={<RecipeCanvasPage />} />
+                  <Route path="/recipes/:id" element={<RecipeDetailPage />} />
                   {DASHBOARD_VIEW_KEYS.map((view) => (
                     <Route key={view} path={`/${view}`} element={<DashboardView view={view} />} />
                   ))}

@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
@@ -186,6 +187,7 @@ function FloatingBluWindow({
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
 
   const [bluOpen, setBluOpen] = useState(false);
   const [bluMode, setBluMode] = useState<BluMode>("panel");
@@ -199,15 +201,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   function panelBlu() { setBluMode("panel"); }
 
   useEffect(() => {
-    const open   = () => setBluOpen(true);
-    const toggle = () => setBluOpen((o) => !o);
-    window.addEventListener("open-blu-chat", open);
-    window.addEventListener("toggle-blu-chat", toggle);
+    const open              = () => setBluOpen(true);
+    const toggle            = () => setBluOpen((o) => !o);
+    const openRecipeCanvas  = () => navigate("/recipe-canvas");
+    window.addEventListener("open-blu-chat",       open);
+    window.addEventListener("toggle-blu-chat",     toggle);
+    window.addEventListener("open-recipe-canvas",  openRecipeCanvas);
     return () => {
-      window.removeEventListener("open-blu-chat", open);
-      window.removeEventListener("toggle-blu-chat", toggle);
+      window.removeEventListener("open-blu-chat",       open);
+      window.removeEventListener("toggle-blu-chat",     toggle);
+      window.removeEventListener("open-recipe-canvas",  openRecipeCanvas);
     };
-  }, []);
+  }, [navigate]);
 
   function handleToggleCollapse() {
     if (sidebarWidth < SIDEBAR_ICON_THR) {

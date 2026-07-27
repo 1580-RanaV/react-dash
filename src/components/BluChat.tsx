@@ -481,6 +481,7 @@ export default function BluChat({
   const [msgTopFade, setMsgTopFade] = useState(false);
   const [msgBottomFade, setMsgBottomFade] = useState(true);
   const [journeyPreviewName, setJourneyPreviewName] = useState<string | null>(null);
+  const [inputLocked, setInputLocked] = useState(false);
 
   function checkMsgFades() {
     const el = messagesRef.current;
@@ -840,6 +841,7 @@ export default function BluChat({
   }
 
   function sendMessage(overrideText?: string) {
+    if (inputLocked) return;
     const text = overrideText ?? getEditorText();
     const currentMentions = overrideText ? [] : getEditorMentions();
     const currentRecipes = overrideText ? [] : getEditorRecipes();
@@ -860,6 +862,7 @@ export default function BluChat({
     const isFailed = !overrideText && text.toLowerCase() === "failed";
     const isError = !overrideText && text.toLowerCase() === "error";
     const isPlan = !overrideText && text.toLowerCase() === "plan";
+    const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
 
@@ -892,6 +895,8 @@ export default function BluChat({
           text: "I'd love to help capture that! Answer a few quick questions so your feedback reaches the right people.",
           feedbackForm: true,
         });
+      } else if (isCreateRecipe) {
+        next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else {
@@ -932,7 +937,11 @@ export default function BluChat({
       setSelectedReference(null);
     }
 
-    if (!isFeedback) {
+    if (isCreateRecipe) {
+      setTimeout(() => window.dispatchEvent(new CustomEvent("open-recipe-canvas")), 600);
+    }
+
+    if (!isFeedback && !isCreateRecipe) {
       window.dispatchEvent(new CustomEvent("blu-image-generate", { detail: { text } }));
     }
   }
@@ -942,9 +951,16 @@ export default function BluChat({
       const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt?.trim();
       if (prompt) sendMessage(prompt);
     }
+    function handleSetLocked(event: Event) {
+      setInputLocked((event as CustomEvent<boolean>).detail);
+    }
 
     window.addEventListener("blu-suggested-prompt", handleSuggestedPrompt);
-    return () => window.removeEventListener("blu-suggested-prompt", handleSuggestedPrompt);
+    window.addEventListener("blu-set-locked", handleSetLocked);
+    return () => {
+      window.removeEventListener("blu-suggested-prompt", handleSuggestedPrompt);
+      window.removeEventListener("blu-set-locked", handleSetLocked);
+    };
   });
 
   return (
@@ -1535,7 +1551,12 @@ export default function BluChat({
 
         <div
           className="rounded-xl px-4 pt-4 pb-3"
-          style={{ border: "1px solid var(--border)" }}
+          style={{
+            border: `1px solid ${inputLocked ? "var(--border)" : "var(--border)"}`,
+            opacity: inputLocked ? 0.45 : 1,
+            pointerEvents: inputLocked ? "none" : undefined,
+            transition: "opacity 0.25s ease",
+          }}
         >
           {queue.length > 0 && (
             <div className="mb-2">
