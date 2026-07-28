@@ -45,7 +45,7 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
       if (selected === "remix")  { setStep("remix"); return; }
       if (selected === "upload") { fileRef.current?.click(); return; }
       close();
-      window.dispatchEvent(new Event("open-blu-chat"));
+      window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
     } else {
       close();
     }
