@@ -1,10 +1,10 @@
-import { useState, cloneElement } from "react";
+import { useState, useRef, useEffect, cloneElement } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, Plus, ArrowUpDown, SlidersHorizontal,
+  Search, Plus, ArrowUpDown, SlidersHorizontal, ChevronDown,
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
-  Check, Copy, FileText, FileCode,
+  Check, Copy, FileText, FileCode, Pencil, Shuffle,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
@@ -35,6 +35,7 @@ type Recipe = {
   why: string;
   spec: RecipeSpec;
   stepDetails: string[];
+  draft?: boolean;
 };
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export const RECIPES: Recipe[] = [
     steps: 1,
     uses: 3300,
     why: "Accounts that visit your pricing page multiple times in a short window are actively evaluating — they are your warmest pipeline. This recipe surfaces them before they self-select to a competitor.",
+    draft: true,
     spec: { complexity: "Simple", execution: "Live", agent: "data analyst", products: ["Accounts", "Segments"], mode: "saas, b2b", areas: ["Data"] },
     stepDetails: [
       `Build a SEGMENT on /attributes titled "Pricing Surge — 7d".
@@ -265,6 +267,7 @@ Cross-reference with your activation metric (e.g. feature_used, project_created,
     steps: 3,
     uses: 2900,
     why: "Churn rarely happens suddenly. The 40% login frequency drop over 14 days is a leading indicator that fires weeks before an account actually cancels — giving your CSM team enough runway to intervene.",
+    draft: true,
     spec: { complexity: "Standard", execution: "Live", agent: "revops automator", products: ["Accounts", "Journeys"], mode: "saas, b2b", areas: ["RevOps", "Data"] },
     stepDetails: [
       `Step 1 — Build a COMPUTED ATTRIBUTE on /attributes: login_freq_drop_14d.\n\nFormula: ((logins in prior 14d − logins in current 14d) / logins in prior 14d) × 100\nOnly evaluate accounts where logins in prior 14d ≥ 3 (filter out inactive-from-the-start).`,
@@ -357,6 +360,7 @@ Cross-reference with your activation metric (e.g. feature_used, project_created,
     steps: 1,
     uses: 5200,
     why: "Subject lines account for roughly 50% of open rate variance — yet most teams write one and ship it. This recipe generates a scored shortlist in seconds so you always send the best version.",
+    draft: true,
     spec: { complexity: "Simple", execution: "On-demand", agent: "content creator", products: ["Email", "Content"], mode: "saas, b2b", areas: ["Email", "Content"] },
     stepDetails: [
       `Open your campaign in /content. In the Subject line field, click "Optimise with AI".\n\nInput: your campaign brief (one sentence describing the email's purpose and audience).\nOutput: 10 subject line variants with a predicted open rate score for each, ranked best-to-worst.\n\nScoring model is trained on your account's historical send data (opens per subject line pattern). For accounts with < 500 past sends, Intempt falls back to industry benchmarks for your vertical.\n\nSelect the top-scored variant or A/B test the top two by splitting your send list 50/50. The winning variant's data feeds back into the scoring model for future optimisations.`,
@@ -462,9 +466,18 @@ function CreatorChip({ id }: { id: string }) {
   );
 }
 
+// ── Chip color by position ────────────────────────────────────────────────────
+
+
 // ── Recipe card ───────────────────────────────────────────────────────────────
 
+const MAX_VISIBLE_CHIPS = 2;
+
 function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
+  const allChips = Array.from(new Set([...recipe.spec.areas, ...recipe.spec.products]));
+  const visibleChips = allChips.slice(0, MAX_VISIBLE_CHIPS);
+  const overflow = allChips.length - MAX_VISIBLE_CHIPS;
+
   return (
     <div
       onClick={onOpen}
@@ -474,6 +487,7 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
       <span className="pointer-events-none absolute -right-3 -bottom-3 select-none text-stone-900 dark:text-stone-100 opacity-[0.045] dark:opacity-[0.06]">
         {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
       </span>
+
       {/* Creator + date */}
       <div className="flex items-center justify-between">
         <CreatorChip id={recipe.id} />
@@ -490,17 +504,33 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
         </p>
       </div>
 
-      {/* Area chips */}
-      {recipe.spec.areas.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {recipe.spec.areas.map(area => (
-            <span key={area} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-              {area}
+      {/* Chips + overflow */}
+      {allChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {visibleChips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300"
+            >
+              {chip}
             </span>
           ))}
+          {overflow > 0 && (
+            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
+              +{overflow} more
+            </span>
+          )}
         </div>
       )}
 
+      {/* Draft badge */}
+      {recipe.draft && (
+        <div className="absolute bottom-3 right-3">
+          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
+            Draft
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -544,20 +574,62 @@ const MOCK_STEPS = [
 ];
 
 const RECIPE_TABS = [
-  { key: "details", label: "Details",   icon: <FileText size={13} /> },
-  { key: "md",      label: ".md file",  icon: <FileCode size={13} /> },
+  { key: "details", label: "Details",   icon: <FileText  size={13} /> },
+  { key: "remix",   label: "Remix",     icon: <Shuffle   size={13} /> },
+  { key: "md",      label: ".md file",  icon: <FileCode  size={13} /> },
 ];
 
 export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
-  const [activeTab, setActiveTab] = useState("details");
-  const [cmdCopied, setCmdCopied] = useState(false);
+  const [activeTab,  setActiveTab]  = useState("details");
+  const [cmdCopied,  setCmdCopied]  = useState(false);
+  const [title,        setTitle]        = useState(recipe.title);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft,   setTitleDraft]   = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [slashCmd,       setSlashCmd]       = useState(() => toSlashCommand(recipe.title));
+  const [editingCmd,     setEditingCmd]     = useState(false);
+  const [cmdDraft,       setCmdDraft]       = useState("");
+  const cmdInputRef = useRef<HTMLInputElement>(null);
   const mdOpen = activeTab === "md";
-  const slashCmd = toSlashCommand(recipe.title);
 
   function handleCopyCmd() {
     navigator.clipboard.writeText(slashCmd);
     setCmdCopied(true);
     setTimeout(() => setCmdCopied(false), 2000);
+  }
+
+  function startEditCmd() {
+    setCmdDraft(slashCmd);
+    setEditingCmd(true);
+    setTimeout(() => { cmdInputRef.current?.select(); }, 0);
+  }
+
+  function commitCmd() {
+    const trimmed = cmdDraft.trim();
+    if (trimmed) setSlashCmd(trimmed.startsWith("/") ? trimmed : "/" + trimmed);
+    setEditingCmd(false);
+  }
+
+  function handleCmdKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter")  { e.preventDefault(); commitCmd(); }
+    if (e.key === "Escape") { setEditingCmd(false); }
+  }
+
+  function startEditTitle() {
+    setTitleDraft(title);
+    setEditingTitle(true);
+    setTimeout(() => { titleInputRef.current?.select(); }, 0);
+  }
+
+  function commitTitle() {
+    const trimmed = titleDraft.trim();
+    if (trimmed) setTitle(trimmed);
+    setEditingTitle(false);
+  }
+
+  function handleTitleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter")  { e.preventDefault(); commitTitle(); }
+    if (e.key === "Escape") { setEditingTitle(false); }
   }
 
   return (
@@ -570,17 +642,42 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
         <div className="flex items-center gap-3 min-w-0">
           <BackButton onClick={onBack} />
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-medium text-stone-900 dark:text-stone-100 truncate">{recipe.title}</span>
-            <span
-              className="shrink-0 hidden sm:inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-medium text-blue-600 dark:text-blue-400"
-              style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
-            >
-              {slashCmd}
-            </span>
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={commitTitle}
+                onKeyDown={handleTitleKeyDown}
+                className="min-w-0 rounded-md px-2 py-0.5 text-sm font-medium text-stone-900 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                style={{ background: "var(--input)", border: "1px solid var(--border)", width: `${Math.max(titleDraft.length, 10)}ch` }}
+              />
+            ) : (
+              <button
+                onClick={startEditTitle}
+                className="group flex items-center gap-1.5 min-w-0"
+                title="Click to rename"
+              >
+                <span className="truncate font-medium text-stone-900 dark:text-stone-100">{title}</span>
+                <Pencil size={13} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 dark:text-stone-500" />
+              </button>
+            )}
           </div>
         </div>
         <div className="shrink-0">
-          <SubTabCorner tabs={RECIPE_TABS} active={activeTab} onChange={setActiveTab} />
+          <SubTabCorner
+            tabs={RECIPE_TABS}
+            active={activeTab}
+            onChange={(key) => {
+              if (key === "remix") {
+                window.dispatchEvent(new Event("open-blu-chat"));
+                window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt: `Remix the "${title}" recipe — keep the structure but adapt it for a different use case` } }));
+                return;
+              }
+              setActiveTab(key);
+            }}
+          />
         </div>
       </div>
 
@@ -593,20 +690,45 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
             <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
               Slash command
             </p>
-            <button
-              onClick={handleCopyCmd}
-              className="group flex w-full items-center justify-between gap-4 rounded-lg px-4 py-3 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
+            <div
+              className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3"
               style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
             >
-              <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 select-all">
-                {slashCmd}
-              </span>
-              <span className="shrink-0 inline-flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500 group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors">
-                {cmdCopied
-                  ? <><Check size={12} className="text-emerald-500" /><span className="text-emerald-500">Copied</span></>
-                  : <><Copy size={12} />Copy</>}
-              </span>
-            </button>
+              {editingCmd ? (
+                <input
+                  ref={cmdInputRef}
+                  autoFocus
+                  value={cmdDraft}
+                  onChange={(e) => setCmdDraft(e.target.value)}
+                  onBlur={commitCmd}
+                  onKeyDown={handleCmdKeyDown}
+                  className="flex-1 min-w-0 font-mono text-sm font-medium text-blue-600 dark:text-blue-400 bg-transparent outline-none border-b border-blue-400"
+                />
+              ) : (
+                <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 truncate flex-1 min-w-0">
+                  {slashCmd}
+                </span>
+              )}
+              <div className="shrink-0 flex items-center gap-1">
+                {!editingCmd && (
+                  <button
+                    onClick={startEditCmd}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-white/8 transition-colors"
+                  >
+                    <Pencil size={11} />
+                    Rename
+                  </button>
+                )}
+                <button
+                  onClick={handleCopyCmd}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-white/8 transition-colors"
+                >
+                  {cmdCopied
+                    ? <><Check size={11} className="text-emerald-500" /><span className="text-emerald-500">Copied</span></>
+                    : <><Copy size={11} />Copy</>}
+                </button>
+              </div>
+            </div>
           </section>
 
           {/* Why this recipe works */}
@@ -751,19 +873,92 @@ function RecipeMdContent({ recipe }: { recipe: Recipe }) {
   );
 }
 
+// ── Sort / filter helpers ──────────────────────────────────────────────────────
+
+const SORT_OPTIONS = [
+  { key: "most-used",        label: "Most used" },
+  { key: "recently-added",   label: "Recently added" },
+  { key: "az",               label: "A → Z" },
+  { key: "recently-updated", label: "Recently updated" },
+] as const;
+type SortKey = typeof SORT_OPTIONS[number]["key"];
+
+const RECIPE_UPDATED_DATES: Record<string, string> = {
+  "1": "Jul 24, 2026", "2": "Jul 18, 2026", "3": "Jun 12, 2026", "4": "Jul 22, 2026",
+  "5": "Jul 15, 2026", "6": "Jul 7, 2026",  "7": "Jul 19, 2026", "8": "Jun 30, 2026",
+  "9": "Jul 11, 2026", "10": "Jul 5, 2026", "11": "Jul 21, 2026","12": "Jul 25, 2026",
+  "13": "Jun 5, 2026", "14": "Jul 10, 2026","15": "Jul 16, 2026",
+};
+
+function normalizeAgent(a: string) {
+  return a.split(" ").map(w =>
+    w.toLowerCase() === "revops" ? "RevOps" : w.charAt(0).toUpperCase() + w.slice(1)
+  ).join(" ");
+}
+
+function parseDateMs(s: string) { return s ? new Date(s).getTime() : 0; }
+
+const ALL_AGENTS = Array.from(new Set(RECIPES.map(r => normalizeAgent(r.spec.agent)))).sort();
+const ALL_AREAS  = Array.from(new Set(RECIPES.flatMap(r => r.spec.areas))).sort();
+
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3.5 text-sm font-medium transition-colors border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-(--border) dark:bg-(--muted) dark:text-stone-300 dark:hover:bg-white/6";
 
 export default function RecipesView() {
   const navigate = useNavigate();
-  const [search, setSearch]       = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [filterOpen,   setFilterOpen]   = useState(false);
+  const [sortOpen,     setSortOpen]     = useState(false);
+  const [sortBy,       setSortBy]       = useState<SortKey>("most-used");
+  const [filterAgents, setFilterAgents] = useState<Set<string>>(new Set());
+  const [filterAreas,  setFilterAreas]  = useState<Set<string>>(new Set());
+  const sortRef   = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  const filtered = RECIPES.filter(r => {
+  useEffect(() => {
+    if (!sortOpen) return;
+    function handle(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [sortOpen]);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    function handle(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [filterOpen]);
+
+  function toggleAgent(a: string) {
+    setFilterAgents(prev => { const n = new Set(prev); n.has(a) ? n.delete(a) : n.add(a); return n; });
+  }
+  function toggleArea(a: string) {
+    setFilterAreas(prev => { const n = new Set(prev); n.has(a) ? n.delete(a) : n.add(a); return n; });
+  }
+
+  // Filter
+  let result = RECIPES.filter(r => {
     const q = search.toLowerCase();
-    return !q || r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.tags.some(t => t.toLowerCase().includes(q));
+    if (q && !r.title.toLowerCase().includes(q) && !r.description.toLowerCase().includes(q) && !r.tags.some(t => t.toLowerCase().includes(q))) return false;
+    if (filterAgents.size > 0 && !filterAgents.has(normalizeAgent(r.spec.agent))) return false;
+    if (filterAreas.size > 0 && !r.spec.areas.some(a => filterAreas.has(a))) return false;
+    return true;
   });
+
+  // Sort
+  if (sortBy === "most-used")        result = [...result].sort((a, b) => b.uses - a.uses);
+  else if (sortBy === "recently-added")   result = [...result].sort((a, b) => parseDateMs(RECIPE_DATES[b.id]) - parseDateMs(RECIPE_DATES[a.id]));
+  else if (sortBy === "az")               result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+  else if (sortBy === "recently-updated") result = [...result].sort((a, b) => parseDateMs(RECIPE_UPDATED_DATES[b.id]) - parseDateMs(RECIPE_UPDATED_DATES[a.id]));
+
+  const activeFilterCount = filterAgents.size + filterAreas.size;
+  const activeSortLabel   = SORT_OPTIONS.find(o => o.key === sortBy)?.label ?? "Sort";
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
@@ -778,14 +973,120 @@ export default function RecipesView() {
             className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
           />
         </div>
-        <button className={BTN}>
-          <SlidersHorizontal size={13} />
-          <span className="hidden sm:inline">Filter</span>
-        </button>
-        <button className={BTN}>
-          <ArrowUpDown size={13} />
-          <span className="hidden sm:inline">Sort</span>
-        </button>
+
+        {/* Filter button + dropdown */}
+        <div className="relative" ref={filterRef}>
+          <button
+            onClick={() => setFilterOpen(v => !v)}
+            className={`${BTN}${filterOpen || activeFilterCount > 0 ? " border-blue-300! bg-blue-50! text-blue-600! dark:border-blue-500/30! dark:bg-blue-500/10! dark:text-blue-400!" : ""}`}
+          >
+            <SlidersHorizontal size={13} />
+            <span className="hidden sm:inline">Filter</span>
+            {activeFilterCount > 0 ? (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white leading-none">
+                {activeFilterCount}
+              </span>
+            ) : (
+              <ChevronDown size={12} className={`transition-transform duration-150 ${filterOpen ? "rotate-180" : ""}`} />
+            )}
+          </button>
+          {filterOpen && (
+            <div
+              className="absolute left-0 top-full mt-1.5 z-50 w-96 rounded-xl overflow-hidden"
+              style={{ border: "1px solid var(--border)", background: "var(--content-bg)", boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)" }}
+            >
+              {/* Agent */}
+              <div className="px-4 pt-4 pb-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2.5">Agent</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_AGENTS.map(agent => {
+                    const active = filterAgents.has(agent);
+                    return (
+                      <button
+                        key={agent}
+                        onClick={() => toggleAgent(agent)}
+                        className="h-7 rounded-full px-3 text-sm font-medium transition-all"
+                        style={{
+                          background: active ? "#3b82f6" : "var(--muted)",
+                          border: `1px solid ${active ? "#3b82f6" : "var(--border)"}`,
+                          color: active ? "#fff" : "var(--stone-700, #44403c)",
+                        }}
+                      >
+                        {agent}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* separator */}
+              <div className="h-px mx-4" style={{ background: "var(--border)" }} />
+              {/* Areas */}
+              <div className="px-4 pt-3 pb-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2.5">Areas</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_AREAS.map(area => {
+                    const active = filterAreas.has(area);
+                    return (
+                      <button
+                        key={area}
+                        onClick={() => toggleArea(area)}
+                        className="h-7 rounded-full px-3 text-sm font-medium transition-all"
+                        style={{
+                          background: active ? "#3b82f6" : "var(--muted)",
+                          border: `1px solid ${active ? "#3b82f6" : "var(--border)"}`,
+                          color: active ? "#fff" : "var(--stone-700, #44403c)",
+                        }}
+                      >
+                        {area}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {activeFilterCount > 0 && (
+                <div className="px-4 pb-3 pt-0 border-t" style={{ borderColor: "var(--border)" }}>
+                  <button
+                    onClick={() => { setFilterAgents(new Set()); setFilterAreas(new Set()); }}
+                    className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors pt-2.5 block"
+                  >
+                    Clear all ({activeFilterCount})
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sort button */}
+        <div className="relative" ref={sortRef}>
+          <button onClick={() => setSortOpen(v => !v)} className={BTN}>
+            <ArrowUpDown size={13} />
+            <span className="hidden sm:inline">{activeSortLabel}</span>
+            <ChevronDown size={12} className={`transition-transform duration-150 ${sortOpen ? "rotate-180" : ""}`} />
+          </button>
+          {sortOpen && (
+            <div
+              className="absolute right-0 top-full mt-1.5 z-50 w-52 rounded-xl overflow-hidden"
+              style={{ border: "1px solid var(--border)", background: "var(--content-bg)", boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)" }}
+            >
+              {SORT_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => { setSortBy(opt.key); setSortOpen(false); }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <span className="w-4 shrink-0">
+                    {sortBy === opt.key && <Check size={14} className="text-blue-500" />}
+                  </span>
+                  <span className={sortBy === opt.key ? "font-semibold text-stone-800 dark:text-stone-100" : "text-stone-600 dark:text-stone-300"}>
+                    {opt.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => setDrawerOpen(true)}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
@@ -797,14 +1098,14 @@ export default function RecipesView() {
       </div>
 
       {/* Card grid */}
-      <div className="px-4 pb-6 pt-3 animate-fade-up">
-        {filtered.length === 0 ? (
+      <div className="px-4 pb-6 pt-1 animate-fade-up">
+        {result.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
             <p className="text-sm text-stone-400 dark:text-stone-500">No recipes match your search</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map(r => (
+            {result.map(r => (
               <RecipeCard
                 key={r.id}
                 recipe={r}

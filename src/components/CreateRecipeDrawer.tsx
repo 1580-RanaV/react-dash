@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Wand2, Copy, FileUp, Search, ArrowLeft } from "lucide-react";
+import { Wand2, Copy, FileUp, Search, ArrowLeft, FileText } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
 
 const CREATE_OPTIONS = [
@@ -29,10 +29,12 @@ const REMIX_RECIPES: RemixRecipe[] = [
 ];
 
 export default function CreateRecipeDrawer({ onClose }: { onClose: () => void }) {
-  const [selected, setSelected]         = useState("scratch");
-  const [step, setStep]                 = useState<"choose" | "remix">("choose");
-  const [remixSearch, setRemixSearch]   = useState("");
+  const [selected, setSelected]           = useState("scratch");
+  const [step, setStep]                   = useState<"choose" | "remix" | "upload">("choose");
+  const [remixSearch, setRemixSearch]     = useState("");
   const [remixSelected, setRemixSelected] = useState<string | null>(null);
+  const [uploadedContent,  setUploadedContent]  = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filteredRemix = REMIX_RECIPES.filter(r => {
@@ -44,6 +46,9 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
     if (step === "choose") {
       if (selected === "remix")  { setStep("remix"); return; }
       if (selected === "upload") { fileRef.current?.click(); return; }
+      close();
+      window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
+    } else if (step === "upload") {
       close();
       window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
     } else {
@@ -58,19 +63,32 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
         type="file"
         accept=".md"
         className="hidden"
-        onChange={() => onClose()}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setUploadedFileName(file.name);
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setUploadedContent((ev.target?.result as string) ?? "");
+            setStep("upload");
+          };
+          reader.readAsText(file);
+          e.target.value = "";
+        }}
       />
 
       <SlidingSidebar
-        title={step === "remix" ? "Remix existing recipe" : "Create recipe"}
-        description={step === "remix"
-          ? "Pick a recipe to clone. The copy lands in My recipes as a draft you can edit."
-          : "Choose how you want to get started."}
+        title={step === "remix" ? "Remix existing recipe" : step === "upload" ? "Review RECIPE.md" : "Create recipe"}
+        description={
+          step === "remix"  ? "Pick a recipe to clone. The copy lands in My recipes as a draft you can edit." :
+          step === "upload" ? "Edit the imported content below, then continue to the canvas." :
+          "Choose how you want to get started."
+        }
         onClose={onClose}
-        contentClassName={step === "remix" ? "pb-5" : "px-5 pb-5"}
+        contentClassName={step === "remix" ? "pb-5" : step === "upload" ? "p-0 flex flex-col" : "px-5 pb-5"}
         footer={(close) => (
           <>
-            {step === "remix" ? (
+            {step === "remix" || step === "upload" ? (
               <button
                 onClick={() => setStep("choose")}
                 className="mr-auto inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8"
@@ -92,12 +110,39 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
               className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               style={{ background: "#0080FF" }}
             >
-              {step === "remix" ? "Clone" : selected === "remix" ? "Next" : "Continue"}
+              {step === "remix" ? "Clone" : step === "upload" ? "Continue" : selected === "remix" ? "Next" : "Continue"}
             </button>
           </>
         )}
       >
-        {step === "choose" ? (
+        {step === "upload" ? (
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            {/* File name bar */}
+            <div
+              className="shrink-0 flex items-center gap-2 px-5 py-2.5 border-b"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <FileText size={13} className="text-blue-500 shrink-0" />
+              <span className="text-sm font-medium text-stone-600 dark:text-stone-300 truncate">{uploadedFileName}</span>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="ml-auto text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors shrink-0"
+              >
+                Replace file
+              </button>
+            </div>
+            {/* Editable md content */}
+            <div className="flex-1 min-h-0 p-4">
+              <textarea
+                value={uploadedContent}
+                onChange={(e) => setUploadedContent(e.target.value)}
+                spellCheck={false}
+                className="w-full h-full resize-none rounded-lg border px-4 py-3 font-mono text-sm leading-relaxed text-stone-700 dark:text-stone-300 outline-none"
+                style={{ background: "var(--muted)", borderColor: "var(--border)" }}
+              />
+            </div>
+          </div>
+        ) : step === "choose" ? (
           <div className="flex flex-col gap-0.5">
             {CREATE_OPTIONS.map(({ key, label, icon: Icon }) => {
               const isSelected = selected === key;

@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Users2, BarChart3, Zap, GitBranch, CheckCircle2, XCircle,
-  Loader2, Play, ShieldCheck, ChevronDown, BookmarkCheck, Plus,
-  Pencil, Trash2, Send, X, AlertTriangle, Check,
+  Loader2, Play, ShieldCheck, ChevronDown, Plus, GripVertical,
+  Pencil, Trash2, X, AlertTriangle, Check,
 } from "lucide-react";
 import BackButton from "./BackButton";
+import Toggle from "./Toggle";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -46,22 +47,54 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // Fading-out nodes
   const [fadingIds,       setFadingIds]       = useState<Set<string>>(new Set());
+  // Drag-to-swap
+  const [draggingId,      setDraggingId]      = useState<string | null>(null);
+  const [dragOverId,      setDragOverId]      = useState<string | null>(null);
   // Button loading states
   const [btnValidating,   setBtnValidating]   = useState(false);
   const [btnRunning,      setBtnRunning]      = useState(false);
-  const isBusy = btnValidating || btnRunning;
+  const [btnReady,        setBtnReady]        = useState(false);
+  const [isReady,         setIsReady]         = useState(false);
+  const isBusy = btnValidating || btnRunning || btnReady;
 
   // Add node
   const [addingAtIndex,   setAddingAtIndex]   = useState<number | null>(null);
   const [newStepTitle,    setNewStepTitle]    = useState("");
   const [newStepSubtitle, setNewStepSubtitle] = useState("");
 
-  // Draft state
-  const [draftSaving,     setDraftSaving]     = useState(false);
-  const [draftSavedAt,    setDraftSavedAt]    = useState<string | null>(null);
-  const [savedNodeIds,    setSavedNodeIds]    = useState<string[]>(INITIAL_NODES.map((n) => n.id));
-  const hasUnsaved = nodes.map((n) => n.id).join(",") !== savedNodeIds.join(",");
+  // Title + slash command
+  const [title,        setTitle]        = useState("Recipe Canvas");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft,   setTitleDraft]   = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [slashCmd,     setSlashCmd]     = useState("/recipe-canvas");
+  const [editingCmd,   setEditingCmd]   = useState(false);
+  const [cmdDraft,     setCmdDraft]     = useState("");
+  const cmdInputRef = useRef<HTMLInputElement>(null);
 
+  function toSlashCmd(t: string) {
+    return "/" + t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");
+  }
+  function startEditTitle() {
+    setTitleDraft(title);
+    setEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.select(), 0);
+  }
+  function commitTitle() {
+    const t = titleDraft.trim();
+    if (t) { setTitle(t); setSlashCmd(toSlashCmd(t)); }
+    setEditingTitle(false);
+  }
+  function startEditCmd() {
+    setCmdDraft(slashCmd);
+    setEditingCmd(true);
+    setTimeout(() => cmdInputRef.current?.select(), 0);
+  }
+  function commitCmd() {
+    const t = cmdDraft.trim();
+    if (t) setSlashCmd(t.startsWith("/") ? t : "/" + t);
+    setEditingCmd(false);
+  }
   // Canvas pan / zoom
   const [zoom, setZoom] = useState(1);
   const [pan,  setPan]  = useState({ x: 0, y: 0 });
@@ -140,6 +173,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
     const incomplete = nodes.length < INITIAL_NODES.length;
     setBtnRunning(true);
     lockBlu();
+    const capturedTitles = nodes.map((n) => n.title);
     runValidate(() => {
       nodes.forEach((n, i) => {
         setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "running" })), i * 700);
@@ -149,24 +183,25 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
     const totalMs = incomplete
       ? validateMs() + 120
       : validateMs() + 350 + runMs() + 120;
-    setTimeout(() => { setBtnRunning(false); unlockBlu(); }, totalMs);
+    setTimeout(() => {
+      setBtnRunning(false);
+      unlockBlu();
+      window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: capturedTitles } }));
+    }, totalMs);
   }
 
-  // ── Draft ─────────────────────────────────────────────────────────────────
+  // ── Ready to use ──────────────────────────────────────────────────────────
 
-  function handleSaveDraft() {
-    if (draftSaving) return;
-    setDraftSaving(true);
-    setTimeout(() => {
-      const draft = {
-        nodes: nodes.map(({ id, step, title, subtitle }) => ({ id, step, title, subtitle })),
-        savedAt: new Date().toISOString(),
-      };
-      try { localStorage.setItem("recipe-canvas-draft", JSON.stringify(draft)); } catch { /* ignore */ }
-      setSavedNodeIds(nodes.map((n) => n.id));
-      setDraftSaving(false);
-      setDraftSavedAt(new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
-    }, 700);
+  function handleReadyToUse() {
+    if (isBusy) return;
+    if (isReady) { setIsReady(false); return; }
+    const complete = nodes.length >= INITIAL_NODES.length;
+    setBtnReady(true);
+    lockBlu();
+    runValidate(() => {
+      setTimeout(() => setIsReady(true), 200);
+    });
+    setTimeout(() => { setBtnReady(false); unlockBlu(); }, validateMs() + (complete ? 600 : 120));
   }
 
   // ── Node interaction ──────────────────────────────────────────────────────
@@ -183,14 +218,12 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
     setSelectedId(null);
   }
 
-  function handleEditSend() {
-    if (!editValue.trim() || !editingId) return;
-    const node = nodes.find((n) => n.id === editingId);
-    const prompt = node
-      ? `Refine step ${node.step} "${node.title}": ${editValue.trim()}`
-      : editValue.trim();
-    window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt } }));
+  function handleEditConfirm() {
+    if (!editingId) return;
+    const id = editingId;
     setEditingId(null);
+    setNodeStates((s) => ({ ...s, [id]: "validating" }));
+    setTimeout(() => setNodeStates((s) => ({ ...s, [id]: "idle" })), 2000);
   }
 
   function handleStartDelete(id: string) {
@@ -208,6 +241,30 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
       setNodeStates((prev) => { const next = { ...prev }; delete next[id]; return next; });
     }, 480);
   }
+
+  function handleDragStart(id: string) {
+    setDraggingId(id);
+    setSelectedId(null);
+  }
+
+  function handleDragOver(id: string) {
+    if (id !== draggingId) setDragOverId(id);
+  }
+
+  function handleDrop(targetId: string) {
+    if (!draggingId || draggingId === targetId) { setDraggingId(null); setDragOverId(null); return; }
+    setNodes((prev) => {
+      const next = [...prev];
+      const fromIdx = next.findIndex((n) => n.id === draggingId);
+      const toIdx   = next.findIndex((n) => n.id === targetId);
+      [next[fromIdx], next[toIdx]] = [next[toIdx], next[fromIdx]];
+      return next.map((n, i) => ({ ...n, step: i + 1 }));
+    });
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  function handleDragEnd() { setDraggingId(null); setDragOverId(null); }
 
   function handleOpenAddNode(index: number) {
     setAddingAtIndex(index);
@@ -244,7 +301,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
       const prevFading = fadingIds.has(nodes[i - 1].id);
       const thisFading = fadingIds.has(node.id);
       flatItems.push(
-        <Connector key={`c-${nodes[i - 1].id}-${node.id}`} fading={prevFading || thisFading} onAdd={() => handleOpenAddNode(i)} />
+        <Connector key={`c-${nodes[i - 1].id}-${node.id}`} fading={prevFading || thisFading} onAdd={() => handleOpenAddNode(i)} fromState={nodeStates[nodes[i - 1].id] ?? "idle"} isAnimating={isBusy} />
       );
     }
     flatItems.push(
@@ -256,9 +313,15 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         isEditing={editingId === node.id}
         isConfirming={confirmDeleteId === node.id}
         isFading={fadingIds.has(node.id)}
+        isDragging={draggingId === node.id}
+        isDragOver={dragOverId === node.id}
         onClick={() => handleNodeClick(node.id)}
         onStartEdit={() => handleStartEdit(node)}
         onStartDelete={() => handleStartDelete(node.id)}
+        onDragStart={() => handleDragStart(node.id)}
+        onDragOver={() => handleDragOver(node.id)}
+        onDrop={() => handleDrop(node.id)}
+        onDragEnd={handleDragEnd}
       />
     );
   });
@@ -266,7 +329,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
   const editNode = nodes.find((n) => n.id === editingId);
   const deleteNode = nodes.find((n) => n.id === confirmDeleteId);
 
-  const addAtEndButton = (
+  const addAtEndButton = !isBusy ? (
     <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
       <div className="w-px h-4" style={{ background: "var(--border)" }} />
       <button
@@ -277,39 +340,63 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         <Plus size={15} />
       </button>
     </div>
-  );
+  ) : null;
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--main-bg)" }}>
       <style>{`
         @keyframes glow-blue {
-          0%,100% { box-shadow: 0 0 0 3px rgba(59,130,246,0.18); }
-          50%      { box-shadow: 0 0 0 8px rgba(59,130,246,0.30), 0 0 24px rgba(59,130,246,0.16); }
+          0%, 100% { box-shadow: 0 0 0 2.5px rgba(59,130,246,0.14), 0 4px 20px rgba(59,130,246,0.07); }
+          50%       { box-shadow: 0 0 0 5px   rgba(59,130,246,0.22), 0 8px 32px rgba(59,130,246,0.12); }
         }
         @keyframes glow-green {
-          0%,100% { box-shadow: 0 0 0 3px rgba(16,185,129,0.18); }
-          50%      { box-shadow: 0 0 0 8px rgba(16,185,129,0.30), 0 0 24px rgba(16,185,129,0.16); }
+          0%, 100% { box-shadow: 0 0 0 2.5px rgba(16,185,129,0.14), 0 4px 20px rgba(16,185,129,0.07); }
+          50%       { box-shadow: 0 0 0 5px   rgba(16,185,129,0.22), 0 8px 32px rgba(16,185,129,0.12); }
         }
         @keyframes invalid-enter {
-          0%   { box-shadow: 0 0 0 9px rgba(239,68,68,0.35), 0 0 30px rgba(239,68,68,0.25); }
-          100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.14); }
+          0%   { box-shadow: 0 0 0 10px rgba(239,68,68,0.26), 0 0 28px rgba(239,68,68,0.18); transform: scale(0.985); }
+          40%  { box-shadow: 0 0 0 4px  rgba(239,68,68,0.18); transform: scale(1.008); }
+          100% { box-shadow: 0 0 0 2px  rgba(239,68,68,0.10); transform: scale(1); }
         }
         @keyframes pop-in {
-          0%   { transform: scale(0.94); opacity: 0.7; }
-          60%  { transform: scale(1.03); }
-          100% { transform: scale(1);   opacity: 1; }
+          0%   { transform: scale(0.95); }
+          55%  { transform: scale(1.03); }
+          78%  { transform: scale(0.997); }
+          100% { transform: scale(1); }
+        }
+        @keyframes pop-in-green {
+          0%   { transform: scale(0.95); }
+          55%  { transform: scale(1.03); }
+          78%  { transform: scale(0.997); }
+          100% { transform: scale(1); }
         }
         @keyframes float-in {
-          0%   { opacity: 0; transform: scale(0.95) translateY(6px); }
+          0%   { opacity: 0; transform: scale(0.96) translateY(8px); }
           100% { opacity: 1; transform: scale(1)    translateY(0); }
         }
         @keyframes fade-out-node {
-          0%   { opacity: 1; transform: scaleY(1); }
-          100% { opacity: 0; transform: scaleY(0.85); }
+          0%   { opacity: 1; transform: scale(1) translateY(0); }
+          100% { opacity: 0; transform: scale(0.94) translateY(-4px); }
         }
         @keyframes connector-fade {
           0%   { opacity: 1; }
           100% { opacity: 0; }
+        }
+        @keyframes connector-activate {
+          0%   { opacity: 0.2; transform: scaleY(0); }
+          60%  { transform: scaleY(1.05); }
+          100% { opacity: 1;   transform: scaleY(1); }
+        }
+        @keyframes chevron-pop {
+          0%   { transform: scale(0.7) translateY(-2px); opacity: 0.3; }
+          65%  { transform: scale(1.2); }
+          100% { transform: scale(1)   translateY(0);  opacity: 1; }
+        }
+        @keyframes bead-travel {
+          0%   { top: -4px; opacity: 0; }
+          15%  { opacity: 1; }
+          85%  { opacity: 1; }
+          100% { top: calc(100% + 4px); opacity: 0; }
         }
       `}</style>
 
@@ -318,44 +405,68 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b"
         style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <BackButton onClick={onBack} />
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">Recipe Canvas</span>
-            {hasUnsaved && !draftSaving && (
-              <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-amber-400" title="Unsaved changes" />
-            )}
-          </div>
+
+          {/* Editable title */}
+          {editingTitle ? (
+            <input
+              ref={titleInputRef}
+              autoFocus
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTitle(); } if (e.key === "Escape") setEditingTitle(false); }}
+              className="rounded-md px-2 py-0.5 text-sm font-medium text-stone-900 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20"
+              style={{ background: "var(--input)", border: "1px solid var(--border)", width: `${Math.max(titleDraft.length, 10)}ch` }}
+            />
+          ) : (
+            <button onClick={startEditTitle} className="group flex items-center gap-1.5 min-w-0" title="Click to rename">
+              <span className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate">{title}</span>
+              <Pencil size={11} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-stone-400" />
+            </button>
+          )}
+
+          {/* Editable slash command */}
+          {editingCmd ? (
+            <input
+              ref={cmdInputRef}
+              autoFocus
+              value={cmdDraft}
+              onChange={(e) => setCmdDraft(e.target.value)}
+              onBlur={commitCmd}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCmd(); } if (e.key === "Escape") setEditingCmd(false); }}
+              className="font-mono text-xs font-medium rounded-md px-2 py-0.5 outline-none"
+              style={{ background: "var(--input)", border: "1px solid #3b82f6", color: "#3b82f6", width: `${Math.max(cmdDraft.length, 8)}ch` }}
+            />
+          ) : (
+            <button
+              onClick={startEditCmd}
+              className="group/cmd flex items-center gap-1 shrink-0 font-mono text-xs font-medium rounded-md px-2 py-0.5 transition-colors"
+              style={{ background: "var(--muted)", color: "#3b82f6", border: "1px solid var(--border)" }}
+              title="Click to rename"
+            >
+              {slashCmd}
+              <Pencil size={10} className="opacity-0 group-hover/cmd:opacity-60 transition-opacity" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Draft button */}
+          {/* Ready to use toggle */}
           <button
-            onClick={handleSaveDraft}
-            disabled={draftSaving || isBusy}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed"
+            onClick={handleReadyToUse}
+            disabled={btnReady || btnValidating || btnRunning}
+            className="inline-flex h-8 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
             style={{
-              border: "1px solid var(--border)",
-              background: "var(--content-bg)",
-              color: hasUnsaved || draftSaving
-                ? "var(--stone-700, #44403c)"
-                : draftSavedAt ? "#10b981" : "var(--stone-400, #a8a29e)",
-              opacity: isBusy ? 0.45 : 1,
+              color: isReady ? "#3b82f6" : "var(--stone-600, #57534e)",
             }}
           >
-            {draftSaving
-              ? <Loader2 size={12} className="animate-spin text-stone-400" />
-              : draftSavedAt && !hasUnsaved
-                ? <Check size={12} style={{ color: "#10b981" }} />
-                : <BookmarkCheck size={12} />}
-            {draftSaving
-              ? "Saving…"
-              : draftSavedAt && !hasUnsaved
-                ? `Saved ${draftSavedAt}`
-                : "Save draft"}
+            {btnReady
+              ? <Loader2 size={13} className="animate-spin" style={{ color: "#3b82f6" }} />
+              : <Toggle on={isReady} onClick={() => {}} />}
+            Ready to use
           </button>
 
-          {/* Separator */}
-          <div className="h-5 w-px" style={{ background: "var(--border)" }} />
 
           <button
             onClick={handleValidate}
@@ -419,17 +530,13 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         {/* ── Edit floating window ─────────────────────────────────────────── */}
         {editingId && editNode && (
           <div
-            className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
-            style={{ backdropFilter: "none" }}
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-72"
+            style={{ left: "calc(50% + 180px)", animation: "float-in 0.22s ease-out both" }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="pointer-events-auto w-80 rounded-xl shadow-2xl"
-              style={{
-                background: "var(--content-bg)",
-                border: "1.5px solid #3b82f6",
-                animation: "float-in 0.22s ease-out both",
-              }}
-              onClick={(e) => e.stopPropagation()}
+              className="rounded-xl shadow-2xl"
+              style={{ background: "var(--content-bg)", border: "1.5px solid #3b82f6" }}
             >
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div>
@@ -451,20 +558,18 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
                   rows={3}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEditSend(); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEditConfirm(); } }}
                   placeholder="Describe the change for this step…"
-                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
                   style={{ background: "var(--input)", borderColor: "var(--border)" }}
                 />
                 <div className="flex items-center gap-2 mt-2.5">
                   <button
-                    onClick={handleEditSend}
-                    disabled={!editValue.trim()}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
+                    onClick={handleEditConfirm}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                     style={{ background: "#3b82f6" }}
                   >
-                    <Send size={11} />
-                    Send to Blu
+                    Confirm
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
@@ -481,16 +586,17 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         {/* ── Add step floating window ────────────────────────────────────── */}
         {addingAtIndex !== null && (
           <div
-            className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-72"
+            style={{ left: "calc(50% + 180px)", animation: "float-in 0.22s ease-out both" }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="pointer-events-auto w-80 rounded-xl shadow-2xl"
+              className="rounded-xl shadow-2xl"
               style={{
                 background: "var(--content-bg)",
-                border: "1.5px solid #3b82f6",
-                animation: "float-in 0.22s ease-out both",
+                border: "1px solid var(--border)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)",
               }}
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div>
@@ -608,31 +714,80 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
 
 // ── Connector ─────────────────────────────────────────────────────────────────
 
-function Connector({ fading, onAdd }: { fading: boolean; onAdd: () => void }) {
+function Connector({ fading, onAdd, fromState, isAnimating }: { fading: boolean; onAdd: () => void; fromState: NodeState; isAnimating: boolean }) {
   const [hovered, setHovered] = useState(false);
+
+  const isBlue  = fromState === "valid" || fromState === "validating";
+  const isGreen = fromState === "done"  || fromState === "running";
+  const lineColor  = isGreen ? "#10b981" : isBlue ? "#3b82f6" : "var(--border)";
+  const beadColor  = isGreen ? "#10b981" : "#3b82f6";
+  const showBead   = isAnimating && (isBlue || isGreen);
+
   return (
     <div
       className="flex flex-col items-center"
-      style={fading ? { animation: "connector-fade 0.3s ease-out forwards" } : undefined}
+      style={fading ? { animation: "connector-fade 0.35s ease-out forwards" } : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="w-px h-3 mt-0.5" style={{ background: "var(--border)" }} />
-      <button
-        onClick={(e) => { e.stopPropagation(); onAdd(); }}
-        className="flex h-5 w-5 items-center justify-center rounded-full transition-all duration-150"
+      {/* Top line + traveling bead */}
+      <div
+        className="relative w-px mt-0.5"
         style={{
-          background: hovered ? "#3b82f6" : "var(--content-bg)",
-          border: `1.5px solid ${hovered ? "#3b82f6" : "var(--border)"}`,
-          color: hovered ? "white" : "#a8a29e",
-          opacity: hovered ? 1 : 0.45,
-          transform: hovered ? "scale(1.15)" : "scale(1)",
+          height: 14,
+          background: lineColor,
+          transition: "background 0.45s cubic-bezier(0.4,0,0.2,1)",
+          overflow: "visible",
+          animation: showBead ? "connector-activate 0.4s cubic-bezier(0.34,1.3,0.64,1) both" : undefined,
         }}
       >
-        <Plus size={9} />
-      </button>
-      <ChevronDown size={12} className="text-stone-300 dark:text-stone-600" />
-      <div className="w-px h-2" style={{ background: "var(--border)" }} />
+        {showBead && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full"
+            style={{
+              background: beadColor,
+              boxShadow: `0 0 5px ${beadColor}`,
+              animation: "bead-travel 0.7s cubic-bezier(0.4,0,0.6,1) infinite",
+            }}
+          />
+        )}
+      </div>
+
+      {/* + add button — hidden during validate / run */}
+      {!isAnimating && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onAdd(); }}
+          className="flex h-5 w-5 items-center justify-center rounded-full transition-all duration-150"
+          style={{
+            background: hovered ? "#3b82f6" : "var(--content-bg)",
+            border: `1.5px solid ${hovered ? "#3b82f6" : "var(--border)"}`,
+            color: hovered ? "white" : "#a8a29e",
+            opacity: hovered ? 1 : 0.4,
+            transform: hovered ? "scale(1.15)" : "scale(1)",
+          }}
+        >
+          <Plus size={9} />
+        </button>
+      )}
+
+      {/* Animated chevron */}
+      <ChevronDown
+        size={12}
+        style={{
+          color: lineColor,
+          transition: "color 0.45s cubic-bezier(0.4,0,0.2,1)",
+          animation: showBead ? "chevron-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both" : undefined,
+        }}
+      />
+
+      {/* Bottom line */}
+      <div
+        className="w-px h-2"
+        style={{
+          background: lineColor,
+          transition: "background 0.45s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      />
     </div>
   );
 }
@@ -641,7 +796,9 @@ function Connector({ fading, onAdd }: { fading: boolean; onAdd: () => void }) {
 
 function FlowNodeCard({
   node, state, isSelected, isEditing, isConfirming, isFading,
+  isDragging, isDragOver,
   onClick, onStartEdit, onStartDelete,
+  onDragStart, onDragOver, onDrop, onDragEnd,
 }: {
   node: FlowNode;
   state: NodeState;
@@ -649,9 +806,15 @@ function FlowNodeCard({
   isEditing: boolean;
   isConfirming: boolean;
   isFading: boolean;
+  isDragging: boolean;
+  isDragOver: boolean;
   onClick: () => void;
   onStartEdit: () => void;
   onStartDelete: () => void;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   const isValidating = state === "validating";
   const isValid      = state === "valid";
@@ -660,6 +823,7 @@ function FlowNodeCard({
   const isDone       = state === "done";
 
   const borderColor =
+    isDragOver    ? "#3b82f6" :
     isConfirming  ? "#ef4444" :
     isEditing     ? "#3b82f6" :
     isInvalid     ? "#ef4444" :
@@ -671,26 +835,41 @@ function FlowNodeCard({
     "var(--border)";
 
   const cardAnimation =
-    isFading      ? "fade-out-node 0.48s ease-out forwards" :
-    isValidating  ? "glow-blue 1.2s ease-in-out infinite"   :
-    isRunning     ? "glow-green 1s ease-in-out infinite"     :
-    isInvalid     ? "invalid-enter 0.6s ease-out both"       :
-    (isValid || isDone) ? "pop-in 0.35s ease-out both"       :
+    isFading      ? "fade-out-node 0.42s cubic-bezier(0.4,0,1,1) forwards"  :
+    isValidating  ? "glow-blue 1.6s cubic-bezier(0.45,0,0.55,1) infinite"   :
+    isRunning     ? "glow-green 1.4s cubic-bezier(0.45,0,0.55,1) infinite"   :
+    isInvalid     ? "invalid-enter 0.55s cubic-bezier(0.22,1,0.36,1) both"  :
+    isValid       ? "pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both"       :
+    isDone        ? "pop-in-green 0.5s cubic-bezier(0.34,1.56,0.64,1) both" :
     undefined;
 
   return (
     <div
       className="w-80 rounded-xl overflow-hidden cursor-pointer"
+      draggable
+      onDragStart={(e) => { e.stopPropagation(); onDragStart(); }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(); }}
+      onDrop={(e) => { e.stopPropagation(); onDrop(); }}
+      onDragEnd={(e) => { e.stopPropagation(); onDragEnd(); }}
       style={{
         background: "var(--content-bg)",
         border: `1.5px solid ${borderColor}`,
-        transition: "border-color 0.25s ease, box-shadow 0.25s ease",
+        transition: "border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease",
         animation: cardAnimation,
+        opacity: isDragging ? 0.4 : 1,
       }}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
+      {/* Top-center drag handle */}
+      <div
+        className="flex justify-center pt-2 pb-0 cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:text-stone-400 dark:hover:text-stone-500 transition-colors"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <GripVertical size={13} />
+      </div>
+
       {/* Main content row */}
-      <div className="px-4 pt-4 pb-4 flex items-start justify-between gap-3">
+      <div className="px-4 pt-3 pb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div
             className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-400"
@@ -699,11 +878,8 @@ function FlowNodeCard({
             {node.step}
           </div>
           <div>
-            <div className="flex items-center gap-1.5 mb-0.5 text-stone-400 dark:text-stone-500">
-              {node.icon}
-            </div>
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug">{node.title}</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-snug">{node.subtitle}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-2 leading-snug">{node.subtitle}</p>
           </div>
         </div>
         <div className="shrink-0 mt-1">
@@ -717,10 +893,10 @@ function FlowNodeCard({
         </div>
       </div>
 
-      {/* Selected action row */}
+      {/* Selected action row — right-aligned */}
       {isSelected && (
         <div
-          className="flex items-center gap-1 px-4 pb-3"
+          className="flex items-center justify-end gap-1 px-4 pb-3"
           style={{ borderTop: "1px solid var(--border)" }}
           onClick={(e) => e.stopPropagation()}
         >
