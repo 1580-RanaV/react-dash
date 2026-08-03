@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import HeartButton from "./HeartButton";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -344,23 +345,26 @@ export function MrrTab() {
       {/* 4 metric cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "CURRENT MRR",      value: "$25.21K",  sub: "June 2026", subCls: "text-stone-400", badge: undefined },
-          { label: "NET MRR MOVEMENT", value: "+$644.43", sub: undefined,   subCls: "",               badge: "+2.62%" },
-          { label: "NEW BUSINESS MRR", value: "$1.00K",   sub: undefined,   subCls: "",               badge: undefined },
-          { label: "CHURN MRR",        value: "$639.40",  sub: undefined,   subCls: "",               badge: undefined },
-        ].map(({ label, value, sub, subCls, badge }) => (
+          { id: "subscription-current-mrr",  label: "CURRENT MRR",      value: "$25.21K",  sub: "June 2026", subCls: "text-stone-400", badge: undefined },
+          { id: "subscription-net-mrr",       label: "NET MRR MOVEMENT", value: "+$644.43", sub: undefined,   subCls: "",               badge: "+2.62%" },
+          { id: "subscription-new-biz-mrr",   label: "NEW BUSINESS MRR", value: "$1.00K",   sub: undefined,   subCls: "",               badge: undefined },
+          { id: "subscription-churn-mrr",     label: "CHURN MRR",        value: "$639.40",  sub: undefined,   subCls: "",               badge: undefined },
+        ].map(({ id, label, value, sub, subCls, badge }) => (
           <div key={label} className="relative rounded-xl p-3 sm:p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-            <div className="mb-1.5 sm:mb-2 flex items-center gap-1 sm:pr-10">
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-1 pr-9">
               <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 leading-tight">{label}</span>
               <Info size={10} className="text-stone-400 shrink-0" />
             </div>
             <p className="text-lg sm:text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
             {badge && (
-              <span className="mt-1.5 inline-block sm:absolute sm:mt-0 sm:right-2.5 sm:top-2.5 rounded-md px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400" style={{ background: "rgba(16,185,129,0.1)" }}>
+              <span className="mt-1.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400" style={{ background: "rgba(16,185,129,0.1)" }}>
                 {badge}
               </span>
             )}
             {sub && <p className={`mt-1 text-[10px] sm:text-xs ${subCls}`}>{sub}</p>}
+            <div className="absolute right-1.5 top-1.5">
+              <HeartButton widget={{ id, type: "kpi", label, size: "sm", meta: { value } }} />
+            </div>
           </div>
         ))}
       </div>
@@ -470,18 +474,21 @@ export function SubscribersTab() {
       {/* 4 metric cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "TOTAL SUBSCRIBERS", value: "1,940", sub: "Jun 2026", subCls: "text-stone-400" },
-          { label: "NET MOVEMENT",      value: "+34",    sub: "-3.04%",   subCls: "text-rose-500" },
-          { label: "NEW SUBSCRIBERS",   value: "70",     sub: undefined,  subCls: "" },
-          { label: "CHURNED",           value: "44",     sub: undefined,  subCls: "" },
-        ].map(({ label, value, sub, subCls }) => (
-          <div key={label} className="rounded-xl p-3 sm:p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-            <div className="mb-1.5 sm:mb-2 flex items-center gap-1">
+          { id: "subscription-total-subscribers", label: "TOTAL SUBSCRIBERS", value: "1,940", sub: "Jun 2026", subCls: "text-stone-400" },
+          { id: "subscription-net-subscribers",   label: "NET MOVEMENT",      value: "+34",    sub: "-3.04%",   subCls: "text-rose-500" },
+          { id: "subscription-new-subscribers",   label: "NEW SUBSCRIBERS",   value: "70",     sub: undefined,  subCls: "" },
+          { id: "subscription-churned",           label: "CHURNED",           value: "44",     sub: undefined,  subCls: "" },
+        ].map(({ id, label, value, sub, subCls }) => (
+          <div key={label} className="relative rounded-xl p-3 sm:p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-1 pr-9">
               <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 leading-tight">{label}</span>
               <Info size={10} className="text-stone-400 shrink-0" />
             </div>
             <p className="text-lg sm:text-2xl font-bold leading-tight text-stone-900 dark:text-stone-100">{value}</p>
             {sub && <p className={`mt-1 text-[10px] sm:text-xs ${subCls}`}>{sub}</p>}
+            <div className="absolute right-1.5 top-1.5">
+              <HeartButton widget={{ id, type: "kpi", label, size: "sm", meta: { value } }} />
+            </div>
           </div>
         ))}
       </div>

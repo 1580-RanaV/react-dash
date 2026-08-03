@@ -35,6 +35,7 @@ import {
   Check,
   PanelLeftOpen,
   ChefHat,
+  CreditCard,
 } from "lucide-react";
 
 type NavItem = {
@@ -108,6 +109,7 @@ const nav: NavSection[] = [
     heading: "Analytics",
     items: [
       { label: "Boards", icon: <LayoutDashboard size={15} /> },
+      { label: "Subscriptions", icon: <CreditCard size={15} /> },
     ],
   },
 ];
@@ -286,6 +288,7 @@ const NAV_VIEWS: Record<string, string> = {
   Scheduler: "scheduler",
   "Out-of-the-box": "out-of-the-box",
   Boards: "boards",
+  Subscriptions: "subscription",
 };
 
 function NavItemRow({

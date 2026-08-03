@@ -10,6 +10,7 @@ import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import SlidingSidebar from "./SlidingSidebar";
+import HeartButton from "./HeartButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -423,16 +424,16 @@ Cross-reference with your activation metric (e.g. feature_used, project_created,
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const RECIPE_DATES: Record<string, string> = {
+export const RECIPE_DATES: Record<string, string> = {
   "1":  "Jul 14, 2026", "2":  "Jun 28, 2026", "3":  "Jul 3, 2026",  "4":  "May 19, 2026",
   "5":  "Jun 9, 2026",  "6":  "Apr 22, 2026", "7":  "Jun 17, 2026", "8":  "Mar 31, 2026",
   "9":  "May 7, 2026",  "10": "Jun 5, 2026",  "11": "Apr 11, 2026", "12": "Jul 1, 2026",
   "13": "Feb 14, 2026", "14": "May 26, 2026", "15": "Jun 20, 2026",
 };
 
-type Creator = { name: string; initials: string; color: string };
+export type Creator = { name: string; initials: string; color: string };
 
-const RECIPE_CREATORS: Record<string, Creator> = {
+export const RECIPE_CREATORS: Record<string, Creator> = {
   "1":  { name: "Rana V",        initials: "RV", color: "#0080FF" },
   "2":  { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
   "3":  { name: "Maya Patel",    initials: "MP", color: "#818cf8" },
@@ -488,10 +489,15 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
         {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
       </span>
 
-      {/* Creator + date */}
+      {/* Creator + date + heart */}
       <div className="flex items-center justify-between">
         <CreatorChip id={recipe.id} />
-        <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">{RECIPE_DATES[recipe.id]}</span>
+        <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+          <span className="text-xs text-stone-400 dark:text-stone-500">{RECIPE_DATES[recipe.id]}</span>
+          <HeartButton
+            widget={{ id: `recipe-${recipe.id}`, type: "recipe", label: recipe.title, size: "sm", meta: { recipeId: recipe.id } }}
+          />
+        </div>
       </div>
 
       {/* Title + description */}
@@ -665,7 +671,10 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
             )}
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
+          <HeartButton
+            widget={{ id: `recipe-${recipe.id}`, type: "recipe", label: recipe.title, size: "sm", meta: { recipeId: recipe.id } }}
+          />
           <SubTabCorner
             tabs={RECIPE_TABS}
             active={activeTab}

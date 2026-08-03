@@ -14,6 +14,7 @@ import SlidingSidebar from "./SlidingSidebar";
 import { BOARDS_DATA, BoardEntry, BoardType } from "./boards/boardsData";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import { SubscriptionContent } from "./SubscriptionView";
+import HeartButton from "./HeartButton";
 
 // ── Chart data ────────────────────────────────────────────────────────────────
 
@@ -101,10 +102,10 @@ const RETENTION_DATA = [
 ];
 
 const USER_METRICS = [
-  { label: "Total Users",     value: "3.79K", change: "-45.29% vs Apr 14 – May 14, 2026", icon: <Users size={14} /> },
-  { label: "Active Users",    value: "1.87K", change: "-70% vs Apr 14 – May 14, 2026",    icon: <Activity size={14} /> },
-  { label: "New Users",       value: "1.71K", change: "-71.53% vs Apr 14 – May 14, 2026", icon: <UserPlus size={14} /> },
-  { label: "Returning Users", value: "158",   change: "-28.18% vs Apr 14 – May 14, 2026", icon: <HistoryIcon size={14} /> },
+  { id: "kpi-traffic-total-users",     label: "Total Users",     value: "3.79K", change: "-45.29% vs Apr 14 – May 14, 2026", icon: <Users size={14} /> },
+  { id: "kpi-traffic-active-users",    label: "Active Users",    value: "1.87K", change: "-70% vs Apr 14 – May 14, 2026",    icon: <Activity size={14} /> },
+  { id: "kpi-traffic-new-users",       label: "New Users",       value: "1.71K", change: "-71.53% vs Apr 14 – May 14, 2026", icon: <UserPlus size={14} /> },
+  { id: "kpi-traffic-returning-users", label: "Returning Users", value: "158",   change: "-28.18% vs Apr 14 – May 14, 2026", icon: <HistoryIcon size={14} /> },
 ];
 
 // ── Chart sub-components ──────────────────────────────────────────────────────
@@ -175,7 +176,8 @@ function SubToggle({ options, active, onChange }: { options: string[]; active: s
   );
 }
 
-function HBarCard({ title, sub, tabs, activeTab, onTab, sub2Active, onSub2, data }: {
+function HBarCard({ id, title, sub, tabs, activeTab, onTab, sub2Active, onSub2, data }: {
+  id: string;
   title: string; sub: string;
   tabs: string[]; activeTab: string; onTab: (v: string) => void;
   sub2Active: string; onSub2: (v: string) => void;
@@ -191,11 +193,12 @@ function HBarCard({ title, sub, tabs, activeTab, onTab, sub2Active, onSub2, data
             >{t}</button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-white/6 transition-colors" style={{ border: "1px solid var(--border)" }}>
             Top 10 <ChevronDown size={10} />
           </button>
           <SubToggle options={["Users", "Revenue"]} active={sub2Active} onChange={onSub2} />
+          <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} />
         </div>
       </div>
       <p className="text-base font-semibold text-stone-800 dark:text-stone-200">{title}</p>
@@ -220,27 +223,32 @@ function TrafficCharts() {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {USER_METRICS.map(({ label, value, change, icon }) => (
-          <div key={label} className="rounded-xl p-4" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-            <div className="flex items-center gap-1.5 mb-2 text-stone-500 dark:text-stone-400">
+        {USER_METRICS.map(({ id, label, value, change, icon }) => (
+          <div key={label} className="relative rounded-xl p-4" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
+            <div className="flex items-center gap-1.5 mb-2 text-stone-500 dark:text-stone-400 pr-9">
               {icon}
               <span className="text-xs font-medium">{label}</span>
               <InfoBadge />
             </div>
             <p className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-1.5">{value}</p>
             <p className="text-xs text-rose-500 flex items-center gap-1"><TrendingDown size={10} className="shrink-0" />{change}</p>
+            <div className="absolute right-2 top-2">
+              <HeartButton widget={{ id, type: "kpi", label, size: "sm", meta: { value } }} />
+            </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <HBarCard
+          id="board-traffic-by-channel"
           title="Traffic by Channel" sub="Where your website visitors are coming from"
           tabs={["Channel", "Referrer", "Campaign"]} activeTab={channelTab} onTab={setChannelTab}
           sub2Active={channelSub} onSub2={setChannelSub}
           data={CHANNELS}
         />
         <HBarCard
+          id="board-page-performance"
           title="Page Performance" sub="Most visited pages ranked by traffic and revenue"
           tabs={["Page", "Entry page"]} activeTab={pageTab} onTab={setPageTab}
           sub2Active={pageSub} onSub2={setPageSub}
@@ -250,12 +258,14 @@ function TrafficCharts() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <HBarCard
+          id="board-users-by-country"
           title="Users by Country" sub="Geographic distribution of your website users"
           tabs={["Country", "Region", "City"]} activeTab={countryTab} onTab={setCountryTab}
           sub2Active={countrySub} onSub2={setCountrySub}
           data={COUNTRIES.map((c) => ({ ...c, prefix: c.flag ? <span className="text-sm leading-none shrink-0">{c.flag}</span> : <span className="w-3.5 shrink-0" /> }))}
         />
         <HBarCard
+          id="board-web-browsers"
           title="Web Browsers" sub="Which browsers your visitors use to access your site"
           tabs={["Browser", "OS", "Device"]} activeTab={browserTab} onTab={setBrowserTab}
           sub2Active={browserSub} onSub2={setBrowserSub}
@@ -270,15 +280,18 @@ function RevenueCharts() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-        <div className="flex items-start gap-2 mb-1">
-          <InfoBadge />
-          <div>
-            <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
-              Traffic &amp; Revenue Overview{" "}
-              <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
-            </p>
-            <p className="text-xs text-stone-400 mt-0.5">Daily unique visitors (bars) and cumulative revenue (line) over the selected period</p>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="flex items-start gap-2">
+            <InfoBadge />
+            <div>
+              <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
+                Traffic &amp; Revenue Overview{" "}
+                <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
+              </p>
+              <p className="text-xs text-stone-400 mt-0.5">Daily unique visitors (bars) and cumulative revenue (line) over the selected period</p>
+            </div>
           </div>
+          <HeartButton widget={{ id: "board-traffic-revenue-overview", type: "report", label: "Traffic & Revenue Overview", size: "sm" }} className="shrink-0" />
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={DAILY_DATA} margin={{ top: 20, right: 20, bottom: 0, left: 0 }}>
@@ -297,15 +310,20 @@ function RevenueCharts() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {[
-          { title: "Purchase Events", sub: "Number of completed purchase transactions", big: "0", bigSub: "total events", color: "#00AAFF" },
-          { title: "Total Purchase Revenue", sub: "Total revenue from completed purchases", big: "$0", bigSub: "total revenue", color: "#59B277" },
-        ].map(({ title, sub, big, bigSub, color }) => (
+          { id: "board-purchase-events",   title: "Purchase Events",       sub: "Number of completed purchase transactions", big: "0",  bigSub: "total events",  color: "#00AAFF" },
+          { id: "board-purchase-revenue",  title: "Total Purchase Revenue", sub: "Total revenue from completed purchases",   big: "$0", bigSub: "total revenue", color: "#59B277" },
+        ].map(({ id, title, sub, big, bigSub, color }) => (
           <div key={title} className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-            <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
-              {title}{" "}
-              <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
-            </p>
-            <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
+                  {title}{" "}
+                  <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
+                </p>
+                <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
+              </div>
+              <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} className="shrink-0" />
+            </div>
             <p className="mt-3 mb-0.5">
               <span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}
               <span className="text-xs text-stone-400">{bigSub}</span>
@@ -326,18 +344,23 @@ function RevenueCharts() {
   );
 }
 
-function EngChart({ title, sub, big, bigSub, change, data, color }: {
-  title: string; sub: string; big: string; bigSub: string;
+function EngChart({ id, title, sub, big, bigSub, change, data, color }: {
+  id: string; title: string; sub: string; big: string; bigSub: string;
   change: string; data: { date: string; value: number }[]; color: string;
 }) {
   const isPositive = change.startsWith("+");
   return (
     <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-      <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
-        {title}{" "}
-        <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
-      </p>
-      <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-base font-semibold text-stone-800 dark:text-stone-200">
+            {title}{" "}
+            <span className="text-xs font-normal text-stone-400">(May 15, 2026 – Jun 13, 2026)</span>
+          </p>
+          <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
+        </div>
+        <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} className="shrink-0" />
+      </div>
       <p className="mt-3 mb-0.5">
         <span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}
         <span className="text-xs text-stone-400">{bigSub}</span>
@@ -358,10 +381,10 @@ function EngChart({ title, sub, big, bigSub, change, data, color }: {
 function EngagementCharts() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <EngChart title="Page Views"    sub="Total number of page views in the selected period"         big="4.06K"  bigSub="total page views"       change="+239.1%"  data={PAGE_VIEWS_DATA}    color="#00AAFF" />
-      <EngChart title="Sessions"      sub="Total number of user sessions in the selected period"      big="2.79K"  bigSub="total sessions"          change="+250.4%"  data={SESSIONS_DATA}      color="#C37EE5" />
-      <EngChart title="Active Users"  sub="Total number of active users in the selected period"       big="1.87K"  bigSub="total active users"      change="-70.0%"   data={ACTIVE_USERS_DATA}  color="#59B277" />
-      <EngChart title="User Retention" sub="Average user retention rate in the selected period"       big="11.4%"  bigSub="average retention rate"  change="+406.2%"  data={RETENTION_DATA}     color="#FFC44D" />
+      <EngChart id="board-eng-page-views"     title="Page Views"     sub="Total number of page views in the selected period"         big="4.06K"  bigSub="total page views"       change="+239.1%"  data={PAGE_VIEWS_DATA}    color="#00AAFF" />
+      <EngChart id="board-eng-sessions"       title="Sessions"       sub="Total number of user sessions in the selected period"      big="2.79K"  bigSub="total sessions"          change="+250.4%"  data={SESSIONS_DATA}      color="#C37EE5" />
+      <EngChart id="board-eng-active-users"   title="Active Users"   sub="Total number of active users in the selected period"       big="1.87K"  bigSub="total active users"      change="-70.0%"   data={ACTIVE_USERS_DATA}  color="#59B277" />
+      <EngChart id="board-eng-user-retention" title="User Retention" sub="Average user retention rate in the selected period"       big="11.4%"  bigSub="average retention rate"  change="+406.2%"  data={RETENTION_DATA}     color="#FFC44D" />
     </div>
   );
 }

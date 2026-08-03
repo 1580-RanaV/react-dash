@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
+import HeartButton from "./HeartButton";
 
 export type GridCard = {
   id: string;
@@ -159,29 +160,44 @@ export default function GridCardView({
       {/* Card grid */}
       <div className="px-3 sm:px-6 pb-6">
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {filtered.map((card) => (
-            <button
-              key={card.id}
-              onClick={() => onCardClick?.(card)}
-              className="group relative aspect-3/4 overflow-hidden rounded-xl transition-transform hover:scale-[1.02]"
-              style={{ background: `linear-gradient(145deg, ${card.gradient[0]}, ${card.gradient[1]})` }}
-            >
-              {card.image && (
-                <img src={card.image} alt={card.name} className="absolute inset-0 h-full w-full object-cover" />
-              )}
-              {card.id === newId && (
-                <span className="absolute right-2 top-2 inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
-                  New
-                </span>
-              )}
+          {filtered.map((card) => {
+            const widgetPrefix = newLabel.toLowerCase();
+            return (
               <div
-                className="absolute inset-x-0 bottom-0 px-3.5 pb-4 pt-16"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)" }}
+                key={card.id}
+                onClick={() => onCardClick?.(card)}
+                className="group relative aspect-3/4 overflow-hidden rounded-xl transition-transform hover:scale-[1.02] cursor-pointer"
+                style={{ background: `linear-gradient(145deg, ${card.gradient[0]}, ${card.gradient[1]})` }}
               >
-                <p className="w-full text-left text-base font-bold leading-tight text-white">{card.name}</p>
+                {card.image && (
+                  <img src={card.image} alt={card.name} className="absolute inset-0 h-full w-full object-cover" />
+                )}
+                {card.id === newId && (
+                  <span className="absolute right-2 top-2 inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
+                    New
+                  </span>
+                )}
+                <div
+                  className="absolute inset-x-0 bottom-0 px-3.5 pb-4 pt-16"
+                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)" }}
+                >
+                  <p className="w-full text-left text-base font-bold leading-tight text-white">{card.name}</p>
+                </div>
+                <div className="absolute right-2 top-2">
+                  <HeartButton
+                    hoverOnly
+                    widget={{
+                      id: `${widgetPrefix}-${card.id}`,
+                      type: "asset",
+                      label: card.name,
+                      size: "sm",
+                      meta: { image: card.image, gradient: card.gradient, widgetType: widgetPrefix },
+                    }}
+                  />
+                </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

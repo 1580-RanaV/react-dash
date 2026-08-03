@@ -21,9 +21,8 @@ import {
   AlertTriangle, AlertCircle, MessageSquare, Bell, Smartphone, Bot,
   ArrowDown, Check, Wand2, FileImage, Route,
   Clapperboard, PenTool, Shuffle, Package, Handshake, CalendarClock,
-  Play, X, ClipboardList,
+  Play, X, ClipboardList, Settings, Video,
 } from "lucide-react";
-import DateRangePicker from "./DateRangePicker";
 
 // ── static data ───────────────────────────────────────────────────────────────
 
@@ -237,12 +236,6 @@ const TOP_SEGMENTS = [
   { name: "Newsletter subscribers", members: "8.1k", rate:  6.2 },
   { name: "Churned (90-day)",       members: "2.4k", rate:  3.1 },
 ];
-const AGENTS = [
-  { name: "Support Concierge",  type: "Chat",  conversations: 1842, resolution: 78, csat: 94 },
-  { name: "Sales Qualifier",    type: "Chat",  conversations: 1204, resolution: 64, csat: 91 },
-  { name: "Onboarding Coach",   type: "Email", conversations:  612, resolution: 82, csat: 96 },
-  { name: "Voice Receptionist", type: "Voice", conversations:  348, resolution: 71, csat: 89 },
-];
 const ANOMALIES = [
   { metric: "Email bounce rate",  status: "critical", expected: "0.9% – 1.6%",    actual: "4.8%",  change: "+220%", ago: "12m ago" },
   { metric: "Open rate",          status: "warning",  expected: "40% – 46%",      actual: "28.4%", change: "−33%",  ago: "48m ago" },
@@ -252,19 +245,6 @@ const ANOMALIES = [
 
 // ── Sales dashboard data ─────────────────────────────────────────────────────
 
-const PIPELINE_STAGES = [
-  { stage: "Prospect",    count: 84, value: 420000, pct: 100 },
-  { stage: "Qualified",   count: 52, value: 312000, pct:  74 },
-  { stage: "Proposal",    count: 28, value: 224000, pct:  53 },
-  { stage: "Negotiation", count: 12, value: 108000, pct:  26 },
-  { stage: "Closed Won",  count: 18, value: 126000, pct:  30 },
-];
-const TOP_OPPORTUNITIES = [
-  { company: "FieldsUSA",   deal: "Enterprise Plan",  value: 24000, stage: "Negotiation" },
-  { company: "Acme Corp",   deal: "Marketing Suite",  value: 18400, stage: "Proposal"    },
-  { company: "BrightCo",    deal: "Pro Annual",       value: 12800, stage: "Qualified"   },
-  { company: "Stellar Inc", deal: "Team Tier",        value:  9600, stage: "Proposal"    },
-];
 const MEETINGS_DATA = [
   { week: "Jun 9", scheduled: 12, attended: 9  },
   { week: "Jun 16", scheduled: 15, attended: 13 },
@@ -333,13 +313,19 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="rounded-lg px-3 py-2 text-xs shadow-lg"
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+      className="rounded-lg px-3.5 py-3 text-xs shadow-2xl"
+      style={{
+        background: "rgba(24,24,27,0.96)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        color: "#f8fafc",
+        boxShadow: "0 18px 48px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.18)",
+      }}
     >
-      <p className="font-semibold mb-1">{label}</p>
+      <p className="mb-2 text-sm font-semibold text-white">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color ?? p.fill }}>
-          {p.name}: {p.value}
+        <p key={p.dataKey} className="mt-1 flex items-center gap-2 font-medium" style={{ color: p.color ?? p.fill }}>
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.color ?? p.fill }} />
+          <span>{p.name}: {p.value}</span>
         </p>
       ))}
     </div>
@@ -804,47 +790,7 @@ function EngagementView() {
 }
 
 // ── Metric card — generic, reusable ───────────────────────────────────────────
-//
-// Pass any Lucide icon component; the card renders it at two sizes itself.
-// Drop it anywhere — it carries its own layout and never leaks outside concerns.
-
 import { type LucideIcon } from "lucide-react";
-
-type MetricCardProps = {
-  icon: LucideIcon;
-  label: string;
-  value: number;
-};
-
-function MetricCard({ icon: Icon, label, value }: MetricCardProps) {
-  return (
-    <div
-      className="relative flex flex-col justify-between overflow-hidden rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)", minHeight: 140 }}
-    >
-      {/* Top row: icon badge + chevron */}
-      <div className="flex items-start justify-between">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-100 dark:bg-white/8 text-blue-500">
-          <Icon size={16} />
-        </span>
-        <ChevronRight size={14} className="text-stone-300 dark:text-stone-600 mt-0.5" />
-      </div>
-
-      {/* Value + label */}
-      <div className="mt-4">
-        <p className="text-3xl font-bold text-stone-800 dark:text-stone-100 leading-none mb-1.5">
-          {value.toLocaleString()}
-        </p>
-        <p className="text-sm text-stone-500 dark:text-stone-400">{label}</p>
-      </div>
-
-      {/* Watermark — same icon rendered large, faint */}
-      <span className="pointer-events-none absolute -bottom-2 -right-2 text-blue-500 opacity-[0.07] dark:opacity-[0.1]">
-        <Icon size={72} />
-      </span>
-    </div>
-  );
-}
 
 // ── Shared dashboard helpers ─────────────────────────────────────────────────
 
@@ -980,45 +926,6 @@ const MARKETING_RECS: BluRec[] = [
     body: "Email dominates at 74% of sends. Industry data shows SMS delivers 3–5× higher open rates for time-sensitive flows like cart abandonment. With only 3,800 SMS sends currently, shifting 10% of cart abandonment sends to SMS is a low-risk, high-reward test.",
     impact: "Est. +12% conversion rate on cart abandonment flow",
     action: "Create SMS Journey",
-  },
-];
-
-const SALES_RECS: BluRec[] = [
-  {
-    id: "top-deal",
-    priority: "urgent",
-    tag: "Pipeline",
-    title: "Top deal at $24k in Negotiation needs a touch point today",
-    body: "FieldsUSA ($24k Enterprise Plan) is your highest-value deal currently in Negotiation. Deals at this stage without a touch point for 3+ days are 40% more likely to stall or go cold. This is your largest single opportunity this quarter.",
-    impact: "Protect $24k in pipeline revenue before end of quarter",
-    action: "Schedule Follow-up",
-  },
-  {
-    id: "meeting-attendance",
-    priority: "high",
-    tag: "Meetings",
-    title: "22% no-show rate on meetings — automate reminders",
-    body: "Of 61 meetings scheduled this month, roughly 13 weren't attended. Your attended rate this week (77%) is the lowest in 5 weeks. Automated 24h and 1h reminders typically recover 8–10 meetings per month with near-zero setup effort.",
-    impact: "Est. +3–4 additional attended meetings per month",
-    action: "Enable Reminders",
-  },
-  {
-    id: "outreach-sequence",
-    priority: "high",
-    tag: "Automation",
-    title: "52 qualified deals totalling $312k have no follow-up sequence",
-    body: "Your Qualified stage has 52 deals worth $312k but no automated outreach is running. Manual follow-up alone misses ~40% of optimal touch points. A 4-step email sequence over 14 days is proven to push more deals through to Proposal.",
-    impact: "Est. +15% qualified→proposal conversion rate",
-    action: "Create Sequence",
-  },
-  {
-    id: "prospect-nurture",
-    priority: "growth",
-    tag: "Lead Nurture",
-    title: "84 prospects representing $420k are stalling at top of funnel",
-    body: "84 prospects haven't advanced to Qualified — only 62% do. A nurture sequence targeting cold prospects in this cohort, focused on value education rather than direct sales, could recover 15–20 deals based on your historical data.",
-    impact: "Est. $42–84k additional pipeline over 60 days",
-    action: "Build Nurture",
   },
 ];
 
@@ -1223,260 +1130,6 @@ function DesignDashboard() {
   );
 }
 
-// ── Marketing dashboard ───────────────────────────────────────────────────────
-
-function ChannelIcon({ type }: { type: string }) {
-  const map: Record<string, React.ReactNode> = {
-    email: <MailOpen size={11} />,
-    sms:   <MessageSquare size={11} />,
-    push:  <Bell size={11} />,
-    inapp: <Smartphone size={11} />,
-  };
-  return <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-white/8 text-stone-500">{map[type] ?? null}</span>;
-}
-
-function MarketingDashboard() {
-  return (
-    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
-      <Greeting />
-
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MiniStat icon={Send}        label="Sends (last 26 days)"   value="24.8k"  change="+12%"  />
-        <MiniStat icon={MailOpen}    label="Open rate"              value="42.6%"  change="+4.8%" accent="#C37EE5" />
-        <MiniStat icon={MousePointerClick} label="Click rate"       value="7.8%"   change="+0.6%" accent="#59B277" />
-        <MiniStat icon={Route}       label="Active journeys"        value="12"     change="+3"    />
-      </div>
-
-      {/* Blu urgent row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <BluCard rec={MARKETING_RECS[0]} />
-        <BluCard rec={MARKETING_RECS[1]} />
-      </div>
-
-      {/* Multi-series sends chart */}
-      <SectionCard>
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Sends, Opens &amp; Clicks</p>
-          <div className="flex items-center gap-5">
-            {[{ label: "Sends", color: "#0080FF" }, { label: "Opens", color: "#C37EE5" }, { label: "Clicks", color: "#59B277" }].map((l) => (
-              <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
-                {l.label}
-              </div>
-            ))}
-          </div>
-        </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={SENDS_CHART_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
-            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <Tooltip content={<ChartTooltip />} />
-            <Area type="monotone" dataKey="sends"  stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)"  dot={false} name="Sends"  />
-            <Area type="monotone" dataKey="opens"  stroke="#C37EE5" strokeWidth={1.5} fill="rgba(195,126,229,0.06)" dot={false} name="Opens"  />
-            <Area type="monotone" dataKey="clicks" stroke="#59B277" strokeWidth={1.5} fill="rgba(89,178,119,0.06)"  dot={false} name="Clicks" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </SectionCard>
-
-      {/* Engagement funnel + Blu open rate */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SectionCard title="Engagement Funnel">
-          <div className="space-y-0">
-            {ENGAGEMENT_FUNNEL.map((step, i) => {
-              const pctOfTotal = ((step.value / ENGAGEMENT_FUNNEL[0].value) * 100).toFixed(1);
-              const pctOfPrev  = i > 0 ? ((step.value / ENGAGEMENT_FUNNEL[i - 1].value) * 100).toFixed(1) : null;
-              return (
-                <div key={step.stage}>
-                  <div className="flex items-center gap-3 py-2.5">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-medium text-stone-700 dark:text-stone-300">{step.stage}</span>
-                        {pctOfPrev && (
-                          <span className="text-[10px] text-stone-400">{pctOfPrev}% of prev</span>
-                        )}
-                      </div>
-                      <div className="w-full bg-stone-100 dark:bg-white/8 rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full bg-blue-400 transition-all" style={{ width: `${Math.max(parseFloat(pctOfTotal), 1)}%` }} />
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 w-16">
-                      <p className="text-xs font-bold text-stone-800 dark:text-stone-100">{step.value.toLocaleString()}</p>
-                      <p className="text-[10px] text-stone-400">{pctOfTotal}%</p>
-                    </div>
-                  </div>
-                  {i < ENGAGEMENT_FUNNEL.length - 1 && (
-                    <div className="flex justify-start pl-1 -my-0.5">
-                      <ArrowDown size={12} className="text-stone-300 dark:text-stone-600" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-
-        <BluCard rec={MARKETING_RECS[2]} />
-      </div>
-
-      {/* Channel mix + Blu A/B winner */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SectionCard title="Channel Mix">
-          <div className="space-y-3.5">
-            {CHANNEL_MIX.map((c) => (
-              <div key={c.channel} className="flex items-center gap-3">
-                <ChannelIcon type={c.icon} />
-                <span className="w-12 shrink-0 text-xs text-stone-600 dark:text-stone-400">{c.channel}</span>
-                <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-1.5">
-                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${c.pct}%`, background: c.color }} />
-                </div>
-                <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 w-10 text-right">{c.count.toLocaleString()}</span>
-                <span className="text-[10px] text-stone-400 w-6 text-right">{c.pct}%</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-        <BluCard rec={MARKETING_RECS[3]} />
-      </div>
-
-      {/* Active journeys + Live experiences */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-        <div className="lg:col-span-3">
-          <SectionCard title="Active Journeys">
-            <div className="space-y-0">
-              <div className="grid grid-cols-4 pb-2 border-b text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500" style={{ borderColor: "var(--border)" }}>
-                <span className="col-span-2">Journey</span>
-                <span className="text-right">24h Sends</span>
-                <span className="text-right">Conv %</span>
-              </div>
-              {ACTIVE_JOURNEYS.map((j) => (
-                <div key={j.name} className="grid grid-cols-4 items-center py-2.5 border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                  <div className="col-span-2 flex items-center gap-2 pr-3">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${j.status === "active" ? "bg-emerald-400" : "bg-stone-300 dark:bg-stone-600"}`} />
-                    <span className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">{j.name}</span>
-                  </div>
-                  <span className="text-xs font-medium text-stone-600 dark:text-stone-300 text-right">{j.sends > 0 ? j.sends.toLocaleString() : "—"}</span>
-                  <span className="text-xs font-semibold text-right" style={{ color: j.rate > 0 ? "#59B277" : "#94a3b8" }}>{j.rate > 0 ? `${j.rate}%` : "—"}</span>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-
-        <div className="lg:col-span-2 space-y-3">
-          {/* Live experiences / A-B */}
-          <SectionCard title="Live Experiences">
-            <div className="space-y-0">
-              {LIVE_EXPERIENCES.map((e) => (
-                <div key={e.name} className="flex items-center justify-between py-2.5 border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                  <div className="min-w-0 flex-1 pr-3">
-                    <p className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">{e.name}</p>
-                    <p className="text-[10px] text-stone-400">{e.variants} variants</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-bold" style={{ color: e.status === "winning" ? "#59B277" : "#94a3b8" }}>+{e.lift}%</p>
-                    <p className="text-[10px] text-stone-400 capitalize">{e.status}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          {/* Top segments */}
-          <SectionCard title="Top Segments">
-            <div className="space-y-0">
-              {TOP_SEGMENTS.map((s) => (
-                <div key={s.name} className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                  <div className="min-w-0 flex-1 pr-3">
-                    <p className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">{s.name}</p>
-                    <p className="text-[10px] text-stone-400">{s.members} members</p>
-                  </div>
-                  <span className="text-xs font-semibold shrink-0" style={{ color: "#0080FF" }}>{s.rate}%</span>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-      </div>
-
-      {/* Agent performance */}
-      <SectionCard title="Agent Performance">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500" style={{ borderColor: "var(--border)" }}>
-                <th className="text-left pb-2.5 font-semibold">Agent</th>
-                <th className="text-left pb-2.5 font-semibold">Type</th>
-                <th className="text-right pb-2.5 font-semibold">Conversations</th>
-                <th className="text-right pb-2.5 font-semibold">Resolution %</th>
-                <th className="text-right pb-2.5 font-semibold">CSAT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {AGENTS.map((a) => (
-                <tr key={a.name} className="border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                  <td className="py-2.5 text-stone-700 dark:text-stone-300 font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-white/8">
-                        <Bot size={11} className="text-stone-500" />
-                      </span>
-                      {a.name}
-                    </div>
-                  </td>
-                  <td className="py-2.5 text-stone-500">{a.type}</td>
-                  <td className="py-2.5 text-right font-medium text-stone-700 dark:text-stone-200">{a.conversations.toLocaleString()}</td>
-                  <td className="py-2.5 text-right">
-                    <span style={{ color: a.resolution >= 75 ? "#59B277" : "#f59e0b" }}>{a.resolution}%</span>
-                  </td>
-                  <td className="py-2.5 text-right font-semibold" style={{ color: a.csat >= 92 ? "#59B277" : "#94a3b8" }}>{a.csat}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      {/* Blu SMS + Anomaly detection */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <BluCard rec={MARKETING_RECS[4]} />
-        <div className="md:col-span-2">
-          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-3">Anomaly Detection</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {ANOMALIES.map((a) => {
-              const isCritical = a.status === "critical";
-              return (
-                <div
-                  key={a.metric}
-                  className={`rounded-xl p-4 ${isCritical ? "bg-red-50 dark:bg-red-500/8 border-red-200 dark:border-red-500/20" : "bg-amber-50 dark:bg-amber-500/8 border-amber-200 dark:border-amber-500/20"}`}
-                  style={{ border: "1px solid" }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {isCritical
-                      ? <AlertCircle size={13} className="text-red-500 shrink-0" />
-                      : <AlertTriangle size={13} className="text-amber-500 shrink-0" />
-                    }
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider ${isCritical ? "text-red-500" : "text-amber-500"}`}>
-                      {a.status}
-                    </span>
-                    <span className="ml-auto text-[10px] text-stone-400">{a.ago}</span>
-                  </div>
-                  <p className="text-xs font-semibold text-stone-700 dark:text-stone-200 mb-2">{a.metric}</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={`text-lg font-bold leading-none ${isCritical ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>{a.actual}</span>
-                    <span className="text-xs font-medium" style={{ color: isCritical ? "#ef4444" : "#f59e0b" }}>{a.change}</span>
-                  </div>
-                  <p className="text-[10px] text-stone-400 mt-1">Expected {a.expected}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Analytics dashboard ───────────────────────────────────────────────────────
 
 function AnalyticsDashboard() {
@@ -1603,117 +1256,6 @@ function AnalyticsDashboard() {
             })}
           </div>
         </SectionCard>
-      </div>
-    </div>
-  );
-}
-
-// ── Sales tab ─────────────────────────────────────────────────────────────────
-
-type SalesMetricDef = {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  value: number;
-};
-
-// TODO: replace with real API data
-const SALES_METRICS: SalesMetricDef[] = [
-  { id: "emails-sent",   label: "Emails sent",    icon: Send,               value: 1284 },
-  { id: "emails-opened", label: "Emails opened",  icon: MailOpen,           value:  437 },
-  { id: "links-clicked", label: "Links clicked",  icon: MousePointerClick,  value:   96 },
-];
-
-function SalesTab() {
-  return (
-    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
-      <Greeting />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MiniStat icon={Briefcase}    label="Pipeline value"           value="$284k"  change="+12%"  />
-        <MiniStat icon={ShoppingCart} label="Deals closed this month"  value="18"     change="+22%"  />
-        <MiniStat icon={Calendar}     label="Meetings scheduled"       value="43"     change="+8"    />
-        <MiniStat icon={Target}       label="Conversion rate"          value="14.3%"  change="+1.4%" accent="#26a269" />
-      </div>
-
-      {/* Blu urgent deal + pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <BluCard rec={SALES_RECS[0]} />
-        <SectionCard title="Pipeline by Stage">
-          <div className="space-y-3">
-            {PIPELINE_STAGES.map((s) => (
-              <div key={s.stage} className="flex items-center gap-3">
-                <span className="w-24 shrink-0 text-xs text-stone-600 dark:text-stone-400">{s.stage}</span>
-                <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-1.5">
-                  <div className="h-1.5 rounded-full bg-blue-400" style={{ width: `${s.pct}%` }} />
-                </div>
-                <span className="text-xs font-medium text-stone-500 dark:text-stone-400 w-6 text-right">{s.count}</span>
-                <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 w-14 text-right">${(s.value / 1000).toFixed(0)}k</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* Top opportunities + Blu meetings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SectionCard title="Top Opportunities">
-          <div className="space-y-0">
-            {TOP_OPPORTUNITIES.map((o, i) => (
-              <div key={i} className="flex items-center gap-3 py-2.5 border-b last:border-0" style={{ borderColor: "var(--border)" }}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-stone-700 dark:text-stone-200 truncate">{o.company}</p>
-                  <p className="text-xs text-stone-400 dark:text-stone-500 truncate">{o.deal}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-bold text-stone-800 dark:text-stone-100">${o.value.toLocaleString()}</p>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400">{o.stage}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-        <BluCard rec={SALES_RECS[1]} />
-      </div>
-
-      {/* Meetings chart + Blu outreach */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <SectionCard title="Meetings — Scheduled vs. Attended" className="lg:col-span-2">
-          <div className="flex items-center gap-5 mb-3">
-            {[{ label: "Scheduled", color: "#0080FF" }, { label: "Attended", color: "#59B277" }].map((l) => (
-              <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
-                {l.label}
-              </div>
-            ))}
-          </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <ComposedChart data={MEETINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-              <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
-              <Line dataKey="attended" stroke="#59B277" strokeWidth={2} dot={{ fill: "#59B277", r: 3, strokeWidth: 0 }} name="Attended" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </SectionCard>
-        <BluCard rec={SALES_RECS[2]} />
-      </div>
-
-      {/* Blu nurture + setup checklist */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-        <BluCard rec={SALES_RECS[3]} />
-        <SalesSetupChecklist />
-      </div>
-
-      <div>
-        <div className="-ml-4 mb-4"><DateRangePicker /></div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">
-          {SALES_METRICS.map((m) => (
-            <MetricCard key={m.id} icon={m.icon} label={m.label} value={m.value} />
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -1884,20 +1426,20 @@ function BrandSetupChecklist() {
 // ── Sales checklist (sales tab) ───────────────────────────────────────────────
 
 const SALES_SETUP_STEPS: SetupStepDef[] = [
-  { id: "create-account",    title: "Create an account",    desc: "", action: "Open"    },
-  { id: "connect-email",     title: "Connect your email",   desc: "", action: "Connect" },
-  { id: "connect-calendar",  title: "Connect your calendar",desc: "", action: "Connect" },
+  { id: "connect-calendar",  title: "Connect your calendar",      desc: "Sync availability for meetings and booking links", action: "Connect" },
+  { id: "create-booking",    title: "Create a booking type",      desc: "Publish reusable scheduler links",                 action: "Open"    },
+  { id: "enable-reminders",  title: "Enable meeting reminders",   desc: "Send 24 hour and 1 hour reminders",                action: "Open"    },
 ];
 
 // TODO: replace with real API call — e.g. useQuery("/api/sales/setup-progress")
 function useSalesSetupProgress(): Set<string> {
-  return new Set(["create-account"]);
+  return new Set(["connect-calendar"]);
 }
 
 function SalesSetupChecklist() {
   return (
     <SetupChecklist
-      title="Complete your setup to unlock full potential"
+      title="Finish scheduler setup"
       steps={SALES_SETUP_STEPS}
       initialCompleted={useSalesSetupProgress()}
     />
@@ -1971,6 +1513,9 @@ type HomeBentoCard = {
   };
 };
 
+const brandLogoUrl = (domain: string) =>
+  `https://cdn.brandfetch.io/${domain}/icon?c=1idhE0Bg4BXpFRYkYnt`;
+
 const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeBentoCard[] }> = {
   design: {
     title: "Design wrapped",
@@ -2030,7 +1575,7 @@ const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeB
     cards: [
       { id: "active-users", perspective: "summary", eyebrow: "Out-of-the-box", title: "Active users", value: "1.87K", body: "Users who were active in the selected period across tracked web and product events.", icon: Users, signal: "-70%", chart: { type: "line", label: "Active users", values: [10, 18, 12, 25, 40, 35, 20, 32, 25, 20, 15, 25, 30, 8] } },
       { id: "traffic-users", perspective: "summary", eyebrow: "Traffic", title: "Total users", value: "3.79K", body: "Total tracked users from the traffic report.", icon: Globe, signal: "-45%" },
-      { id: "revenue-channel", perspective: "summary", eyebrow: "Revenue", title: "Top revenue channel", value: "$42.4K", body: "Organic Search is the highest attributed revenue source.", icon: DollarSign, signal: "#1" },
+      // { id: "revenue-channel", perspective: "summary", eyebrow: "Revenue", title: "Top revenue channel", value: "$42.4K", body: "Organic Search is the highest attributed revenue source.", icon: DollarSign, signal: "#1" },
       { id: "page-views", perspective: "summary", eyebrow: "Engagement", title: "Page views", value: "4.06K", body: "Total page views across tracked sessions.", icon: Activity, signal: "+239%" },
       { id: "mrr", perspective: "summary", eyebrow: "MRR", title: "Current MRR", value: "$25.21K", body: "Subscription MRR for Jun 2026.", icon: DollarSign, signal: "+2.62%", chart: { type: "line", label: "MRR", values: [10530, 12144, 13701, 15594, 16766, 18207, 19597, 20711, 22052, 22914, 24568, 25212] } },
       { id: "subscribers", perspective: "summary", eyebrow: "Subscribers", title: "Total subscribers", value: "1,940", body: "Active subscribers at the end of Jun 2026.", icon: Users, signal: "-3.04%" },
@@ -2282,6 +1827,171 @@ function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
       <span className={`pointer-events-none absolute -bottom-5 -right-5 opacity-[0.05] ${watermarkClass}`}>
         <Icon size={86} />
       </span>
+    </div>
+  );
+}
+
+function EmptyAnalyticsCard({
+  title,
+  label,
+  action,
+  className = "",
+}: {
+  title: string;
+  label?: string;
+  action?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative min-h-[116px] overflow-hidden rounded-xl p-4 ${className}`}
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+    >
+      <img
+        src="/logo.png"
+        alt=""
+        className="pointer-events-none absolute -bottom-7 -right-7 h-24 w-24 object-contain opacity-[0.035] grayscale dark:opacity-[0.055]"
+      />
+      <div className="relative z-10 flex h-full flex-col justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-400 dark:bg-white/8 dark:text-stone-500">
+            <span className="h-3 w-3 rounded-full border border-current" />
+          </span>
+          {label && <span className="rounded-full bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">{label}</span>}
+        </div>
+        <div>
+          <p className="text-sm font-medium leading-snug text-stone-700 dark:text-stone-200">{title}</p>
+          {action && <p className="mt-1 text-xs font-medium text-stone-400 dark:text-stone-500">{action}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyAnalyticsPanel({
+  title,
+  action,
+  provider,
+  href,
+  linkText,
+  className = "",
+}: {
+  title: string;
+  action: string;
+  provider?: "stripe" | "javascript";
+  href?: string;
+  linkText?: string;
+  className?: string;
+}) {
+  const providerDomain = provider === "stripe" ? "stripe.com" : null;
+  const providerName = provider === "stripe" ? "Stripe" : provider === "javascript" ? "JavaScript" : "";
+
+  return (
+    <div
+      className={`relative grid min-h-[168px] place-items-center overflow-hidden rounded-xl p-5 ${className}`}
+      style={{ background: "var(--content-bg)", border: "1px solid color-mix(in srgb, var(--border) 58%, transparent)" }}
+    >
+      <img
+        src="/logo.png"
+        alt=""
+        className="pointer-events-none absolute -bottom-10 -right-10 h-36 w-36 object-contain opacity-[0.035] grayscale dark:opacity-[0.055]"
+      />
+      <div className="relative z-10 text-center">
+        {provider && (
+          <span className="mx-auto mb-4 flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-stone-100 dark:bg-white/8">
+            {provider === "javascript" ? (
+              <span className="flex h-full w-full items-center justify-center bg-[#F7DF1E] text-xs font-bold text-black">
+                JS
+              </span>
+            ) : providerDomain ? (
+              <img
+                src={brandLogoUrl(providerDomain)}
+                alt={providerName}
+                className="h-full w-full object-contain"
+              />
+            ) : null}
+          </span>
+        )}
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
+        <p className="mt-1 text-xs font-medium text-stone-400 dark:text-stone-500">{action}</p>
+        {href && linkText && (
+          <a
+            href={href}
+            className="mt-4 inline-flex text-xs font-medium text-stone-600 underline decoration-dotted underline-offset-4 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+          >
+            {linkText}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type EmptySourceLogo =
+  | { kind: "js" }
+  | { kind: "brand"; domain: string; alt: string }
+  | { kind: "icon"; icon: LucideIcon };
+
+function EmptySourceMark({ logo, index }: { logo: EmptySourceLogo; index: number }) {
+  const rotate = index % 2 === 0 ? "rotate-[-8deg]" : "rotate-[8deg]";
+  const offset = index === 0 ? "" : "-ml-3";
+
+  return (
+    <span
+      className={`${offset} ${rotate} relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-stone-100 dark:bg-white/8`}
+      style={{ border: "1px solid var(--border)", zIndex: 10 - index }}
+    >
+      {logo.kind === "js" ? (
+        <span className="flex h-full w-full items-center justify-center bg-[#F7DF1E] text-sm font-bold text-black">
+          JS
+        </span>
+      ) : logo.kind === "brand" ? (
+        <img
+          src={brandLogoUrl(logo.domain)}
+          alt={logo.alt}
+          className="h-full w-full object-contain"
+        />
+      ) : (
+        <logo.icon size={18} className="text-stone-500 dark:text-stone-400" />
+      )}
+    </span>
+  );
+}
+
+function AnalyticsIntegrationsCard({
+  className = "",
+  title = "Connect analytics sources",
+  body = "Unlock users, page views, MRR, subscribers, and more.",
+  href = "/integrations",
+  linkText = "Go to integrations",
+  logos = [{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }] as EmptySourceLogo[],
+}: {
+  className?: string;
+  title?: string;
+  body?: string;
+  href?: string;
+  linkText?: string;
+  logos?: EmptySourceLogo[];
+}) {
+  return (
+    <div className={`relative grid min-h-[260px] place-items-center overflow-hidden p-6 ${className}`}>
+      <div className="relative z-10 max-w-md text-center">
+        <div className="mb-5 flex items-center justify-center">
+          {logos.map((logo, index) => (
+            <EmptySourceMark key={`${logo.kind}-${index}`} logo={logo} index={index} />
+          ))}
+        </div>
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
+        <p className="mt-1.5 text-xs font-medium leading-relaxed text-stone-400 dark:text-stone-500">
+          {body}
+        </p>
+        <a
+          href={href}
+          className="mt-5 inline-flex text-xs font-medium text-stone-600 underline decoration-dotted underline-offset-4 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          {linkText}
+        </a>
+      </div>
     </div>
   );
 }
@@ -2543,6 +2253,58 @@ const TAB_VIDEOS: Record<string, string> = {
   analytics:  "https://www.youtube.com/embed/Z0KjV40InIo?autoplay=1&rel=0&modestbranding=1",
 };
 
+const TAB_VIDEO_IDS: Record<string, string> = {
+  design: "XAyYkqmHzhc",
+  sales: "UQNNQb7JPvw",
+  marketing: "9LuIOESoiCc",
+  analytics: "Z0KjV40InIo",
+};
+
+const EMPTY_HOME_SETUP: Record<string, {
+  title: string;
+  body: string;
+  href: string;
+  linkText: string;
+  logos: EmptySourceLogo[];
+}> = {
+  design: {
+    title: "Set up your brand kit",
+    body: "Add logo, colors, fonts, and product assets to unlock design workflows.",
+    href: "/brand-kit",
+    linkText: "Open brand kit",
+    logos: [{ kind: "icon", icon: Palette }, { kind: "icon", icon: FileImage }],
+  },
+  marketing: {
+    title: "Connect marketing sources",
+    body: "Sync catalog, site activity, audiences, journeys, and more.",
+    href: "/integrations",
+    linkText: "Go to integrations",
+    logos: [
+      { kind: "brand", domain: "hubspot.com", alt: "HubSpot" },
+      { kind: "brand", domain: "sendgrid.com", alt: "SendGrid" },
+      { kind: "js" },
+      { kind: "brand", domain: "shopify.com", alt: "Shopify" },
+    ],
+  },
+  sales: {
+    title: "Set up meetings and scheduler",
+    body: "Connect calendar, create booking types, reminders, and more.",
+    href: "/meetings",
+    linkText: "Open meetings",
+    logos: [
+      { kind: "brand", domain: "calendar.google.com", alt: "Google Calendar" },
+      { kind: "brand", domain: "gmail.com", alt: "Gmail" },
+    ],
+  },
+  analytics: {
+    title: "Connect analytics sources",
+    body: "Unlock users, page views, MRR, subscribers, and more.",
+    href: "/integrations",
+    linkText: "Go to integrations",
+    logos: [{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }],
+  },
+};
+
 function VideoOverlay({ src, onClose }: { src: string; onClose: () => void }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -2601,10 +2363,13 @@ const TAB_CHECKLIST: Record<string, React.ReactNode> = {
 function HomeBentoDashboard({ tab }: { tab: string }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const dashboard = HOME_BENTO[tab] ?? HOME_BENTO.design;
   const allSummaryCards = dashboard.cards.filter((card) => card.perspective === "summary");
-  const summaryCount = tab === "analytics" ? 6 : tab === "design" ? 4 : 5;
-  const summaryCards = allSummaryCards.slice(0, summaryCount);
+  const summaryCount = tab === "analytics" ? 5 : tab === "design" ? 4 : 5;
+  const allSlicedCards = allSummaryCards.slice(0, summaryCount);
+  const [hiddenCards, setHiddenCards] = useState<Set<string>>(new Set());
+  const summaryCards = allSlicedCards.filter((card) => !hiddenCards.has(card.id));
   const preferredChartIds = tab === "marketing" ? new Set(["journeys", "ab"]) : tab === "sales" ? new Set(["upcoming-meetings", "pipeline-stages"]) : null;
   const chartCards = (preferredChartIds
     ? allSummaryCards.filter((card) => preferredChartIds.has(card.id))
@@ -2613,6 +2378,14 @@ function HomeBentoDashboard({ tab }: { tab: string }) {
   const fallbackChartCards = chartCards.length >= 2 ? chartCards : allSummaryCards.slice(0, 2);
   const bluCards = dashboard.cards.filter((card) => card.perspective === "blu").slice(0, 4);
   const videoSrc = TAB_VIDEOS[tab];
+
+  function toggleCard(id: string) {
+    setHiddenCards((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="px-6 pt-6 pb-8 animate-fade-up">
@@ -2639,6 +2412,70 @@ function HomeBentoDashboard({ tab }: { tab: string }) {
               Watch intro
             </button>
           )}
+          {/* Gear — card visibility dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setSettingsOpen((o) => !o)}
+              className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+                settingsOpen || hiddenCards.size > 0
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                  : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+              }`}
+              style={{ borderColor: "var(--border)" }}
+              title="Customize cards"
+            >
+              <Settings size={14} />
+            </button>
+
+            {settingsOpen && (
+              <>
+                {/* Backdrop */}
+                <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />
+                {/* Dropdown */}
+                <div
+                  className="absolute right-0 top-10 z-50 w-56 rounded-xl py-1 shadow-lg"
+                  style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+                >
+                  <p className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500">
+                    Visible cards
+                  </p>
+                  {allSlicedCards.map((card) => {
+                    const Icon = card.icon;
+                    const visible = !hiddenCards.has(card.id);
+                    return (
+                      <button
+                        key={card.id}
+                        onClick={() => toggleCard(card.id)}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+                      >
+                        <span
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+                          style={{
+                            background: visible ? "#0080FF" : "transparent",
+                            border: visible ? "none" : "1.5px solid var(--border)",
+                          }}
+                        >
+                          {visible && <Check size={10} className="text-white" />}
+                        </span>
+                        <Icon size={12} className="shrink-0 text-stone-400 dark:text-stone-500" />
+                        <span className="text-xs text-stone-700 dark:text-stone-200">{card.title}</span>
+                      </button>
+                    );
+                  })}
+                  {hiddenCards.size > 0 && (
+                    <div style={{ borderTop: "1px solid var(--border)" }} className="mt-1 pt-1 pb-1">
+                      <button
+                        onClick={() => setHiddenCards(new Set())}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-500 transition-colors hover:text-blue-600"
+                      >
+                        Show all
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2655,11 +2492,13 @@ function HomeBentoDashboard({ tab }: { tab: string }) {
       </div>
 
       <div className="space-y-3">
-        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tab === "analytics" ? "lg:grid-cols-6" : tab === "design" ? "lg:grid-cols-4" : "lg:grid-cols-5"}`}>
-          {summaryCards.map((card) => (
-            <SummaryKpiCard key={card.id} card={card} />
-          ))}
-        </div>
+        {summaryCards.length > 0 && (
+          <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${tab === "analytics" ? "lg:grid-cols-5" : tab === "design" ? "lg:grid-cols-4" : "lg:grid-cols-5"}`}>
+            {summaryCards.map((card) => (
+              <SummaryKpiCard key={card.id} card={card} />
+            ))}
+          </div>
+        )}
 
         {tab === "design" ? (
           <LatestGenerationsCard />
@@ -2681,12 +2520,1075 @@ function HomeBentoDashboard({ tab }: { tab: string }) {
   );
 }
 
+function EmptyHomeDashboard({ tab }: { tab: string }) {
+  const [inlinePlaying, setInlinePlaying] = useState(false);
+  const [videoCollapsed, setVideoCollapsed] = useState(false);
+  const videoSrc = TAB_VIDEOS[tab] ?? TAB_VIDEOS.analytics;
+  const videoId = TAB_VIDEO_IDS[tab] ?? TAB_VIDEO_IDS.analytics;
+  const setup = EMPTY_HOME_SETUP[tab] ?? EMPTY_HOME_SETUP.analytics;
+
+  return (
+    <div className="relative overflow-hidden px-6 pt-6 pb-8 animate-fade-up">
+      <img
+        src="/logo.png"
+        alt=""
+        className="pointer-events-none fixed -bottom-22 -right-22 z-0 h-90 w-90 -rotate-12 object-contain opacity-[0.014] grayscale dark:opacity-[0.03]"
+      />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <Greeting />
+        <button
+          onClick={() => {
+            setVideoCollapsed(false);
+            setInlinePlaying(false);
+          }}
+          className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
+            videoCollapsed ? "w-28 px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
+          }`}
+          style={{ borderColor: "var(--border)" }}
+          aria-hidden={!videoCollapsed}
+          tabIndex={videoCollapsed ? 0 : -1}
+        >
+          <Play size={11} className="fill-current text-blue-500" />
+          <span className="whitespace-nowrap">Watch video</span>
+        </button>
+      </div>
+
+      <div className="relative z-10 mt-4 flex min-h-140 items-center">
+        <div className={`grid w-full items-stretch gap-3 ${videoCollapsed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
+          {!videoCollapsed && (
+            <div className="relative aspect-video overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
+              <button
+                onClick={() => {
+                  setVideoCollapsed(true);
+                  setInlinePlaying(false);
+                }}
+                className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
+                style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
+                aria-label="Close video"
+              >
+                <X size={14} />
+              </button>
+              {inlinePlaying ? (
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={videoSrc}
+                  title="Analytics setup video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
+                  <img
+                    src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                    alt={`${tab} setup overview`}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.22) 58%, rgba(0,0,0,0.06) 100%)" }}
+                  />
+                  <span
+                    className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
+                  >
+                    <Play size={18} className="ml-0.5 fill-white text-white" />
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className={`grid ${videoCollapsed ? "mx-auto w-full max-w-xl" : "lg:h-full"}`}>
+            <AnalyticsIntegrationsCard
+              className="h-full"
+              title={setup.title}
+              body={setup.body}
+              href={setup.href}
+              linkText={setup.linkText}
+              logos={setup.logos}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Marketing homepage ────────────────────────────────────────────────────────
+
+type MarketingKpi = {
+  label: string;
+  value: string;
+  detail: string;
+  trend: string;
+  tone: "good" | "warning" | "critical";
+  icon: LucideIcon;
+};
+
+const MARKETING_HOME_KPIS: MarketingKpi[] = [
+  {
+    label: "Attributed revenue",
+    value: "$22.6M",
+    detail: "Combined impact from journeys and experiments",
+    trend: "+18%",
+    tone: "good",
+    icon: DollarSign,
+  },
+  {
+    label: "Experiment lift",
+    value: "+8.6%",
+    detail: "Best active personalization result is ready to ship",
+    trend: "Winner",
+    tone: "good",
+    icon: Shuffle,
+  },
+  {
+    label: "Feed coverage",
+    value: "68%",
+    detail: "Catalog items eligible for personalized blocks",
+    trend: "+11%",
+    tone: "warning",
+    icon: Package,
+  },
+  {
+    label: "Bounce rate",
+    value: "4.8%",
+    detail: "Above the 3% sender risk threshold",
+    trend: "Critical",
+    tone: "critical",
+    icon: AlertCircle,
+  },
+];
+
+const MARKETING_OPERATIONS = [
+  { name: "Welcome series", type: "Journey", status: "active", metric: "1,240 sends", result: "12.4% conv." },
+  { name: "Cart abandonment", type: "Journey", status: "active", metric: "842 sends", result: "18.1% conv." },
+  { name: "Onboarding tips", type: "Experience", status: "winning", metric: "2 variants", result: "+8.6% lift" },
+  { name: "Popular right now", type: "Feed", status: "active", metric: "428 items", result: "68% coverage" },
+  { name: "Re-engagement Q2", type: "Journey", status: "paused", metric: "0 sends", result: "Needs review" },
+];
+
+const MARKETING_HOME_ACTIONS = [
+  {
+    priority: "Urgent",
+    title: "Clean stale audiences before the next send",
+    body: "Bounce rate is above the sender-risk threshold. Suppress old re-engagement segments first, then resume volume.",
+    impact: "Protect deliverability",
+    action: "Clean segment",
+    tone: "critical" as const,
+  },
+  {
+    priority: "High",
+    title: "Ship the winning onboarding experience",
+    body: "The onboarding variant has a clear lift. Moving the winner live is more useful than keeping the test running.",
+    impact: "+8.6% conversion lift",
+    action: "Ship winner",
+    tone: "warning" as const,
+  },
+];
+
+function MarketingKpiCard({ item }: { item: MarketingKpi }) {
+  const Icon = item.icon;
+  const tone =
+    item.tone === "critical"
+      ? { text: "text-red-600 dark:text-red-400", bg: "rgba(239,68,68,0.08)" }
+      : item.tone === "warning"
+        ? { text: "text-amber-600 dark:text-amber-400", bg: "rgba(245,158,11,0.08)" }
+        : { text: "text-blue-600 dark:text-blue-400", bg: "rgba(0,128,255,0.08)" };
+
+  return (
+    <div
+      className="flex min-h-[128px] flex-col rounded-xl p-4"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: tone.bg }}>
+          <Icon size={14} className={tone.text} />
+        </span>
+        <span className={`text-xs font-semibold ${tone.text}`}>{item.trend}</span>
+      </div>
+      <p className="text-2xl font-bold leading-none text-stone-900 dark:text-stone-50">{item.value}</p>
+      <p className="mt-2 text-xs font-medium text-stone-700 dark:text-stone-300">{item.label}</p>
+      <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
+    </div>
+  );
+}
+
+function MarketingStatusPill({ status }: { status: string }) {
+  const isActive = status === "active" || status === "winning";
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+      isActive
+        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300"
+        : "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400"
+    }`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-stone-400"}`} />
+      {status}
+    </span>
+  );
+}
+
+function MarketingBluActionCard({ rec }: { rec: typeof MARKETING_HOME_ACTIONS[number] }) {
+  const isCritical = rec.tone === "critical";
+  const color = isCritical ? "#ef4444" : "#f59e0b";
+
+  return (
+    <div
+      className="flex h-full min-h-[204px] flex-col rounded-xl p-5"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: isCritical ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)" }}>
+            <Bot size={14} style={{ color }} />
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-stone-800 dark:text-stone-100">Blu recommendation</p>
+            <p className="text-xs text-stone-400">{rec.impact}</p>
+          </div>
+        </div>
+        <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: isCritical ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)", color }}>
+          {rec.priority}
+        </span>
+      </div>
+      <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{rec.title}</p>
+      <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-500 dark:text-stone-400">{rec.body}</p>
+      <button
+        className="mt-5 inline-flex h-9 w-fit items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
+        style={{ background: "#0080FF" }}
+      >
+        {rec.action}
+        <ChevronRight size={12} />
+      </button>
+    </div>
+  );
+}
+
+type SalesHomeKpi = {
+  label: string;
+  value: string;
+  detail: string;
+  trend: string;
+  tone: "good" | "warning" | "neutral";
+  icon: LucideIcon;
+};
+
+const SALES_HOME_KPIS: SalesHomeKpi[] = [
+  {
+    label: "Upcoming meetings",
+    value: "3",
+    detail: "Scheduled meetings in the next 7 days",
+    trend: "Next 7d",
+    tone: "good",
+    icon: Calendar,
+  },
+  {
+    label: "Attended rate",
+    value: "77%",
+    detail: "Meetings attended across the current period",
+    trend: "-6pp",
+    tone: "warning",
+    icon: Activity,
+  },
+  {
+    label: "Booking types",
+    value: "4",
+    detail: "Reusable scheduler links available to share",
+    trend: "2 live",
+    tone: "good",
+    icon: CalendarClock,
+  },
+  {
+    label: "Calendar setup",
+    value: "1/3",
+    detail: "Calendar is connected, reminders still need setup",
+    trend: "Setup",
+    tone: "neutral",
+    icon: ClipboardList,
+  },
+];
+
+const SALES_HOME_ACTIONS = [
+  {
+    priority: "High",
+    title: "Enable meeting reminders",
+    body: "Meetings and booking are supported now. Add 24 hour and 1 hour reminders to reduce no-shows.",
+    impact: "Improve attendance",
+    action: "Enable reminders",
+    tone: "warning" as const,
+  },
+  {
+    priority: "Setup",
+    title: "Publish the onboarding booking type",
+    body: "The scheduler can already manage reusable booking links. Review the draft onboarding slot and publish it.",
+    impact: "Make handoff bookable",
+    action: "Review booking",
+    tone: "neutral" as const,
+  },
+];
+
+function SalesKpiCard({ item }: { item: SalesHomeKpi }) {
+  const Icon = item.icon;
+
+  return (
+    <div
+      className="relative flex h-full min-h-[128px] overflow-hidden rounded-xl p-4"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+    >
+      <Icon
+        size={86}
+        className="pointer-events-none absolute -bottom-5 -right-5 text-blue-500 opacity-[0.05]"
+      />
+      <div className="relative z-10 flex min-h-full w-full flex-col">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8"
+          >
+            <Icon size={15} />
+          </span>
+          <span
+            className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium leading-none text-blue-600 dark:bg-blue-500/12 dark:text-blue-300"
+          >
+            {item.trend}
+          </span>
+        </div>
+        <div className="mt-auto">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[34px] font-bold leading-none tracking-normal text-stone-950 dark:text-stone-50">{item.value}</p>
+              <p className="mt-2 text-sm font-semibold leading-tight text-stone-800 dark:text-stone-100">{item.label}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SalesActionCard({ rec }: { rec: typeof SALES_HOME_ACTIONS[number] }) {
+  const isWarning = rec.tone === "warning";
+  const color = isWarning ? "#f59e0b" : "#0080FF";
+
+  return (
+    <div className="flex h-full min-h-[204px] flex-col rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: isWarning ? "rgba(245,158,11,0.08)" : "rgba(0,128,255,0.08)" }}>
+            <Bot size={14} style={{ color }} />
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-stone-800 dark:text-stone-100">Blu recommendation</p>
+            <p className="text-xs text-stone-400">{rec.impact}</p>
+          </div>
+        </div>
+        <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: isWarning ? "rgba(245,158,11,0.08)" : "rgba(0,128,255,0.08)", color }}>
+          {rec.priority}
+        </span>
+      </div>
+      <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{rec.title}</p>
+      <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-500 dark:text-stone-400">{rec.body}</p>
+      <button className="mt-5 inline-flex h-9 w-fit items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90" style={{ background: "#0080FF" }}>
+        {rec.action}
+        <ChevronRight size={12} />
+      </button>
+    </div>
+  );
+}
+
+// ── Design homepage ────────────────────────────────────────────────────────────
+
+function DesignHomeDashboard() {
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const videoSrc = TAB_VIDEOS.design;
+
+  const kpis = [
+    { label: "ASSETS CREATED",  value: "127",  sub: "+24% this week",       icon: FileImage, accent: "#0080FF" },
+    { label: "BRAND READINESS", value: "80%",  sub: "4 of 5 items complete", icon: Palette,   accent: "#26a269" },
+    { label: "DESIGN SYSTEMS",  value: "3",    sub: "+1 added this month",   icon: PenTool,   accent: "#C37EE5" },
+    { label: "AVATARS",         value: "6",    sub: "+1 added recently",     icon: Users,     accent: "#f59e0b" },
+  ] as const;
+
+  return (
+    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && (
+        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <Greeting />
+        <button
+          onClick={() => setChecklistOpen((o) => !o)}
+          className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+            checklistOpen
+              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+              : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+          }`}
+          style={{ borderColor: "var(--border)" }}
+          title="Brand setup checklist"
+        >
+          <ClipboardList size={14} />
+        </button>
+      </div>
+
+      {/* Collapsible checklist */}
+      <div
+        style={{
+          maxHeight: checklistOpen ? 600 : 0,
+          opacity: checklistOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+        }}
+      >
+        <BrandSetupChecklist />
+      </div>
+
+      {/* ── Hero: video + 4 KPI tiles ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 items-stretch">
+        {/* Video card */}
+        <button
+          onClick={() => setVideoOpen(true)}
+          className="lg:col-span-3 relative overflow-hidden rounded-xl group text-left"
+          style={{ minHeight: 232, border: "1px solid var(--border)" }}
+        >
+          <img
+            src="https://img.youtube.com/vi/XAyYkqmHzhc/maxresdefault.jpg"
+            alt="Intempt Design overview"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.08) 100%)" }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+              style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+            >
+              <Play size={18} className="fill-white text-white ml-0.5" />
+            </span>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <span
+              className="inline-flex items-center gap-1.5 mb-2.5 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
+              style={{ background: "rgba(0,128,255,0.22)", border: "1px solid rgba(0,128,255,0.32)" }}
+            >
+              <Play size={8} className="fill-current" /> WATCH INTRO
+            </span>
+            <p className="text-[17px] font-semibold text-white leading-snug">How Intempt Design works</p>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
+              Brand kits, design systems, avatars &amp; AI-generated creative assets — channel-ready in minutes.
+            </p>
+          </div>
+        </button>
+
+        {/* 2×2 KPI tiles */}
+        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
+          {kpis.map(({ label, value, sub, icon: Icon, accent }) => (
+            <div
+              key={label}
+              className="rounded-xl p-4 flex flex-col"
+              style={{ background: "var(--content-bg)", border: "1px solid var(--border)", minHeight: 110 }}
+            >
+              <div className="flex items-center gap-1.5 mb-3">
+                <Icon size={11} style={{ color: accent }} className="shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500 leading-none">
+                  {label}
+                </span>
+              </div>
+              <p className="text-[27px] font-semibold tabular-nums tracking-tight text-stone-900 dark:text-stone-50 leading-none mt-auto">
+                {value}
+              </p>
+              <p className="text-[11px] mt-2 text-stone-500 dark:text-stone-400">{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Brand kit + Asset types ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Brand kit completeness */}
+        <div className="rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100">Brand Kit</p>
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(245,158,11,0.10)", color: "#d97706" }}
+            >
+              1 missing
+            </span>
+          </div>
+          <div className="w-full h-1 rounded-full mb-4" style={{ background: "var(--muted)" }}>
+            <div className="h-1 rounded-full bg-blue-500 transition-all" style={{ width: "80%" }} />
+          </div>
+          <div>
+            {DESIGN_BRAND_ITEMS.map((b, i) => (
+              <div
+                key={b.label}
+                className="flex items-center justify-between py-2.5"
+                style={{ borderBottom: i < DESIGN_BRAND_ITEMS.length - 1 ? "1px solid var(--border)" : "none" }}
+              >
+                <span className="text-xs text-stone-600 dark:text-stone-400">{b.label}</span>
+                {b.ok ? (
+                  <span
+                    className="flex h-[18px] w-[18px] items-center justify-center rounded-full"
+                    style={{ background: "rgba(37,184,100,0.12)" }}
+                  >
+                    <Check size={9} className="text-emerald-600 dark:text-emerald-400" />
+                  </span>
+                ) : (
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                    style={{ background: "rgba(245,158,11,0.10)", color: "#d97706" }}
+                  >
+                    Missing
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Asset type breakdown */}
+        <div className="rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100 mb-4">
+            Asset Types
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500">
+              this week
+            </span>
+          </p>
+          <div className="space-y-3.5">
+            {DESIGN_ASSET_TYPES.map((t) => (
+              <div key={t.label} className="flex items-center gap-3">
+                <span className="text-xs text-stone-600 dark:text-stone-400 shrink-0 w-36 truncate">{t.label}</span>
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--muted)" }}>
+                  <div className="h-1.5 rounded-full bg-blue-400" style={{ width: `${t.pct}%` }} />
+                </div>
+                <span className="text-xs font-semibold tabular-nums text-stone-700 dark:text-stone-300 w-6 text-right shrink-0">
+                  {t.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Generation chart + Credits ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100">Generation Activity</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Images and videos created — last 14 days</p>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              {[
+                { label: "Images", color: "#0080FF" },
+                { label: "Videos", color: "#C37EE5" },
+              ].map((l) => (
+                <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
+                  {l.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={DESIGN_GEN_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={3} />
+              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="images" stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)"   dot={false} name="Images" />
+              <Area type="monotone" dataKey="videos" stroke="#C37EE5" strokeWidth={1.5} fill="rgba(195,126,229,0.06)" dot={false} name="Videos" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Credits */}
+        <div className="rounded-xl p-5 flex flex-col" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100 mb-4">Credits</p>
+          <div>
+            <p className="text-[32px] font-semibold tabular-nums tracking-tight text-stone-900 dark:text-stone-50 leading-none">3,840</p>
+            <p className="text-xs text-stone-400 mt-1 mb-4">of 5,000 used · 77%</p>
+          </div>
+          <div className="w-full h-2 rounded-full mb-3" style={{ background: "var(--muted)" }}>
+            <div className="h-2 rounded-full transition-all" style={{ width: "77%", background: "#f59e0b" }} />
+          </div>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">1,160 credits remaining this cycle</p>
+          <div
+            className="mt-auto flex items-start gap-2 rounded-lg p-3"
+            style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}
+          >
+            <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+              Approaching 80% limit — schedule batch runs to avoid throttling.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Recent designs ── */}
+      <LatestGenerationsCard />
+
+      {/* ── Blu recommendations ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <BluCard rec={DESIGN_RECS[0]} />
+        <BluCard rec={DESIGN_RECS[1]} />
+      </div>
+    </div>
+  );
+}
+
+function MarketingHomeDashboard() {
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [videoCollapsed, setVideoCollapsed] = useState(false);
+  const [inlinePlaying, setInlinePlaying] = useState(false);
+  const videoSrc = TAB_VIDEOS.marketing;
+
+  return (
+    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && (
+        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
+      )}
+
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <Greeting />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => setChecklistOpen((o) => !o)}
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+              checklistOpen
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            title="Setup checklist"
+          >
+            <ClipboardList size={14} />
+          </button>
+          <button
+            onClick={() => setVideoOpen(true)}
+            className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
+              videoCollapsed ? "w-[112px] px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            aria-hidden={!videoCollapsed}
+            tabIndex={videoCollapsed ? 0 : -1}
+          >
+            <Play size={11} className="fill-current text-blue-500" />
+            <span className="whitespace-nowrap">Watch video</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Collapsible setup checklist */}
+      <div
+        style={{
+          maxHeight: checklistOpen ? 600 : 0,
+          opacity: checklistOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+        }}
+      >
+        <MarketingSetupChecklist />
+      </div>
+
+      <div className="space-y-3">
+        <div className={`transition-all duration-300 ease-out ${videoCollapsed ? "max-h-0 overflow-hidden opacity-0" : "max-h-[260px] opacity-100"}`}>
+          <div
+            className="relative min-h-[220px] overflow-hidden rounded-xl"
+            style={{ border: "1px solid var(--border)" }}
+          >
+            <button
+              onClick={() => {
+                setVideoCollapsed(true);
+                setInlinePlaying(false);
+              }}
+              className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
+              style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
+              aria-label="Close video"
+            >
+              <X size={14} />
+            </button>
+            {inlinePlaying ? (
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={videoSrc}
+                title="Marketing overview video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
+                <img
+                  src="https://img.youtube.com/vi/9LuIOESoiCc/maxresdefault.jpg"
+                  alt="Intempt Marketing overview"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 58%, rgba(0,0,0,0.08) 100%)" }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
+                  >
+                    <Play size={18} className="fill-white text-white ml-0.5" />
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <span
+                    className="inline-flex items-center gap-1.5 mb-2.5 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
+                    style={{ background: "rgba(0,128,255,0.22)", border: "1px solid rgba(0,128,255,0.32)" }}
+                  >
+                    <Play size={8} className="fill-current" /> Play video
+                  </span>
+                  <p className="text-[17px] font-semibold text-white leading-snug">
+                    Marketing command center
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
+                    Journeys, experiments, catalog feeds, and channel performance in one operating view.
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {MARKETING_HOME_KPIS.map((item) => (
+            <MarketingKpiCard key={item.label} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div>
+          <SectionCard className="h-full">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Message performance</p>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Daily delivery volume and response quality over the last 26 days.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                {[
+                  { label: "Sends",  color: "#0080FF" },
+                  { label: "Opens",  color: "#64748b" },
+                  { label: "Clicks", color: "#16a34a" },
+                ].map((l) => (
+                  <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
+                    <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
+                    {l.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={SENDS_CHART_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
+                <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Area type="monotone" dataKey="sends"  stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)"   dot={false} name="Sends"  />
+                <Area type="monotone" dataKey="opens"  stroke="#64748b" strokeWidth={1.5} fill="rgba(100,116,139,0.06)" dot={false} name="Opens"  />
+                <Area type="monotone" dataKey="clicks" stroke="#16a34a" strokeWidth={1.5} fill="rgba(22,163,74,0.06)"  dot={false} name="Clicks" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </SectionCard>
+        </div>
+        <div>
+          <SectionCard title="Marketing Operations" className="h-full">
+            <div className="space-y-0">
+              <div
+                className="grid grid-cols-4 gap-3 pb-2 border-b text-xs font-semibold text-slate-500 dark:text-slate-400"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <span>Item</span>
+                <span>Status</span>
+                <span className="text-right">Metric</span>
+                <span className="text-right">Result</span>
+              </div>
+              {MARKETING_OPERATIONS.map((j) => (
+                <div
+                  key={j.name}
+                  className="grid grid-cols-4 gap-3 items-center py-3 border-b last:border-0"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <div className="min-w-0 pr-3">
+                    <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{j.name}</p>
+                    <p className="mt-0.5 text-xs text-stone-400">{j.type}</p>
+                  </div>
+                  <MarketingStatusPill status={j.status} />
+                  <span className="text-sm font-medium text-stone-600 dark:text-stone-300 text-right">
+                    {j.metric}
+                  </span>
+                  <span
+                    className="text-sm font-semibold text-right"
+                    style={{ color: j.result.includes("Needs") ? "#f59e0b" : j.result.includes("+") || j.result.includes("conv") ? "#16a34a" : "#64748b" }}
+                  >
+                    {j.result}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
+        <SectionCard title="Anomaly Detection" className="h-full">
+          <div className="space-y-3">
+            {ANOMALIES.slice(0, 3).map((a) => {
+              const isCritical = a.status === "critical";
+              const color = isCritical ? "#ef4444" : "#f59e0b";
+              return (
+                <div key={a.metric} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-stone-800 dark:text-stone-100">{a.metric}</span>
+                    <span className="text-xs font-medium" style={{ color }}>{a.status}</span>
+                  </div>
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xl font-bold leading-none" style={{ color }}>{a.actual}</p>
+                      <p className="mt-1 text-xs text-stone-400">Expected {a.expected}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold" style={{ color }}>{a.change}</p>
+                      <p className="mt-1 text-xs text-stone-400">{a.ago}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+        {MARKETING_HOME_ACTIONS.map((rec) => (
+          <MarketingBluActionCard key={rec.title} rec={rec} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SalesHomeDashboard() {
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [videoCollapsed, setVideoCollapsed] = useState(false);
+  const [inlinePlaying, setInlinePlaying] = useState(false);
+  const videoSrc = TAB_VIDEOS.sales;
+
+  return (
+    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && (
+        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
+      )}
+
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <Greeting />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => setChecklistOpen((o) => !o)}
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+              checklistOpen
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            title="Setup checklist"
+          >
+            <ClipboardList size={14} />
+          </button>
+          <button
+            onClick={() => setVideoOpen(true)}
+            className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
+              videoCollapsed ? "w-[112px] px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            aria-hidden={!videoCollapsed}
+            tabIndex={videoCollapsed ? 0 : -1}
+          >
+            <Play size={11} className="fill-current text-blue-500" />
+            <span className="whitespace-nowrap">Watch video</span>
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          maxHeight: checklistOpen ? 600 : 0,
+          opacity: checklistOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+        }}
+      >
+        <SalesSetupChecklist />
+      </div>
+
+      <div className={`grid grid-cols-1 gap-3 ${videoCollapsed ? "" : "lg:grid-cols-2"} items-stretch`}>
+        <div className={`transition-all duration-300 ease-out ${videoCollapsed ? "max-h-0 overflow-hidden opacity-0" : "max-h-[420px] opacity-100"}`}>
+          <div className="relative aspect-video overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
+            <button
+              onClick={() => {
+                setVideoCollapsed(true);
+                setInlinePlaying(false);
+              }}
+              className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
+              style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
+              aria-label="Close video"
+            >
+              <X size={14} />
+            </button>
+            {inlinePlaying ? (
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={videoSrc}
+                title="Sales overview video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
+                <img
+                  src="https://img.youtube.com/vi/UQNNQb7JPvw/hqdefault.jpg"
+                  alt="Intempt Sales overview"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 58%, rgba(0,0,0,0.08) 100%)" }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
+                  >
+                    <Play size={18} className="fill-white text-white ml-0.5" />
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-[17px] font-semibold text-white leading-snug">
+                    Sales command center
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
+                    Meetings, scheduler links, calendar setup, and attendance health in one operating view.
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${videoCollapsed ? "xl:grid-cols-4" : "lg:h-full lg:grid-rows-2"}`}>
+          {SALES_HOME_KPIS.map((item) => (
+            <SalesKpiCard key={item.label} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <SectionCard title="Meeting Attendance" className="h-full">
+          <div className="mb-3 flex items-center gap-4">
+            {[
+              { label: "Scheduled", color: "#0080FF" },
+              { label: "Attended", color: "#16a34a" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5 text-xs text-stone-500">
+                <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: item.color }} />
+                {item.label}
+              </div>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={210}>
+            <ComposedChart data={MEETINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
+              <Line dataKey="attended" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 3, strokeWidth: 0 }} name="Attended" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </SectionCard>
+
+        <div className="h-full rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Coming up</p>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+              Meetings
+            </span>
+          </div>
+          <div className="space-y-4">
+            {[
+              { date: "JUN 10", title: "FieldsUSA demo", time: "7:00 PM", due: "in 4 hours" },
+              { date: "JUN 10", title: "Linea renewal call", time: "8:00 PM", due: "in 5 hours" },
+              { date: "JUN 13", title: "StockInvest onboarding", time: "12:15 PM", due: "in 3 days" },
+            ].map((meeting) => {
+              const [month, day] = meeting.date.split(" ");
+              return (
+                <div key={meeting.title} className="grid grid-cols-[56px_1fr_auto] items-center gap-4">
+                  <span className="flex h-14 w-14 flex-col items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+                    <span className="text-[10px] font-semibold leading-none">{month}</span>
+                    <span className="mt-0.5 text-xl font-semibold leading-none">{day}</span>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-stone-800 dark:text-stone-100">{meeting.title}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-stone-500 dark:text-stone-400">{meeting.time}</span>
+                      <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-600 dark:bg-orange-500/12 dark:text-orange-300">
+                        {meeting.due}
+                      </span>
+                    </div>
+                  </div>
+                  <button className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90" style={{ background: "#0080FF" }}>
+                    <Video size={13} />
+                    Join now
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
+        <SectionCard title="Setup Health" className="h-full">
+          <div className="space-y-3">
+            {[
+              { label: "Calendar connected", status: "Done", done: true },
+              { label: "Booking types created", status: "2 live", done: true },
+              { label: "Reminders configured", status: "Missing", done: false },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--muted)" }}>
+                <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{item.label}</span>
+                <span className={`text-xs font-semibold ${item.done ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}>
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {SALES_HOME_ACTIONS.map((rec) => (
+          <SalesActionCard key={rec.title} rec={rec} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HomeView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const tab = HOME_TABS.some((t) => t.key === searchParams.get("tab"))
-    ? searchParams.get("tab")!
+  const rawTab = searchParams.get("tab") ?? "design";
+  const [requestedTab, previewState] = rawTab.split("/");
+  const tab = HOME_TABS.some((t) => t.key === requestedTab)
+    ? requestedTab
     : "design";
+  const showEmptyPreview = previewState === "1";
 
   function setTab(key: string) {
     navigate(`/home?tab=${key}`, { replace: true });
@@ -2695,7 +3597,16 @@ export default function HomeView() {
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
       <ViewTabs tabs={HOME_TABS} activeTab={tab} onChange={setTab} />
-      <HomeBentoDashboard key={tab} tab={tab} />
+      {showEmptyPreview
+        ? <EmptyHomeDashboard key={`${tab}-empty`} tab={tab} />
+        : tab === "design"
+          ? <DesignHomeDashboard key="design" />
+          : tab === "marketing"
+            ? <MarketingHomeDashboard key="marketing" />
+            : tab === "sales"
+              ? <SalesHomeDashboard key="sales" />
+              : <HomeBentoDashboard key={tab} tab={tab} />
+      }
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import MetricCard from "./MetricCard";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import ViewTabs from "./ViewTabs";
+import HeartButton from "./HeartButton";
 
 const CHART_DATA = [
   { date:"May 3",  value:0 },       { date:"May 4",  value:12000 },
@@ -252,7 +253,23 @@ export default function JourneysView() {
     ];
   }
 
-  const displayRows = rows.map((r) => ({ ...r, menuItems: makeMenu(r) }));
+  const displayRows = rows.map((r) => ({
+    ...r,
+    menuItems: makeMenu(r),
+    rowActions: (
+      <HeartButton
+        hoverOnly
+        widget={{
+          id: `journey-${r.id}`,
+          type: "journey",
+          label: String(r.cells.name),
+          sublabel: String((r.cells.status as any)?.label ?? ""),
+          size: "sm",
+          href: String(r.href ?? ""),
+        }}
+      />
+    ),
+  }));
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
@@ -268,18 +285,46 @@ export default function JourneysView() {
 
       {/* Metric cards */}
       <div className="flex flex-col sm:flex-row gap-4 px-4 pt-3 pb-4 animate-fade-up">
-        <MetricCard
-          value="$15,047,484.74"
-          label="Total revenue"
-          change="-- vs. previous period"
-          data={CHART_DATA}
-        />
-        <MetricCard
-          value="$7,523,742.37"
-          label="Intempt attributed revenue"
-          change="-- vs. previous period"
-          data={CHART_DATA_HALF}
-        />
+        <div className="relative flex-1 min-w-0">
+          <MetricCard
+            value="$15,047,484.74"
+            label="Total revenue"
+            change="-- vs. previous period"
+            data={CHART_DATA}
+          />
+          <div className="absolute right-3 top-3">
+            <HeartButton
+              widget={{
+                id: "journeys-total-revenue",
+                type: "kpi",
+                label: "Total revenue",
+                sublabel: "Journeys",
+                size: "md",
+                meta: { value: "$15,047,484.74", change: "-- vs. previous period", sparkline: CHART_DATA.map(d => d.value) },
+              }}
+            />
+          </div>
+        </div>
+        <div className="relative flex-1 min-w-0">
+          <MetricCard
+            value="$7,523,742.37"
+            label="Intempt attributed revenue"
+            change="-- vs. previous period"
+            data={CHART_DATA_HALF}
+          />
+          <div className="absolute right-3 top-3">
+            <HeartButton
+              widget={{
+                id: "journeys-attributed-revenue",
+                type: "kpi",
+                label: "Intempt attributed revenue",
+                sublabel: "Journeys",
+                size: "md",
+                meta: { value: "$7,523,742.37", change: "-- vs. previous period", sparkline: CHART_DATA_HALF.map(d => d.value) },
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="sticky top-0 flex flex-col px-4 pb-4" style={{ height: "calc(100vh - 60px)" }}>

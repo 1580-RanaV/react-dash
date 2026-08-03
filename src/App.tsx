@@ -22,6 +22,7 @@ import BluFullscreenView from "./components/BluFullscreenView";
 import { RecipeDetailView, RECIPES } from "./components/RecipesView";
 import RecipeCanvasView from "./components/RecipeCanvasView";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
+import PinboardView from "./components/PinboardView";
 
 function RecipeCanvasPage() {
   const navigate = useNavigate();
@@ -134,6 +135,7 @@ export default function App() {
               <DashboardShell>
                 <Routes>
                   <Route path="/home" element={<DashboardView view="home" />} />
+                  <Route path="/home/pinboard" element={<PinboardView />} />
                   <Route path="/users/:id/*" element={<UserDetailView />} />
                   <Route path="/accounts/:id/*" element={<AccountDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />

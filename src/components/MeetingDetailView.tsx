@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import BackButton from "./BackButton";
+import HeartButton from "./HeartButton";
 import {
   CalendarDays,
   Check,
@@ -173,6 +174,84 @@ function formatPlayerTime(seconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+export function MeetingVideoPlayer({ compact = false }: { compact?: boolean }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [volume, setVolume] = useState(72);
+  const [seekNudge, setSeekNudge] = useState<null | "-10" | "+10">(null);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = window.setInterval(() => {
+      setCurrentTime((t) => {
+        if (t >= MEETING_DURATION) { setIsPlaying(false); return MEETING_DURATION; }
+        return t + 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [isPlaying]);
+
+  function seekBy(amount: number) {
+    setCurrentTime((t) => Math.max(0, Math.min(MEETING_DURATION, t + amount)));
+    setSeekNudge(amount > 0 ? "+10" : "-10");
+    window.setTimeout(() => setSeekNudge(null), 520);
+  }
+
+  const progress = (currentTime / MEETING_DURATION) * 100;
+
+  return (
+    <div className="relative flex w-full h-full items-center justify-center overflow-hidden rounded-xl bg-black">
+      <button type="button" onClick={() => setIsPlaying((p) => !p)} className="absolute inset-0" aria-label={isPlaying ? "Pause" : "Play"} />
+
+      {!isPlaying && (
+        <div className="pointer-events-none flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+          <Play size={20} className="text-white" style={{ marginLeft: 2 }} fill="currentColor" />
+        </div>
+      )}
+
+      {seekNudge && (
+        <div className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full bg-white/12 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-md">
+          {seekNudge}s
+        </div>
+      )}
+
+      <div className={`absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center rounded-full bg-black/50 text-white backdrop-blur-md ${compact ? "gap-2 px-3 py-1.5" : "gap-3 px-4 py-2"}`}>
+        {!compact && (
+          <button type="button" onClick={() => seekBy(-10)} className="inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/12" aria-label="Back 10s">
+            <RotateCcw size={14} />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsPlaying((p) => !p)}
+          className={`inline-flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform ${compact ? "h-7 w-7" : "h-9 w-9"}`}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? <Pause size={compact ? 12 : 16} /> : <Play size={compact ? 12 : 16} fill="currentColor" />}
+        </button>
+        {!compact && (
+          <button type="button" onClick={() => seekBy(10)} className="inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/12" aria-label="Forward 10s">
+            <RotateCw size={14} />
+          </button>
+        )}
+        <span className="whitespace-nowrap text-xs font-medium">
+          {formatPlayerTime(currentTime)} / {formatPlayerTime(MEETING_DURATION)}
+        </span>
+        {!compact && (
+          <label className="flex items-center gap-2">
+            <Volume2 size={14} />
+            <input type="range" min="0" max="100" value={volume} onChange={(e) => setVolume(Number(e.target.value))} className="h-1 w-20 cursor-pointer accent-white" aria-label="Volume" />
+          </label>
+        )}
+      </div>
+
+      <div className="absolute inset-x-4 bottom-1 h-0.5 overflow-hidden rounded-full bg-white/15">
+        <div className="h-full rounded-full bg-white transition-all duration-300" style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function MeetingDetailView() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -309,7 +388,10 @@ export default function MeetingDetailView() {
         style={{ borderColor: "var(--border)", background: "var(--content-bg)" }}
       >
         <BackButton href="/meetings" />
-        <span className="truncate text-sm font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
+        <span className="flex-1 truncate text-sm font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
+        <HeartButton
+          widget={{ id: "meeting-rd-check-in", type: "meeting", label: "R&D Check-in", size: "sm", meta: { meetingType: "recording" } }}
+        />
       </div>
 
       <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,900px)_minmax(420px,1fr)] gap-0">

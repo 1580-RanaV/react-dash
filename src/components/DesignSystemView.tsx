@@ -5,6 +5,7 @@ import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
 import DesignThemeDetailView, { type ThemePalette } from "./DesignThemeDetailView";
+import HeartButton from "./HeartButton";
 
 type Palette = ThemePalette;
 
@@ -40,9 +41,14 @@ function PaletteCard({ palette, isNew = false, onClick }: { palette: Palette; is
   return (
     <div
       onClick={onClick}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl transition-shadow hover:shadow-lg"
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl transition-shadow hover:shadow-lg"
       style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
     >
+      <HeartButton
+        hoverOnly
+        widget={{ id: `design-system-${palette.id}`, type: "design", label: name, size: "sm", meta: { colors } }}
+        className="absolute right-2 top-2 z-10"
+      />
       <div className="flex h-28">
         {colors.map((color, i) => (
           <div key={i} className="flex-1" style={{ background: color }} />

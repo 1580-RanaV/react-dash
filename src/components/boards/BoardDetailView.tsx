@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { BOARDS_DATA } from "./boardsData";
 import InsightsTab from "./InsightsTab";
+import HeartButton from "../HeartButton";
 
 type TabKey = "insights" | "funnels" | "retention";
 
@@ -163,13 +164,24 @@ export default function BoardDetailView({ id }: { id: string }) {
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">{board.title}</span>
         </div>
 
-        {/* Tabs — below name on mobile, right-aligned on desktop */}
-        <div className="shrink-0">
+        {/* Tabs + heart — below name on mobile, right-aligned on desktop */}
+        <div className="shrink-0 flex items-center gap-2">
           <SubTabCorner
             tabs={TABS}
             active={activeTab}
             onChange={(k) => setActiveTab(k as TabKey)}
           />
+          <div className="group">
+            <HeartButton
+              widget={{
+                id: `board-${board.id}`,
+                type: "report",
+                label: board.title,
+                size: "md",
+                meta: { boardId: board.id },
+              }}
+            />
+          </div>
         </div>
       </div>
 

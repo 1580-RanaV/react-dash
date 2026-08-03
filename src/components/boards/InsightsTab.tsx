@@ -26,6 +26,36 @@ const TABLE_ROWS = [
   { key: "b", label: "Session End",   color: "#9580FF", total: 1103460, avg: 157637, values: [90965, 108647, 87614, 247978, 102799, 465457, 0] },
 ];
 
+export function InsightsMiniChart({ height = 120 }: { height?: number | string }) {
+  return (
+    <div style={{ height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={CHART_DATA} margin={{ top: 4, right: 2, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="mgradA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#0080FF" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#0080FF" stopOpacity={0.01} />
+            </linearGradient>
+            <linearGradient id="mgradB" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#9580FF" stopOpacity={0.12} />
+              <stop offset="95%" stopColor="#9580FF" stopOpacity={0.01} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+          <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} dy={4} />
+          <YAxis hide />
+          <Tooltip
+            contentStyle={{ fontSize: 11, padding: "4px 8px", background: "var(--content-bg)", border: "1px solid var(--border)", borderRadius: 8 }}
+            labelStyle={{ color: "var(--fg)", fontWeight: 600 }}
+          />
+          <Area type="monotone" dataKey="a" name="Session start" stroke="#0080FF" strokeWidth={1.5} fill="url(#mgradA)" dot={false} />
+          <Area type="monotone" dataKey="b" name="Session End"   stroke="#9580FF" strokeWidth={1.5} fill="url(#mgradB)" dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function fmtY(v: number) {
   if (v === 0) return "0";
   if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ExternalLink, Maximize2, X } from "lucide-react";
 
 import BackButton from "./BackButton";
+import HeartButton from "./HeartButton";
 
 const specs = [
   ["Link", "https://fieldsusa.com/product/pavashot-c5-5-capsaicin-round"],
@@ -24,12 +25,23 @@ export default function ProductDetailView() {
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--content-bg)" }}>
       {/* Top bar */}
       <div className="shrink-0 flex items-center px-5 py-2.5 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 text-sm min-w-0">
+        <div className="flex items-center gap-2 text-sm min-w-0 flex-1">
           <BackButton href="/catalog" />
           <span className="truncate font-medium text-stone-900 dark:text-stone-100">
             PavaShot C5 OC Rounds 5% Capsaicin .68 Cal Projectiles
           </span>
         </div>
+        <HeartButton
+          widget={{
+            id: "product-42338",
+            type: "product",
+            label: "PavaShot C5 OC Rounds 5% Capsaicin .68 Cal",
+            size: "sm",
+            href: "/catalog/products/42338",
+            meta: { image: "/pava.png" },
+          }}
+          className="shrink-0"
+        />
       </div>
 
       {/* Body */}
