@@ -17,6 +17,7 @@ import DateRangePicker from "./DateRangePicker";
 import MetricCard from "./MetricCard";
 import ExperienceDecisionButton, { type ExperienceStatus } from "./ExperienceDecisionButton";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import HeartButton from "./HeartButton";
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
@@ -982,20 +983,60 @@ export default function ExperienceDetailView({ id }: { id: string }) {
 
           {/* Metric cards */}
           <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-5 pt-3 pb-2 animate-fade-up">
-            <MetricCard
-              value="7,140"
-              label="Cumulative users"
-              change="-- vs. previous period"
-              data={USERS_DATA}
-              variantLabel={{ letter: "A", name: "Control", color: "#3F8CB2" }}
-            />
-            <MetricCard
-              value="24,276"
-              label="Cumulative impressions"
-              change="-- vs. previous period"
-              data={IMPRESSIONS_DATA}
-              variantLabel={{ letter: "B", name: "Variant 1", color: "#9580FF" }}
-            />
+            <div className="relative flex-1 min-w-0">
+              <MetricCard
+                value="7,140"
+                label="Cumulative users"
+                change="-- vs. previous period"
+                data={USERS_DATA}
+                variantLabel={{ letter: "A", name: "Control", color: "#3F8CB2" }}
+              />
+              <div className="absolute right-3 top-3">
+                <HeartButton
+                  widget={{
+                    id: `experience-${id}-cumulative-users`,
+                    type: "kpi",
+                    label: "Cumulative users",
+                    sublabel: exp.title,
+                    size: "md",
+                    href: `/experiences/${id}?tab=results`,
+                    meta: {
+                      value: "7,140",
+                      change: "-- vs. previous period",
+                      sparkline: USERS_DATA.map((d) => d.value),
+                      chartPoints: USERS_DATA,
+                    },
+                  }}
+                />
+              </div>
+            </div>
+            <div className="relative flex-1 min-w-0">
+              <MetricCard
+                value="24,276"
+                label="Cumulative impressions"
+                change="-- vs. previous period"
+                data={IMPRESSIONS_DATA}
+                variantLabel={{ letter: "B", name: "Variant 1", color: "#9580FF" }}
+              />
+              <div className="absolute right-3 top-3">
+                <HeartButton
+                  widget={{
+                    id: `experience-${id}-cumulative-impressions`,
+                    type: "kpi",
+                    label: "Cumulative impressions",
+                    sublabel: exp.title,
+                    size: "md",
+                    href: `/experiences/${id}?tab=results`,
+                    meta: {
+                      value: "24,276",
+                      change: "-- vs. previous period",
+                      sparkline: IMPRESSIONS_DATA.map((d) => d.value),
+                      chartPoints: IMPRESSIONS_DATA,
+                    },
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Control bar */}

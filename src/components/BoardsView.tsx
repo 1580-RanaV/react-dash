@@ -183,6 +183,13 @@ function HBarCard({ id, title, sub, tabs, activeTab, onTab, sub2Active, onSub2, 
   sub2Active: string; onSub2: (v: string) => void;
   data: { name: string; pct: number; users: number | string; prefix?: React.ReactNode }[];
 }) {
+  const rows = data.map(({ name, pct, users, prefix }) => ({
+    name,
+    pct,
+    users,
+    prefixLabel: typeof prefix === "string" ? prefix : undefined,
+  }));
+
   return (
     <div className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
       <div className="flex items-center justify-between mb-3">
@@ -198,7 +205,21 @@ function HBarCard({ id, title, sub, tabs, activeTab, onTab, sub2Active, onSub2, 
             Top 10 <ChevronDown size={10} />
           </button>
           <SubToggle options={["Users", "Revenue"]} active={sub2Active} onChange={onSub2} />
-          <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} />
+          <HeartButton
+            widget={{
+              id,
+              type: "report",
+              label: title,
+              size: "md",
+              href: "/boards?tab=traffic",
+              meta: {
+                reportType: "traffic-bars",
+                activeTab,
+                metric: sub2Active,
+                rows,
+              },
+            }}
+          />
         </div>
       </div>
       <p className="text-base font-semibold text-stone-800 dark:text-stone-200">{title}</p>
@@ -233,7 +254,16 @@ function TrafficCharts() {
             <p className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-1.5">{value}</p>
             <p className="text-xs text-rose-500 flex items-center gap-1"><TrendingDown size={10} className="shrink-0" />{change}</p>
             <div className="absolute right-2 top-2">
-              <HeartButton widget={{ id, type: "kpi", label, size: "sm", meta: { value } }} />
+              <HeartButton
+                widget={{
+                  id,
+                  type: "kpi",
+                  label,
+                  size: "sm",
+                  href: "/boards?tab=traffic",
+                  meta: { value, change },
+                }}
+              />
             </div>
           </div>
         ))}
@@ -291,7 +321,21 @@ function RevenueCharts() {
               <p className="text-xs text-stone-400 mt-0.5">Daily unique visitors (bars) and cumulative revenue (line) over the selected period</p>
             </div>
           </div>
-          <HeartButton widget={{ id: "board-traffic-revenue-overview", type: "report", label: "Traffic & Revenue Overview", size: "sm" }} className="shrink-0" />
+          <HeartButton
+            widget={{
+              id: "board-traffic-revenue-overview",
+              type: "report",
+              label: "Traffic & Revenue Overview",
+              size: "md",
+              href: "/boards?tab=revenue",
+              meta: {
+                reportType: "revenue-chart",
+                chartKind: "traffic-revenue",
+                chartPoints: DAILY_DATA,
+              },
+            }}
+            className="shrink-0"
+          />
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={DAILY_DATA} margin={{ top: 20, right: 20, bottom: 0, left: 0 }}>
@@ -312,7 +356,9 @@ function RevenueCharts() {
         {[
           { id: "board-purchase-events",   title: "Purchase Events",       sub: "Number of completed purchase transactions", big: "0",  bigSub: "total events",  color: "#00AAFF" },
           { id: "board-purchase-revenue",  title: "Total Purchase Revenue", sub: "Total revenue from completed purchases",   big: "$0", bigSub: "total revenue", color: "#59B277" },
-        ].map(({ id, title, sub, big, bigSub, color }) => (
+        ].map(({ id, title, sub, big, bigSub, color }) => {
+          const chartPoints = DAILY_DATA.map((d) => ({ date: d.date, value: 0 }));
+          return (
           <div key={title} className="rounded-xl p-5" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -322,7 +368,25 @@ function RevenueCharts() {
                 </p>
                 <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
               </div>
-              <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} className="shrink-0" />
+              <HeartButton
+                widget={{
+                  id,
+                  type: "report",
+                  label: title,
+                  size: "md",
+                  href: "/boards?tab=revenue",
+                  meta: {
+                    reportType: "revenue-chart",
+                    chartKind: "area",
+                    value: big,
+                    bigSub,
+                    change: "+0.0%",
+                    color,
+                    chartPoints,
+                  },
+                }}
+                className="shrink-0"
+              />
             </div>
             <p className="mt-3 mb-0.5">
               <span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}
@@ -330,7 +394,7 @@ function RevenueCharts() {
             </p>
             <p className="text-xs text-emerald-500 mb-3">+0.0% vs Apr 14, 2026 – May 14, 2026</p>
             <ResponsiveContainer width="100%" height={150}>
-              <AreaChart data={DAILY_DATA.map((d) => ({ date: d.date, value: 0 }))} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <AreaChart data={chartPoints} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
                 <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} ticks={[0, 1, 2, 3, 4]} />
                 <Tooltip content={<ChartTooltip />} />
@@ -338,7 +402,8 @@ function RevenueCharts() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );
@@ -359,7 +424,24 @@ function EngChart({ id, title, sub, big, bigSub, change, data, color }: {
           </p>
           <p className="text-xs text-stone-400 mt-0.5">{sub}</p>
         </div>
-        <HeartButton widget={{ id, type: "report", label: title, size: "sm" }} className="shrink-0" />
+        <HeartButton
+          widget={{
+            id,
+            type: "report",
+            label: title,
+            size: "md",
+            href: "/boards?tab=engagement",
+            meta: {
+              reportType: "engagement-chart",
+              value: big,
+              bigSub,
+              change,
+              color,
+              chartPoints: data,
+            },
+          }}
+          className="shrink-0"
+        />
       </div>
       <p className="mt-3 mb-0.5">
         <span className="text-xl font-bold text-stone-900 dark:text-stone-100">{big}</span>{" "}

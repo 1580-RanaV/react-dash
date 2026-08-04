@@ -390,7 +390,7 @@ export default function MeetingDetailView() {
         <BackButton href="/meetings" />
         <span className="flex-1 truncate text-sm font-medium text-stone-900 dark:text-stone-100">R&amp;D check-in</span>
         <HeartButton
-          widget={{ id: "meeting-rd-check-in", type: "meeting", label: "R&D Check-in", size: "sm", meta: { meetingType: "recording" } }}
+          widget={{ id: "meeting-rd-check-in", type: "meeting", label: "R&D Check-in", size: "sm", href: "/meetings/rd-check-in", meta: { meetingType: "recording" } }}
         />
       </div>
 

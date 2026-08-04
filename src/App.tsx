@@ -134,8 +134,8 @@ export default function App() {
             element={
               <DashboardShell>
                 <Routes>
-                  <Route path="/home" element={<DashboardView view="home" />} />
-                  <Route path="/home/pinboard" element={<PinboardView />} />
+                  <Route path="/home" element={<PinboardView />} />
+                  <Route path="/home/pinboard" element={<Navigate to="/home" replace />} />
                   <Route path="/users/:id/*" element={<UserDetailView />} />
                   <Route path="/accounts/:id/*" element={<AccountDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />

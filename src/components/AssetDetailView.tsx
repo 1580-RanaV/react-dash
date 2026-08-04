@@ -19,6 +19,18 @@ const ASSET_NAMES: Record<string, string> = {
   "a12": "change character's pink pants to grey shorts",
 };
 
+const IMAGE_ASSETS: Record<string, { src: string; width: number; height: number }> = {
+  a4:  { src: "/gpt-img.png", width: 500,  height: 500 },
+  a5:  { src: "/pava.png",    width: 1280, height: 853 },
+  a6:  { src: "/hero.png",    width: 1600, height: 1200 },
+  a7:  { src: "/gpt-img.png", width: 500,  height: 500 },
+  a8:  { src: "/pava.png",    width: 1280, height: 853 },
+  a9:  { src: "/hero.png",    width: 1600, height: 1200 },
+  a10: { src: "/hero.png",    width: 1600, height: 1200 },
+  a11: { src: "/pava.png",    width: 1280, height: 853 },
+  a12: { src: "/gpt-img.png", width: 500,  height: 500 },
+};
+
 export const EMAIL_TEMPLATES: Record<string, string> = {
   a1: `<!DOCTYPE html>
 <html lang="en">
@@ -100,6 +112,7 @@ export default function AssetDetailView({ id, onBack }: { id: string; onBack: ()
 function AssetDetailViewInner({ id, onBack }: { id: string; onBack: () => void }) {
   const title = ASSET_NAMES[id] ?? "Untitled asset";
   const emailHtml = EMAIL_TEMPLATES[id];
+  const imageAsset = IMAGE_ASSETS[id];
   const dragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -151,17 +164,36 @@ function AssetDetailViewInner({ id, onBack }: { id: string; onBack: () => void }
         <span className="flex-1 text-sm font-medium text-stone-900 dark:text-stone-100 truncate">
           {title}
         </span>
-        {emailHtml && (
+        {emailHtml ? (
           <HeartButton
             widget={{
               id: `asset-${id}`,
               type: "asset",
               label: title,
               size: "sm",
+              href: `/asset-library/${id}`,
               meta: { assetId: id, isEmail: true },
             }}
           />
-        )}
+        ) : imageAsset ? (
+          <HeartButton
+            widget={{
+              id: `asset-${id}`,
+              type: "asset",
+              label: title,
+              size: "sm",
+              href: `/asset-library/${id}`,
+              meta: {
+                assetId: id,
+                assetKind: "image",
+                image: imageAsset.src,
+                width: imageAsset.width,
+                height: imageAsset.height,
+                aspectRatio: imageAsset.width / imageAsset.height,
+              },
+            }}
+          />
+        ) : null}
       </div>
 
       {/* Dotted canvas */}
@@ -195,6 +227,20 @@ function AssetDetailViewInner({ id, onBack }: { id: string; onBack: () => void }
                 style={{ width: 600, height: 820, border: "none", display: "block" }}
                 title={title}
               />
+            </div>
+          ) : imageAsset ? (
+            <div
+              className="flex items-center justify-center overflow-hidden rounded-2xl bg-white dark:bg-stone-950"
+              style={{
+                width: Math.min(imageAsset.width, 720),
+                aspectRatio: imageAsset.width / imageAsset.height,
+                boxShadow: "0 8px 48px rgba(0,0,0,0.18)",
+                border: "1px solid var(--border)",
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseMove={(e) => e.stopPropagation()}
+            >
+              <img src={imageAsset.src} alt={title} className="h-full w-full object-contain" />
             </div>
           ) : null}
         </div>

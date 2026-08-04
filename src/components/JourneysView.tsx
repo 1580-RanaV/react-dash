@@ -300,7 +300,7 @@ export default function JourneysView() {
                 label: "Total revenue",
                 sublabel: "Journeys",
                 size: "md",
-                meta: { value: "$15,047,484.74", change: "-- vs. previous period", sparkline: CHART_DATA.map(d => d.value) },
+                meta: { value: "$15,047,484.74", change: "-- vs. previous period", sparkline: CHART_DATA.map(d => d.value), chartPoints: CHART_DATA },
               }}
             />
           </div>
@@ -320,7 +320,7 @@ export default function JourneysView() {
                 label: "Intempt attributed revenue",
                 sublabel: "Journeys",
                 size: "md",
-                meta: { value: "$7,523,742.37", change: "-- vs. previous period", sparkline: CHART_DATA_HALF.map(d => d.value) },
+                meta: { value: "$7,523,742.37", change: "-- vs. previous period", sparkline: CHART_DATA_HALF.map(d => d.value), chartPoints: CHART_DATA_HALF },
               }}
             />
           </div>

@@ -13,6 +13,12 @@ export type GridCard = {
   image?: string;
 };
 
+const DETAIL_ROUTE_BY_WIDGET: Record<string, string> = {
+  "new avatar": "/avatars",
+  "new scene": "/scenes",
+  "new pose": "/poses",
+};
+
 const SORT_OPTIONS = [
   { key: "my-first",      label: "My characters first" },
   { key: "presets-first", label: "Presets first" },
@@ -162,6 +168,7 @@ export default function GridCardView({
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filtered.map((card) => {
             const widgetPrefix = newLabel.toLowerCase();
+            const detailBase = DETAIL_ROUTE_BY_WIDGET[widgetPrefix];
             return (
               <div
                 key={card.id}
@@ -191,6 +198,7 @@ export default function GridCardView({
                       type: "asset",
                       label: card.name,
                       size: "sm",
+                      href: detailBase ? `${detailBase}/${card.id}` : undefined,
                       meta: { image: card.image, gradient: card.gradient, widgetType: widgetPrefix },
                     }}
                   />

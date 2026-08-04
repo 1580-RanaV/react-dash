@@ -1,7 +1,7 @@
 
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import BackButton from "../BackButton";
 import SubTabCorner from "../SubTabCorner";
 import {
@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { BOARDS_DATA } from "./boardsData";
 import InsightsTab from "./InsightsTab";
+import FunnelsTab from "./FunnelsTab";
+import RetentionTab from "./RetentionTab";
 import HeartButton from "../HeartButton";
 
 type TabKey = "insights" | "funnels" | "retention";
@@ -149,8 +151,24 @@ function FunnelStepItem({ number, event }: { number: number; event: string }) {
 
 export default function BoardDetailView({ id }: { id: string }) {
   const board = BOARDS_DATA.find((b) => b.id === id) ?? BOARDS_DATA[0];
-  const [activeTab, setActiveTab] = useState<TabKey>("insights");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
+    ? searchParams.get("tab") as TabKey
+    : "insights";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [unit, setUnit] = useState<"users" | "accounts">("users");
+
+  function changeTab(tab: TabKey) {
+    setActiveTab(tab);
+    setSearchParams(tab === "insights" ? {} : { tab });
+  }
+
+  const reportLabel =
+    activeTab === "funnels"
+      ? `${board.title} funnel`
+      : activeTab === "retention"
+      ? `${board.title} retention`
+      : `${board.title} insights`;
 
   return (
     <div className="flex flex-col h-full animate-fade-up">
@@ -169,16 +187,17 @@ export default function BoardDetailView({ id }: { id: string }) {
           <SubTabCorner
             tabs={TABS}
             active={activeTab}
-            onChange={(k) => setActiveTab(k as TabKey)}
+            onChange={(k) => changeTab(k as TabKey)}
           />
           <div className="group">
             <HeartButton
               widget={{
-                id: `board-${board.id}`,
+                id: `board-${board.id}-${activeTab}`,
                 type: "report",
-                label: board.title,
+                label: reportLabel,
                 size: "md",
-                meta: { boardId: board.id },
+                href: `/boards/${board.id}${activeTab === "insights" ? "" : `?tab=${activeTab}`}`,
+                meta: { boardId: board.id, reportType: activeTab },
               }}
             />
           </div>
@@ -190,7 +209,7 @@ export default function BoardDetailView({ id }: { id: string }) {
 
         {/* Left: chart / tab content — full width on mobile, 70% on desktop */}
         <div className="flex flex-col w-full md:overflow-hidden md:basis-[70%] md:shrink-0">
-          <InsightsTab />
+          {activeTab === "funnels" ? <FunnelsTab /> : activeTab === "retention" ? <RetentionTab /> : <InsightsTab />}
         </div>
 
         {/* Right: config panel — full width on mobile (top border), 30% on desktop (left border) */}

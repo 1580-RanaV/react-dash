@@ -1,12 +1,6 @@
-import { useState, useEffect, useRef, cloneElement } from "react";
-import {
-  Heart, GripVertical, ChevronRight, Plug, BarChart3,
-  FileImage, Palette, TrendingUp, Activity, Video, FlaskConical,
-  LayoutGrid, LayoutTemplate, Play, Package, Shuffle,
-} from "lucide-react";
-import { MeetingVideoPlayer } from "./MeetingDetailView";
-import { EMAIL_TEMPLATES } from "./AssetDetailView";
-import { RECIPES, RECIPE_DATES, RECIPE_CREATORS } from "./RecipesView";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { ExternalLink, Heart, Play, RotateCcw } from "lucide-react";
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors,
@@ -17,8 +11,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useFavorites, type PinnedWidget } from "../lib/useFavorites";
+import { usePlan, PLAN_LABELS, type Plan } from "../lib/usePlan";
 import Greeting from "./Greeting";
-import { InsightsMiniChart } from "./boards/InsightsTab";
+import { WIDGET_REGISTRY } from "./widget-previews";
 
 // ── Tool logos for empty state ────────────────────────────────────────────────
 
@@ -50,499 +45,74 @@ const TOOLS: Tool[] = [
   { domain: "freshdesk.com",       label: "Freshdesk"       },
 ];
 
-// ── Email preview (scales iframe to fit card width) ───────────────────────────
 
-function EmailPreviewFrame({ html, cardH = 220 }: { html: string; cardH?: number }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.5);
+// ── Card dispatcher — no DnD logic ────────────────────────────────────────────
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver((entries) => {
-      const w = entries[0].contentRect.width;
-      if (w > 0) setScale(w / 600);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  const iframeH = scale > 0 ? Math.ceil(cardH / scale) : 440;
-
-  return (
-    <div ref={wrapRef} className="w-full h-full overflow-hidden relative">
-      <iframe
-        srcDoc={html}
-        style={{
-          width: 600,
-          height: iframeH,
-          border: "none",
-          display: "block",
-          transformOrigin: "top left",
-          transform: `scale(${scale})`,
-          pointerEvents: "none",
-        }}
-        title="Email preview"
-      />
-    </div>
-  );
-}
-
-// ── Widget card ───────────────────────────────────────────────────────────────
-
-const WIDGET_ICON: Record<string, typeof Heart> = {
-  kpi:        TrendingUp,
-  report:     BarChart3,
-  design:     Palette,
-  asset:      FileImage,
-  journey:    Activity,
-  meeting:    Video,
-  recipe:     FlaskConical,
-  custom:     BarChart3,
-  product:    Package,
-  experience: Shuffle,
-};
-
-const SPARKLINE = [28, 32, 24, 40, 36, 45, 38, 52, 47, 58, 53, 62];
-
-function Sparkline({ values = SPARKLINE, color = "#0080FF" }: { values?: number[]; color?: string }) {
-  const max = Math.max(...values, 1);
-  const pts = values.map((v, i) => {
-    const x = values.length === 1 ? 50 : (i / (values.length - 1)) * 100;
-    const y = 28 - (v / max) * 24;
-    return `${x},${y}`;
-  }).join(" ");
-  return (
-    <svg viewBox="0 0 100 32" className="w-full h-8 overflow-visible">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points={`0,32 ${pts} 100,32`} fill={color} fillOpacity="0.08" stroke="none" />
-    </svg>
-  );
-}
-
-const CARD_STYLES = `
-  @keyframes heartbeat {
-    0%   { transform: scale(1);    }
-    20%  { transform: scale(1.6);  }
-    40%  { transform: scale(1);    }
-    65%  { transform: scale(1.35); }
-    100% { transform: scale(1);    }
-  }
-  @keyframes card-out {
-    0%   { opacity: 1; transform: scale(1);    }
-    40%  { opacity: 1; transform: scale(1.01); }
-    100% { opacity: 0; transform: scale(0.94); }
-  }
-`;
-
-function PinboardHeart({ onClick, removing }: { onClick: () => void; removing: boolean }) {
-  return (
-    <button
-      onClick={e => { e.stopPropagation(); onClick(); }}
-      onPointerDown={e => e.stopPropagation()}
-      className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-stone-900 text-red-500 transition-transform hover:scale-110"
-      style={{
-        boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
-        border: "1px solid var(--border)",
-        animation: removing ? "heartbeat 0.55s ease-in-out" : undefined,
-      }}
-      title="Remove from pinboard"
-    >
-      <Heart size={13} className="fill-current" />
-    </button>
-  );
-}
-
-// Pure presentational card — no DnD logic
 function WidgetCardInner({
   widget,
   onUnpin,
   isOverlay = false,
   dragHandleProps = {},
-  uniform = true,
 }: {
   widget: PinnedWidget;
   onUnpin?: () => void;
   isOverlay?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
-  uniform?: boolean;
 }) {
-  const [removing, setRemoving] = useState(false);
+  const entry = WIDGET_REGISTRY.find(e => e.matches(widget)) ?? WIDGET_REGISTRY[WIDGET_REGISTRY.length - 1];
+  return <entry.Render widget={widget} onUnpin={onUnpin} isOverlay={isOverlay} dragHandleProps={dragHandleProps} />;
+}
 
-  function handleUnpin() {
-    if (!onUnpin) return;
-    setRemoving(true);
-    setTimeout(onUnpin, 680);
+function inferWidgetHref(widget: PinnedWidget): string | undefined {
+  if (widget.href) return widget.href;
+
+  const widgetType = String(widget.meta?.widgetType ?? "").toLowerCase();
+  const id = widget.id;
+
+  if (widget.type === "meeting") return "/meetings/rd-check-in";
+  if (widget.type === "recipe" && widget.meta?.recipeId) return `/recipes/${widget.meta.recipeId}`;
+  if (widget.type === "asset" && widget.meta?.assetId) return `/asset-library/${widget.meta.assetId}`;
+  if (widget.type === "design" && id.startsWith("design-system-")) return `/design-system?theme=${id.replace("design-system-", "")}`;
+  if (widget.type === "journey" && id.startsWith("journey-")) return `/journeys/${id.replace("journey-", "")}`;
+  if (widget.type === "product") return id.startsWith("product-") ? `/catalog/products/${id.replace("product-", "")}` : "/catalog";
+
+  if (widget.type === "asset" && widgetType.includes("avatar")) return `/avatars/${id.replace(/^new avatar-/, "")}`;
+  if (widget.type === "asset" && widgetType.includes("scene")) return `/scenes/${id.replace(/^new scene-/, "")}`;
+  if (widget.type === "asset" && widgetType.includes("pose")) return `/poses/${id.replace(/^new pose-/, "")}`;
+  if (widget.type === "kpi" && String(widget.sublabel ?? "").toLowerCase() === "journeys") return "/journeys";
+  if (widget.type === "report") return "/boards";
+
+  switch (widget.type) {
+    case "kpi":
+      return "/boards";
+    case "design":
+      return "/design-system";
+    case "asset":
+      return "/asset-library";
+    case "journey":
+      return "/journeys";
+    case "recipe":
+      return "/recipes";
+    case "experience":
+      return "/experiences";
+    case "custom":
+      return "/home";
+    default:
+      return "/home";
   }
+}
 
-  const removeStyle = removing ? { animation: "card-out 0.65s ease-in forwards" } : undefined;
-  const overlayStyle = isOverlay
-    ? { boxShadow: "0 16px 48px rgba(0,0,0,0.22)", transform: "scale(1.03)", cursor: "grabbing" }
-    : {};
-
-  // ── Design-system card ────────────────────────────────────────────────────
-  if (widget.type === "design") {
-    const colors = (widget.meta?.colors as string[] | undefined) ?? ["#ccc", "#eee", "#aaa", "#f5f5f5"];
-    return (
-      <div
-        className={`group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col ${uniform ? "h-55" : "h-44"}`}
-        style={{ background: "var(--content-bg)", border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-        {...dragHandleProps}
-      >
-        <style>{CARD_STYLES}</style>
-        <div className="flex flex-1 min-h-0">
-          {colors.map((c, i) => <div key={i} className="flex-1" style={{ background: c }} />)}
-        </div>
-        <div className="shrink-0 flex items-center gap-3 px-4 py-3.5" style={{ background: "var(--content-bg)" }}>
-          <div
-            className="h-7 w-7 shrink-0 rounded-full ring-2 ring-white dark:ring-stone-800"
-            style={{ background: `conic-gradient(${colors[0]} 0deg 180deg, ${colors[1]} 180deg 360deg)` }}
-          />
-          <span className="text-sm font-semibold text-stone-900 dark:text-stone-100 truncate">{widget.label}</span>
-        </div>
-        {!isOverlay && onUnpin && (
-          <div className="absolute right-2.5 top-2.5">
-            <PinboardHeart onClick={handleUnpin} removing={removing} />
-          </div>
-        )}
-        <span className="absolute left-2 top-3 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none text-stone-400">
-          <GripVertical size={14} />
-        </span>
-      </div>
-    );
-  }
-
-  // ── Recipe card ───────────────────────────────────────────────────────────
-  if (widget.type === "recipe") {
-    const recipe = RECIPES.find(r => r.id === String(widget.meta?.recipeId ?? ""));
-    if (recipe) {
-      const chips = Array.from(new Set([...recipe.spec.areas, ...recipe.spec.products])).slice(0, 2);
-      const creator = RECIPE_CREATORS[recipe.id];
-
-      if (!uniform) {
-        // Natural mode — mirrors the recipes homepage card exactly
-        return (
-          <div
-            className="group relative rounded-xl p-5 overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col gap-3"
-            style={{ background: "var(--content-bg)", border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-            {...dragHandleProps}
-          >
-            <style>{CARD_STYLES}</style>
-            <span className="pointer-events-none absolute -right-3 -bottom-3 select-none text-stone-900 dark:text-stone-100 opacity-[0.045] dark:opacity-[0.06]">
-              {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
-            </span>
-            <div className="shrink-0 flex items-center justify-between gap-2">
-              {creator && (
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: creator.color }}>
-                    {creator.initials}
-                  </span>
-                  <span className="text-xs text-stone-600 dark:text-stone-400 truncate">{creator.name}</span>
-                </div>
-              )}
-              <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">{RECIPE_DATES[recipe.id]}</span>
-            </div>
-            <div className="flex-1 pr-6">
-              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1.5">{recipe.title}</p>
-              <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3">{recipe.description}</p>
-            </div>
-            {chips.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {chips.map(chip => (
-                  <span key={chip} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            )}
-            {!isOverlay && onUnpin && (
-              <div className="absolute right-2 top-2">
-                <PinboardHeart onClick={handleUnpin} removing={removing} />
-              </div>
-            )}
-            <span className="absolute left-2 top-4 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none text-stone-300 dark:text-stone-600">
-              <GripVertical size={14} />
-            </span>
-          </div>
-        );
-      }
-
-      // Uniform mode
-      return (
-        <div
-          className="group relative rounded-xl p-4 overflow-hidden select-none cursor-grab active:cursor-grabbing h-55 flex flex-col gap-2.5"
-          style={{ background: "var(--content-bg)", border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-          {...dragHandleProps}
-        >
-          <style>{CARD_STYLES}</style>
-          <span className="pointer-events-none absolute -right-3 -bottom-3 select-none text-stone-900 dark:text-stone-100 opacity-[0.045] dark:opacity-[0.06]">
-            {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
-          </span>
-          <div className="shrink-0 flex items-center justify-between gap-2">
-            {creator && (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: creator.color }}>
-                  {creator.initials}
-                </span>
-                <span className="text-xs text-stone-600 dark:text-stone-400 truncate">{creator.name}</span>
-              </div>
-            )}
-            <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">{RECIPE_DATES[recipe.id]}</span>
-          </div>
-          <div className="flex-1 min-h-0 pr-6">
-            <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1.5 line-clamp-2">{recipe.title}</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3">{recipe.description}</p>
-          </div>
-          {chips.length > 0 && (
-            <div className="shrink-0 flex flex-wrap gap-1">
-              {chips.map(chip => (
-                <span key={chip} className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
-                  {chip}
-                </span>
-              ))}
-            </div>
-          )}
-          {!isOverlay && onUnpin && (
-            <div className="absolute right-2 top-2">
-              <PinboardHeart onClick={handleUnpin} removing={removing} />
-            </div>
-          )}
-          <span className="absolute left-2 top-4 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none text-stone-300 dark:text-stone-600">
-            <GripVertical size={14} />
-          </span>
-        </div>
-      );
-    }
-  }
-
-  // ── Email asset card ─────────────────────────────────────────────────────
-  const emailHtml = widget.type === "asset" && widget.meta?.assetId
-    ? EMAIL_TEMPLATES[widget.meta.assetId as string]
-    : null;
-
-  if (emailHtml) {
-    const emailCardH = uniform ? 220 : 288;
-    return (
-      <div
-        className={`group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col ${uniform ? "h-55" : "h-72"}`}
-        style={{ border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-        {...dragHandleProps}
-      >
-        <style>{CARD_STYLES}</style>
-        <div className="flex-1 min-h-0">
-          <EmailPreviewFrame html={emailHtml} cardH={emailCardH} />
-        </div>
-        {!isOverlay && onUnpin && (
-          <div className="absolute right-2 top-2">
-            <PinboardHeart onClick={handleUnpin} removing={removing} />
-          </div>
-        )}
-        <span className="absolute left-2 top-1/3 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none text-stone-400">
-          <GripVertical size={14} />
-        </span>
-      </div>
-    );
-  }
-
-  // ── Meeting recording card ────────────────────────────────────────────────
-  if (widget.type === "meeting") {
-    if (!uniform) {
-      // Natural mode — 16:9 video box + footer
-      return (
-        <div
-          className="group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col bg-stone-950"
-          style={{ border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-          {...dragHandleProps}
-        >
-          <style>{CARD_STYLES}</style>
-          <div className="aspect-video w-full">
-            <MeetingVideoPlayer compact={false} />
-          </div>
-          <div className="shrink-0 flex items-center gap-2.5 px-4 py-3">
-            <Video size={13} className="text-stone-400 shrink-0" />
-            <span className="text-sm font-semibold text-stone-100 truncate">{widget.label}</span>
-          </div>
-          {!isOverlay && onUnpin && (
-            <div className="absolute right-2 top-2">
-              <PinboardHeart onClick={handleUnpin} removing={removing} />
-            </div>
-          )}
-          <span className="absolute left-2 top-4 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none text-white/40">
-            <GripVertical size={14} />
-          </span>
-        </div>
-      );
-    }
-
-    // Uniform mode
-    return (
-      <div
-        className="group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing h-55 flex flex-col bg-black"
-        style={{ border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-        {...dragHandleProps}
-      >
-        <style>{CARD_STYLES}</style>
-        <div className="flex-1 min-h-0">
-          <MeetingVideoPlayer compact />
-        </div>
-        <div className="shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 bg-stone-950">
-          <Video size={12} className="text-stone-400 shrink-0" />
-          <span className="text-sm font-semibold text-stone-100 truncate">{widget.label}</span>
-        </div>
-        {!isOverlay && onUnpin && (
-          <div className="absolute right-2 top-2">
-            <PinboardHeart onClick={handleUnpin} removing={removing} />
-          </div>
-        )}
-        <span className="absolute left-2 top-1/3 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none text-white/40">
-          <GripVertical size={14} />
-        </span>
-      </div>
-    );
-  }
-
-  // ── Product card ─────────────────────────────────────────────────────────
-  if (widget.type === "product") {
-    const image = widget.meta?.image as string | undefined;
-    return (
-      <div
-        className={`group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col ${uniform ? "h-55" : "h-44"}`}
-        style={{ background: "var(--content-bg)", border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-        {...dragHandleProps}
-      >
-        <style>{CARD_STYLES}</style>
-        <div className="flex-1 min-h-0 flex items-center justify-center bg-stone-50 dark:bg-white/4 overflow-hidden">
-          {image
-            ? <img src={image} alt={widget.label} className="w-full h-full object-contain p-4" />
-            : <Package size={32} className="text-stone-300 dark:text-stone-600" />
-          }
-        </div>
-        <div className="shrink-0 px-4 py-3" style={{ borderTop: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">{widget.label}</p>
-        </div>
-        {!isOverlay && onUnpin && (
-          <div className="absolute right-2 top-2">
-            <PinboardHeart onClick={handleUnpin} removing={removing} />
-          </div>
-        )}
-        <span className="absolute left-2 top-4 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none text-stone-300 dark:text-stone-600">
-          <GripVertical size={14} />
-        </span>
-      </div>
-    );
-  }
-
-  // ── Generic card ──────────────────────────────────────────────────────────
-  const Icon = WIDGET_ICON[widget.type] ?? BarChart3;
-  const disconnected = widget.meta?.disconnected === true;
-
-  return (
-    <div
-      className={`group relative rounded-xl overflow-hidden select-none cursor-grab active:cursor-grabbing flex flex-col ${uniform ? "h-55" : "h-44"}`}
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)", ...removeStyle, ...overlayStyle }}
-      {...dragHandleProps}
-    >
-      <style>{CARD_STYLES}</style>
-      <span className="absolute left-2 top-4 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none text-stone-300 dark:text-stone-600">
-        <GripVertical size={14} />
-      </span>
-      {!isOverlay && onUnpin && (
-        <div className="absolute right-2 top-2">
-          <PinboardHeart onClick={handleUnpin} removing={removing} />
-        </div>
-      )}
-
-      <div className="px-4 pt-3 pb-0 flex flex-col flex-1 min-h-0">
-        <div className="shrink-0 flex items-center gap-2 mb-2 pr-8">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-white/8">
-            <Icon size={12} className="text-stone-500 dark:text-stone-400" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate text-stone-800 dark:text-stone-100">{widget.label}</p>
-            {widget.sublabel && (
-              <p className="text-[10px] text-stone-400 dark:text-stone-500">{widget.sublabel}</p>
-            )}
-          </div>
-        </div>
-
-        {disconnected ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 rounded-lg px-3 py-4 mb-4" style={{ background: "var(--muted)" }}>
-            <Plug size={14} className="text-stone-400" />
-            <p className="text-xs font-medium text-stone-600 dark:text-stone-300">
-              Connect {widget.source === "stripe" ? "Stripe" : "SDK"} to see this widget
-            </p>
-            <a href="/integrations" className="inline-flex h-7 items-center gap-1 rounded-lg px-3 text-xs font-semibold text-white" style={{ background: "#0080FF" }}>
-              Connect <ChevronRight size={10} />
-            </a>
-          </div>
-        ) : widget.type === "kpi" ? (
-          (() => {
-            const sparklineData = widget.meta?.sparkline as number[] | undefined;
-            const change = widget.meta?.change ? String(widget.meta.change) : "";
-            const badge  = widget.meta?.badge  ? String(widget.meta.badge)  : "";
-            const isPositive = badge.startsWith("+") || (change.startsWith("+") && !change.startsWith("+-"));
-            const isNegative = badge.startsWith("-") || change.startsWith("-");
-            return (
-              <div className="flex-1 flex flex-col justify-center pb-3">
-                <p className="text-[30px] font-bold tabular-nums tracking-tight leading-none text-stone-900 dark:text-stone-50">
-                  {String(widget.meta?.value ?? "—")}
-                </p>
-                {(badge || change) && (
-                  <div className="mt-2.5 flex items-center gap-1.5">
-                    {badge && (
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isPositive ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-400"
-                        : isNegative ? "bg-red-50 text-red-600 dark:bg-red-500/12 dark:text-red-400"
-                        : "bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400"
-                      }`}>{badge}</span>
-                    )}
-                    {change && (
-                      <span className="text-[11px] text-stone-400 dark:text-stone-500">{change}</span>
-                    )}
-                  </div>
-                )}
-                {sparklineData?.length ? (
-                  <div className="mt-3"><Sparkline values={sparklineData} /></div>
-                ) : null}
-              </div>
-            );
-          })()
-        ) : widget.type === "report" ? (
-          <div className="flex-1 min-h-0 -mx-4 relative">
-            <div className="absolute inset-0">
-              <InsightsMiniChart height="100%" />
-            </div>
-          </div>
-        ) : widget.type === "asset" && widget.meta?.gradient ? (
-          <div
-            className="flex-1 min-h-0 -mx-4 mb-0 relative overflow-hidden rounded-b-xl"
-            style={{ background: `linear-gradient(145deg, ${(widget.meta.gradient as string[])[0]}, ${(widget.meta.gradient as string[])[1]})` }}
-          >
-            {!!widget.meta.image && (
-              <img src={String(widget.meta.image)} alt={widget.label} className="absolute inset-0 h-full w-full object-cover object-center" />
-            )}
-            <div
-              className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
-              style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)" }}
-            >
-              <p className="text-xs font-semibold text-white capitalize">{String(widget.meta.widgetType ?? "")}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 mb-4 rounded-lg p-2" style={{ background: "var(--muted)" }}>
-            <FileImage size={14} className="text-stone-400" />
-            <p className="text-xs text-stone-500 truncate">{String(widget.meta?.filename ?? "Asset")}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+function isInteractiveTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && !!target.closest("button,a,input,textarea,select,iframe,[role='button']");
 }
 
 // ── Sortable wrapper ──────────────────────────────────────────────────────────
 
-function SortableWidgetCard({ widget, onUnpin, uniform }: { widget: PinnedWidget; onUnpin: () => void; uniform: boolean }) {
+function SortableWidgetCard({ widget, onUnpin, showError }: { widget: PinnedWidget; onUnpin: () => void; showError?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id });
+  const navigate = useNavigate();
+  const href = inferWidgetHref(widget);
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
 
   const wrapperStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -551,15 +121,88 @@ function SortableWidgetCard({ widget, onUnpin, uniform }: { widget: PinnedWidget
     zIndex: isDragging ? 1 : undefined,
   };
 
-  // Meeting cards span 2 columns in natural mode
-  const colSpan = !uniform && widget.type === "meeting" ? "col-span-2" : "col-span-1";
+  if (showError) {
+    return (
+      <div ref={setNodeRef} style={wrapperStyle} className="break-inside-avoid mb-3">
+        <div
+          className="relative rounded-xl overflow-hidden flex flex-col items-center justify-center gap-3 h-44 select-none"
+          style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+        >
+          <img src="/logo.png" alt="Intempt" className="h-6 w-auto opacity-50" />
+          <p className="text-xs text-stone-500 dark:text-stone-400 text-center px-6 leading-relaxed">
+            Couldn't load this widget
+          </p>
+          <button
+            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 transition-colors hover:bg-stone-100 dark:hover:bg-white/8"
+            style={{ border: "1px solid var(--border)" }}
+          >
+            <RotateCcw size={11} />
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function rememberPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  }
+
+  function movedSincePointerDown(e: React.MouseEvent<HTMLDivElement>) {
+    const start = pointerDownRef.current;
+    if (!start) return false;
+    return Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6;
+  }
+
+  function openWidget(e: React.MouseEvent<HTMLDivElement>) {
+    if (!href || isInteractiveTarget(e.target)) return;
+    if (movedSincePointerDown(e)) return;
+    openHref(href);
+  }
+
+  function openHref(targetHref: string) {
+    if (/^https?:\/\//.test(targetHref)) {
+      window.location.href = targetHref;
+      return;
+    }
+    navigate(targetHref);
+  }
+
+  function openFromButton(e: React.MouseEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    if (!href) return;
+    if (/^https?:\/\//.test(href)) {
+      window.location.href = href;
+      return;
+    }
+    openHref(href);
+  }
 
   return (
-    <div ref={setNodeRef} style={wrapperStyle} className={colSpan}>
+    <div
+      ref={setNodeRef}
+      style={wrapperStyle}
+      className={`group/pin relative break-inside-avoid mb-3 ${href ? "cursor-pointer" : ""}`}
+      onPointerDownCapture={rememberPointerDown}
+      onClick={openWidget}
+      title={href ? `Open ${widget.label}` : undefined}
+    >
+      {href && !isDragging && (
+        <button
+          type="button"
+          onClick={openFromButton}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="pointer-events-none absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-stone-600 opacity-0 shadow-sm transition-all hover:scale-105 hover:text-stone-900 group-hover/pin:pointer-events-auto group-hover/pin:opacity-100 dark:bg-stone-900/92 dark:text-stone-300 dark:hover:text-stone-100"
+          style={{ border: "1px solid var(--border)", backdropFilter: "blur(8px)" }}
+          aria-label={`Open ${widget.label}`}
+          title={`Open ${widget.label}`}
+        >
+          <ExternalLink size={13} />
+        </button>
+      )}
       <WidgetCardInner
         widget={widget}
         onUnpin={onUnpin}
-        uniform={uniform}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -661,56 +304,15 @@ function EmptyPinboard() {
 
 // ── View-mode toggle ──────────────────────────────────────────────────────────
 
-type ViewMode = "uniform" | "natural";
-const VIEW_MODE_KEY = "intempt:pinboard-view";
-
-function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
-  return (
-    <div
-      className="flex items-center rounded-lg p-0.5 gap-0.5"
-      style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
-    >
-      <button
-        onClick={() => onChange("uniform")}
-        title="Uniform grid"
-        className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-          mode === "uniform"
-            ? "bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm"
-            : "text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
-        }`}
-      >
-        <LayoutGrid size={13} />
-      </button>
-      <button
-        onClick={() => onChange("natural")}
-        title="Natural sizes"
-        className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-          mode === "natural"
-            ? "bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm"
-            : "text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
-        }`}
-      >
-        <LayoutTemplate size={13} />
-      </button>
-    </div>
-  );
-}
-
 // ── Main view ─────────────────────────────────────────────────────────────────
+
+const PLANS: Plan[] = ["free", "pro", "org", "enterprise", "error"];
 
 export default function PinboardView() {
   const { pinned, unpin, reorder } = useFavorites();
+  const { plan, setPlan, limit } = usePlan();
   const [items,    setItems]    = useState<string[]>(() => pinned.map(w => w.id));
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem(VIEW_MODE_KEY);
-    return saved === "natural" ? "natural" : "uniform";
-  });
-
-  function handleViewMode(m: ViewMode) {
-    setViewMode(m);
-    localStorage.setItem(VIEW_MODE_KEY, m);
-  }
 
   // Sync when pinned list changes (external pin/unpin)
   useEffect(() => {
@@ -731,7 +333,6 @@ export default function PinboardView() {
     .filter(Boolean) as PinnedWidget[];
 
   const activeWidget = activeId ? pinned.find(w => w.id === activeId) : null;
-  const uniform = viewMode === "uniform";
 
   function handleDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as string);
@@ -768,7 +369,31 @@ export default function PinboardView() {
         <div className="mb-5 flex items-center justify-between gap-3">
           <Greeting />
           <div className="flex items-center gap-2 shrink-0">
-            <ViewModeToggle mode={viewMode} onChange={handleViewMode} />
+            {/* Plan switcher */}
+            <div
+              className="flex items-center rounded-lg p-0.5 gap-0.5"
+              style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
+            >
+              {PLANS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPlan(p)}
+                  className={`px-2.5 h-7 rounded-md text-xs font-medium transition-colors ${
+                    plan === p && p === "error"
+                      ? "bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 shadow-sm"
+                      : plan === p
+                      ? "bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm"
+                      : "text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
+                  }`}
+                >
+                  {PLAN_LABELS[p]}
+                </button>
+              ))}
+            </div>
+            {/* Card count */}
+            <span className="text-xs text-stone-400 dark:text-stone-500 tabular-nums">
+              {pinned.length}/{limit === Infinity ? "∞" : limit}
+            </span>
             <button
               onClick={() => window.dispatchEvent(new Event("open-blu-chat"))}
               className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium border transition-colors hover:bg-stone-50 dark:hover:bg-white/6 text-stone-600 dark:text-stone-400"
@@ -780,15 +405,15 @@ export default function PinboardView() {
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Masonry */}
         <SortableContext items={items} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 items-start">
-            {orderedWidgets.map(widget => (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3">
+            {orderedWidgets.map((widget, index) => (
               <SortableWidgetCard
                 key={widget.id}
                 widget={widget}
                 onUnpin={() => unpin(widget.id)}
-                uniform={uniform}
+                showError={plan === "error" && index % 2 === 0}
               />
             ))}
           </div>
@@ -799,11 +424,10 @@ export default function PinboardView() {
         </p>
       </div>
 
-      {/* Floating ghost — always renders in uniform size for a consistent drag ghost */}
       <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
         {activeWidget && (
           <div className="col-span-1">
-            <WidgetCardInner widget={activeWidget} isOverlay uniform />
+            <WidgetCardInner widget={activeWidget} isOverlay />
           </div>
         )}
       </DragOverlay>

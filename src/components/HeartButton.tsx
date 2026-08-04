@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useFavorites, type PinnedWidget } from "../lib/useFavorites";
+import { usePlan } from "../lib/usePlan";
+import UpgradePlanModal from "./UpgradePlanModal";
 
 interface Props {
   widget: PinnedWidget;
@@ -9,13 +11,19 @@ interface Props {
 }
 
 export default function HeartButton({ widget, className = "", hoverOnly = false }: Props) {
-  const { toggle, isPinned } = useFavorites();
+  const { toggle, isPinned, pinned } = useFavorites();
+  const { plan, limit } = usePlan();
   const active = isPinned(widget.id);
   const [burst, setBurst] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
+    if (!active && limit !== Infinity && pinned.length >= limit) {
+      setShowUpgrade(true);
+      return;
+    }
     if (!active) setBurst(true);
     toggle(widget);
   }
@@ -51,12 +59,13 @@ export default function HeartButton({ widget, className = "", hoverOnly = false 
       >
         <Heart
           size={13}
-          style={{
-            fill: active ? "currentColor" : "none",
-            transition: "fill 180ms ease",
-          }}
+          style={{ fill: active ? "currentColor" : "none", transition: "fill 180ms ease" }}
         />
       </button>
+
+      {showUpgrade && (
+        <UpgradePlanModal plan={plan} limit={limit} onClose={() => setShowUpgrade(false)} />
+      )}
     </>
   );
 }

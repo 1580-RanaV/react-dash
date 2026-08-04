@@ -1,6 +1,7 @@
 
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ListFilter, Plus, Search, Sparkles, Upload } from "lucide-react";
 import GeneratingLoader from "./GeneratingLoader";
 import SlidingSidebar from "./SlidingSidebar";
@@ -46,7 +47,7 @@ function PaletteCard({ palette, isNew = false, onClick }: { palette: Palette; is
     >
       <HeartButton
         hoverOnly
-        widget={{ id: `design-system-${palette.id}`, type: "design", label: name, size: "sm", meta: { colors } }}
+        widget={{ id: `design-system-${palette.id}`, type: "design", label: name, size: "sm", href: `/design-system?theme=${palette.id}`, meta: { colors } }}
         className="absolute right-2 top-2 z-10"
       />
       <div className="flex h-28">
@@ -67,6 +68,9 @@ function PaletteCard({ palette, isNew = false, onClick }: { palette: Palette; is
 }
 
 export default function DesignSystemView() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const themeId = searchParams.get("theme");
   const [selected, setSelected] = useState<Palette | null>(null);
   const [search, setSearch]       = useState("");
   const [shelfOpen, setShelfOpen] = useState(false);
@@ -80,6 +84,14 @@ export default function DesignSystemView() {
   const filterRef = useRef<HTMLDivElement>(null);
 
   const presetIds = useMemo(() => new Set(DEFAULT_PALETTES.map((p) => p.id)), []);
+
+  useEffect(() => {
+    if (!themeId) {
+      setSelected(null);
+      return;
+    }
+    setSelected(palettes.find((p) => p.id === themeId) ?? null);
+  }, [palettes, themeId]);
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -103,7 +115,7 @@ export default function DesignSystemView() {
     return result;
   }, [palettes, search, sortKey, presetIds]);
 
-  if (selected) return <DesignThemeDetailView palette={selected} onBack={() => setSelected(null)} />;
+  if (selected) return <DesignThemeDetailView palette={selected} onBack={() => navigate("/design-system")} />;
 
   function handleBluAI() {
     setShelfOpen(false);
@@ -192,7 +204,7 @@ export default function DesignSystemView() {
       <div className="px-6 pb-6">
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
           {filtered.map((palette) => (
-            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} onClick={() => setSelected(palette)} />
+            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} onClick={() => navigate(`/design-system?theme=${palette.id}`)} />
           ))}
         </div>
       </div>
