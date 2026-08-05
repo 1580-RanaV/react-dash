@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
@@ -186,6 +186,54 @@ function FloatingBluWindow({
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
+type HomeState = "empty" | "partial" | "full";
+
+const HOME_STATE_TABS: { key: HomeState; label: string }[] = [
+  { key: "empty", label: "Empty" },
+  { key: "partial", label: "Partial" },
+  { key: "full", label: "Full" },
+];
+
+const HOME_TAB_KEYS = new Set(["design", "marketing", "sales", "analytics"]);
+
+function ShellHomeStateSwitcher() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  if (location.pathname !== "/home") return null;
+
+  const searchParams = new URLSearchParams(location.search);
+  const rawTab = searchParams.get("tab") ?? "analytics/full";
+  const [rawHomeTab, rawState] = rawTab.split("/");
+  const homeTab = HOME_TAB_KEYS.has(rawHomeTab) ? rawHomeTab : "analytics";
+  const state: HomeState =
+    rawState === "1" || rawState === "empty"
+      ? "empty"
+      : rawState === "partial"
+        ? "partial"
+        : "full";
+
+  return (
+    <div
+      className="hidden items-center rounded-lg p-0.5 sm:inline-flex"
+      style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
+    >
+      {HOME_STATE_TABS.map((item) => (
+        <button
+          key={item.key}
+          onClick={() => navigate(`/home?tab=${homeTab}/${item.key}`, { replace: true })}
+          className={`h-7 rounded-md px-3 text-xs font-medium transition-colors ${
+            state === item.key
+              ? "bg-white text-stone-900 shadow-sm dark:bg-stone-800 dark:text-stone-100"
+              : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
@@ -236,7 +284,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       )}
 
 
-    <div className="flex h-full" style={{ background: "var(--sidebar-background)" }}>
+    <div className="console-shell flex h-full" style={{ background: "var(--sidebar-background)" }}>
       {/* Desktop sidebar spacer */}
       <div
         className="hidden md:block shrink-0"
@@ -279,6 +327,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </button>
 
           <NotificationsMenu />
+          <ShellHomeStateSwitcher />
           <UpgradeButton />
           {/* <LanguageSwitcher /> */}
           <ProfileMenu />

@@ -127,6 +127,8 @@ const PLAN_CHART = [
   { m: "Jun '26", p0: 5889, p1: 2799, p2: 6019, p3:  6800, p4: 151, p5: 550 },
 ];
 
+const PLAN_KEYS = ["p0", "p1", "p2", "p3", "p4", "p5"];
+
 const PLANS = [
   { name: "3-Month Subscription",               id: "prod_0MwZpc3SsF2GNC", price: "$79.95",  customers:  216, cPct:  2.37, mrr:  5889.65, mPct:  2.79, color: PLAN_COLORS[0] },
   { name: "6-Month Subscription",               id: "prod_0MwZF2iTazQp4b", price: "$149.95", customers:  112, cPct:  1.23, mrr:  2799.07, mPct:  1.33, color: PLAN_COLORS[1] },
@@ -432,7 +434,25 @@ export function MrrTab() {
       </div>
 
       {/* MRR by Plan chart */}
-      <Card className="flex flex-col">
+      <Card className="relative flex flex-col">
+        <div className="absolute right-3 top-3 z-10">
+          <HeartButton
+            widget={{
+              id: "subscription-mrr-by-plan",
+              type: "report",
+              label: "MRR by Plan",
+              size: "md",
+              href: "/subscription?tab=mrr",
+              meta: {
+                reportType: "subscription-chart",
+                chartKind: "stacked-bar",
+                chartPoints: PLAN_CHART,
+                keys: PLAN_KEYS,
+                names: PLANS.map((p) => p.name),
+              },
+            }}
+          />
+        </div>
         <SectionLabel>MRR by Plan</SectionLabel>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={PLAN_CHART} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
@@ -556,7 +576,25 @@ export function SubscribersTab() {
       </div>
 
       {/* Subscribers by Plan chart */}
-      <Card className="flex flex-col">
+      <Card className="relative flex flex-col">
+        <div className="absolute right-3 top-3 z-10">
+          <HeartButton
+            widget={{
+              id: "subscription-subscribers-by-plan",
+              type: "report",
+              label: "Subscribers by Plan",
+              size: "md",
+              href: "/subscription?tab=subscribers",
+              meta: {
+                reportType: "subscription-chart",
+                chartKind: "stacked-bar",
+                chartPoints: SUBS_CHART,
+                keys: PLAN_KEYS,
+                names: PLANS.map((p) => p.name),
+              },
+            }}
+          />
+        </div>
         <SectionLabel>Subscribers by Plan</SectionLabel>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={SUBS_CHART} margin={{ top: 5, right: 8, left: 0, bottom: 5 }}>
@@ -599,7 +637,27 @@ function SharedSection() {
       <div className="my-3 sm:my-4" style={{ borderTop: "1px solid var(--border)" }} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         {/* NRR */}
-        <Card>
+        <Card className="relative">
+          <div className="absolute right-3 top-3 z-10">
+            <HeartButton
+              widget={{
+                id: "subscription-net-revenue-retention",
+                type: "report",
+                label: "Net Revenue Retention",
+                size: "md",
+                href: "/subscription",
+                meta: {
+                  reportType: "subscription-chart",
+                  chartKind: "line",
+                  value: "97.0%",
+                  sub: "+0.6pp",
+                  chartPoints: NRR_DATA,
+                  keys: ["v"],
+                  names: ["NRR"],
+                },
+              }}
+            />
+          </div>
           <SectionLabel>Net Revenue Retention</SectionLabel>
           <div className="mb-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">97.0%</span>
@@ -618,7 +676,24 @@ function SharedSection() {
         </Card>
 
         {/* Trial-to-Paid */}
-        <Card>
+        <Card className="relative">
+          <div className="absolute right-3 top-3 z-10">
+            <HeartButton
+              widget={{
+                id: "subscription-trial-to-paid-funnel",
+                type: "report",
+                label: "Trial-to-Paid Funnel",
+                size: "md",
+                href: "/subscription",
+                meta: {
+                  reportType: "subscription-chart",
+                  chartKind: "funnel",
+                  value: "41.2%",
+                  sub: "overall conversion",
+                },
+              }}
+            />
+          </div>
           <SectionLabel>Trial-to-Paid Funnel</SectionLabel>
           <div className="mb-4 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">41.2%</span>
@@ -643,7 +718,27 @@ function SharedSection() {
         </Card>
 
         {/* Expansion Revenue */}
-        <Card>
+        <Card className="relative">
+          <div className="absolute right-3 top-3 z-10">
+            <HeartButton
+              widget={{
+                id: "subscription-expansion-revenue",
+                type: "report",
+                label: "Expansion Revenue",
+                size: "md",
+                href: "/subscription",
+                meta: {
+                  reportType: "subscription-chart",
+                  chartKind: "area",
+                  value: "$1.18",
+                  sub: "last 6 months",
+                  chartPoints: EXPANSION_DATA,
+                  keys: ["v"],
+                  names: ["Revenue"],
+                },
+              }}
+            />
+          </div>
           <SectionLabel>Expansion Revenue</SectionLabel>
           <div className="mb-3">
             <span className="text-xl font-bold text-stone-900 dark:text-stone-100">$1.18</span>

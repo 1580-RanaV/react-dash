@@ -122,6 +122,7 @@
 
   /* ─── Backwards-compat aliases ─────────────────────────────────────────── */
   --sidebar-background: var(--page);
+  --sidebar-bottom-fade: linear-gradient(to top, var(--sidebar-background) 0%, transparent 100%);
   --content-bg:         var(--card);
   --main-bg:            var(--page);
 }
@@ -200,6 +201,8 @@
   --chart-10: #6DC28A;  /* forest green  */
   --chart-11: #A895FF;  /* indigo        */
   --chart-12: #88CCCC;  /* muted teal    */
+
+  --sidebar-bottom-fade: transparent;
 }
 
 /* ─── Tailwind theme ─────────────────────────────────────────── */
@@ -429,6 +432,37 @@ input, select, textarea {
 }
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.42);
+}
+
+.console-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.dark .console-shell {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 .22'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' fill='%23fff'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 18% 94%, rgba(0, 170, 255, 0.12) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 78% 91%, rgba(0, 128, 255, 0.1) 0 1px, transparent 1.6px),
+    radial-gradient(18% 72% at 100% 56%, color-mix(in srgb, var(--brand-blue) 24%, transparent) 0%, rgba(0, 128, 255, 0.08) 42%, transparent 82%),
+    linear-gradient(270deg, rgba(0, 170, 255, 0.16) 0%, rgba(0, 128, 255, 0.08) 3%, transparent 12%),
+    radial-gradient(58% 18% at 12% 100%, color-mix(in srgb, var(--brand-blue) 34%, transparent) 0%, rgba(0, 128, 255, 0.14) 48%, transparent 82%),
+    radial-gradient(44% 15% at 58% 100%, color-mix(in srgb, var(--brand-jeans) 24%, transparent) 0%, transparent 76%),
+    radial-gradient(34% 20% at 100% 100%, color-mix(in srgb, var(--brand-blue) 28%, transparent) 0%, transparent 78%),
+    linear-gradient(180deg, var(--background) 0%, var(--background) 80%, rgba(0, 128, 255, 0.08) 92%, rgba(0, 128, 255, 0.2) 100%) !important;
+  background-blend-mode: soft-light, screen, screen, normal, normal, normal, normal, normal, normal;
+  background-size: 140px 140px, 19px 19px, 27px 27px, auto, auto, auto, auto, auto, auto;
+}
+
+@media (min-width: 768px) {
+  .sidebar-shell {
+    width: var(--sidebar-width);
+  }
+
+  .dark .sidebar-shell {
+    background: transparent !important;
+  }
 }
 
 /* In collapsed mode scrollbar takes up layout space and misaligns icons — hide it */

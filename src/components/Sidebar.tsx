@@ -565,17 +565,18 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 flex flex-col h-full select-none
+          sidebar-shell fixed inset-y-0 left-0 z-50 flex flex-col h-full select-none
           transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
         style={{
+          "--sidebar-width": `${sidebarWidth}px`,
           width: sidebarWidth,
           transition: isResizing
             ? "transform 300ms cubic-bezier(0.22,1,0.36,1)"
             : "transform 300ms cubic-bezier(0.22,1,0.36,1), width 0.25s cubic-bezier(0.22,1,0.36,1)",
           background: "var(--sidebar-background)",
-        }}
+        } as React.CSSProperties}
       >
         {/* Top: workspace switcher */}
         <WorkspaceSwitcher collapsed={collapsed} />
@@ -635,8 +636,8 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
             ))}
           </nav>
           <div
-            className="pointer-events-none absolute bottom-0 inset-x-0 z-10 h-4 transition-opacity duration-300"
-            style={{ opacity: bottomFade ? 1 : 0, background: "linear-gradient(to top, var(--sidebar-background) 0%, transparent 100%)" }}
+            className="pointer-events-none absolute bottom-0 inset-x-0 z-10 h-10 transition-opacity duration-300"
+            style={{ opacity: bottomFade ? 1 : 0, background: "var(--sidebar-bottom-fade)" }}
           />
         </div>
 
@@ -646,8 +647,8 @@ export default function Sidebar({ isOpen, onClose, bluOpen, sidebarWidth = 196, 
             <>
               <img src="/logo.png" alt="Intempt" width={18} height={18} className="rounded-md opacity-60" style={{ objectFit: "contain" }} />
               <span className="flex-1 text-xs font-medium text-stone-600 dark:text-stone-400 tracking-tight">Intempt</span>
-              <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-(--border) flex items-center justify-center hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-100 dark:hover:bg-white/6 transition-colors shrink-0">
-                <span className="text-xs font-semibold text-stone-400 dark:text-stone-500 leading-none">?</span>
+              <button className="w-5 h-5 rounded-full border border-stone-300 dark:border-white/80 dark:bg-white/10 flex items-center justify-center hover:border-stone-400 dark:hover:border-white hover:bg-stone-100 dark:hover:bg-white/16 transition-colors shrink-0">
+                <span className="text-xs font-semibold text-stone-400 dark:text-white leading-none">?</span>
               </button>
             </>
           )}

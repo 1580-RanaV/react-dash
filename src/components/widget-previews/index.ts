@@ -6,6 +6,7 @@ import KpiBadgePreview    from "./KpiBadgePreview";
 import EngagementReportPreview from "./EngagementReportPreview";
 import RevenueReportPreview from "./RevenueReportPreview";
 import TrafficReportPreview from "./TrafficReportPreview";
+import SubscriptionChartPreview from "./SubscriptionChartPreview";
 import ReportPreview      from "./ReportPreview";
 import DesignPreview      from "./DesignPreview";
 import RecipePreview      from "./RecipePreview";
@@ -53,6 +54,11 @@ export const WIDGET_REGISTRY: {
     name: "traffic-report",
     matches: w => w.type === "report" && w.meta?.reportType === "traffic-bars" && !!(w.meta?.rows as unknown[] | undefined)?.length,
     Render: TrafficReportPreview,
+  },
+  {
+    name: "subscription-chart",
+    matches: w => w.type === "report" && w.meta?.reportType === "subscription-chart",
+    Render: SubscriptionChartPreview,
   },
   {
     name: "report",

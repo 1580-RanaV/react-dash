@@ -10,7 +10,7 @@ import HeroVideo from "./HeroVideo";
 import RecentDesigns from "./RecentDesigns";
 import RevenueMetricCard from "./MetricCard";
 import {
-  ComposedChart, Bar, Line, AreaChart, Area, LabelList,
+  ComposedChart, Bar, Line, AreaChart, Area, LabelList, PieChart, Pie, Cell,
   XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import {
@@ -21,7 +21,7 @@ import {
   AlertTriangle, AlertCircle, MessageSquare, Bell, Smartphone, Bot,
   ArrowDown, Check, Wand2, FileImage, Route,
   Clapperboard, PenTool, Shuffle, Package, Handshake, CalendarClock,
-  Play, X, ClipboardList, Settings, Video,
+  Play, X, ClipboardList, Settings, Video, Lock,
 } from "lucide-react";
 
 // ── static data ───────────────────────────────────────────────────────────────
@@ -93,6 +93,57 @@ const BROWSERS = [
   { icon: "firefox", name: "Firefox", users: 32, pct: 2 },
   { icon: "unknown", name: "Unknown", users: 28, pct: 2 },
   { icon: "opera", name: "Opera", users: 5, pct: 0.3 },
+];
+
+const ANALYTICS_EVENT_TYPES = [
+  { name: "Page viewed", category: "Page", value: "4.06K", lastSeen: "2m ago", icon: Globe },
+  { name: "Session started", category: "Session", value: "2.79K", lastSeen: "2m ago", icon: Activity },
+  { name: "CTA clicked", category: "Interaction", value: "842", lastSeen: "9m ago", icon: MousePointerClick },
+  { name: "Form submitted", category: "Conversion", value: "186", lastSeen: "21m ago", icon: Send },
+];
+
+const ANALYTICS_DEVICE_MIX = [
+  { name: "Desktop", value: 1420, display: "1.42K", pct: 76 },
+  { name: "Mobile", value: 386, display: "386", pct: 21 },
+  { name: "Tablet", value: 62, display: "62", pct: 3 },
+];
+
+const ANALYTICS_REVENUE_HEALTH = [
+  { label: "Current MRR", value: "$25.2K", note: "+2.6% vs prior 30d", tone: "positive" },
+  { label: "Subscribers", value: "1,940", note: "+84 net new", tone: "positive" },
+  { label: "Trial to paid", value: "32.6%", note: "Needs lift", tone: "watch" },
+  { label: "Churn", value: "2.1%", note: "-0.4pp", tone: "positive" },
+];
+
+const ANALYTICS_AUDIENCE_SPLIT = [
+  { name: "New", value: 49440, display: "49.44K", pct: 75 },
+  { name: "Returning", value: 16430, display: "16.43K", pct: 25 },
+];
+
+const ANALYTICS_AUDIENCE_RINGS = [
+  { label: "DAU", value: "2.1K", pct: 18, tooltip: "Daily active users: unique users active in a single day." },
+  { label: "WAU", value: "18.4K", pct: 58, tooltip: "Weekly active users: unique users active in the last 7 days." },
+  { label: "MAU", value: "65.87K", pct: 92, tooltip: "Monthly active users: unique users active in the last 30 days." },
+];
+
+const ANALYTICS_MRR_TREND = [
+  { month: "Oct", mrr: 15594 },
+  { month: "Nov", mrr: 16766 },
+  { month: "Dec", mrr: 18207 },
+  { month: "Jan", mrr: 19597 },
+  { month: "Feb", mrr: 20711 },
+  { month: "Mar", mrr: 22052 },
+  { month: "Apr", mrr: 22914 },
+  { month: "May", mrr: 24656 },
+  { month: "Jun", mrr: 25203 },
+  { month: "Jul", mrr: 24895 },
+  { month: "Aug", mrr: 24762 },
+];
+
+const ANALYTICS_ACQUISITION_MIX = [
+  { name: "Email", value: 1700, display: "1.7K", pct: 55 },
+  { name: "Icon", value: 1300, display: "1.3K", pct: 42 },
+  { name: "Push", value: 92, display: "92", pct: 3 },
 ];
 
 const PAGE_VIEWS_DATA = [
@@ -236,13 +287,6 @@ const TOP_SEGMENTS = [
   { name: "Newsletter subscribers", members: "8.1k", rate:  6.2 },
   { name: "Churned (90-day)",       members: "2.4k", rate:  3.1 },
 ];
-const ANOMALIES = [
-  { metric: "Email bounce rate",  status: "critical", expected: "0.9% – 1.6%",    actual: "4.8%",  change: "+220%", ago: "12m ago" },
-  { metric: "Open rate",          status: "warning",  expected: "40% – 46%",      actual: "28.4%", change: "−33%",  ago: "48m ago" },
-  { metric: "Unsubscribe rate",   status: "warning",  expected: "0.10% – 0.22%",  actual: "0.42%", change: "+110%", ago: "2h ago"  },
-  { metric: "Send volume",        status: "critical", expected: "4.6k – 5.8k",    actual: "1.2k",  change: "−76%",  ago: "3h ago"  },
-];
-
 // ── Sales dashboard data ─────────────────────────────────────────────────────
 
 const MEETINGS_DATA = [
@@ -309,6 +353,30 @@ function InfoBadge() {
   return <Info size={12} className="text-stone-400 shrink-0" />;
 }
 
+function HeadingTooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex shrink-0 items-center">
+      <span
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-stone-400 transition-colors hover:text-blue-500 dark:text-stone-500 dark:hover:text-blue-400"
+        tabIndex={0}
+        aria-label={text}
+      >
+        <Info size={12} />
+      </span>
+      <span
+        className="pointer-events-none absolute left-1/2 top-6 z-50 w-56 -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-medium leading-relaxed text-stone-600 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-stone-200"
+        style={{
+          background: "var(--content-bg)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 14px 36px rgba(0,0,0,0.16)",
+        }}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -336,17 +404,17 @@ function ChartTooltip({ active, payload, label }: any) {
 
 function HBar({ name, pct, users, prefix }: { name: string; pct: number; users: number | string; prefix?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 py-1">
+    <div className="flex items-center gap-3 py-1.5">
       <div className="flex items-center gap-2 w-40 shrink-0 min-w-0">
         {prefix}
-        <span className="text-xs text-stone-600 dark:text-stone-400 truncate">{name}</span>
+        <span className="truncate text-xs font-medium text-stone-700 dark:text-stone-300">{name}</span>
       </div>
-      <div className="flex-1 bg-stone-100 dark:bg-white/8 rounded-full h-2 min-w-0">
-        <div className="h-2 rounded-full bg-blue-400" style={{ width: `${Math.max(pct, 0.5)}%` }} />
+      <div className="h-1.5 min-w-0 flex-1 rounded-full bg-stone-100 dark:bg-white/8">
+        <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${Math.max(pct, 0.5)}%` }} />
       </div>
-      <div className="flex items-center gap-2 text-xs font-medium shrink-0 w-15 justify-end">
-        <span className="text-teal-600 dark:text-teal-400">{typeof users === "number" ? users.toLocaleString() : users}</span>
-        <span className="text-stone-400">$0</span>
+      <div className="flex w-15 shrink-0 items-center justify-end gap-2 text-xs font-semibold tabular-nums">
+        <span className="text-blue-600 dark:text-blue-400">{typeof users === "number" ? users.toLocaleString() : users}</span>
+        <span className="text-stone-400 dark:text-stone-500">$0</span>
       </div>
     </div>
   );
@@ -821,10 +889,92 @@ function MiniStat({ label, value, change, icon: Icon, accent = "#0080FF" }: {
   );
 }
 
-function SectionCard({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
+function AcquisitionPieLabel({
+  cx,
+  cy,
+  midAngle,
+  outerRadius,
+  payload,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  payload?: { name: string; display: string; pct: number };
+}) {
+  if (
+    typeof cx !== "number" ||
+    typeof cy !== "number" ||
+    typeof midAngle !== "number" ||
+    typeof outerRadius !== "number" ||
+    !payload
+  ) {
+    return null;
+  }
+
+  const radians = -midAngle * Math.PI / 180;
+  const startX = cx + (outerRadius + 2) * Math.cos(radians);
+  const startY = cy + (outerRadius + 2) * Math.sin(radians);
+  const midX = cx + (outerRadius + 16) * Math.cos(radians);
+  const midY = cy + (outerRadius + 16) * Math.sin(radians);
+  const endX = midX + (Math.cos(radians) >= 0 ? 16 : -16);
+  const textAnchor = Math.cos(radians) >= 0 ? "start" : "end";
+
+  return (
+    <g>
+      <path d={`M ${startX} ${startY} L ${midX} ${midY} L ${endX} ${midY}`} fill="none" stroke="var(--muted-foreground)" strokeOpacity="0.45" strokeWidth="1" />
+      <text x={endX} y={midY - 5} textAnchor={textAnchor} fill="var(--foreground)" className="text-[10px] font-semibold">
+        {payload.name} ({payload.display})
+      </text>
+      <text x={endX} y={midY + 9} textAnchor={textAnchor} fill="var(--muted-foreground)" className="text-[10px] font-medium">
+        {payload.pct}%
+      </text>
+    </g>
+  );
+}
+
+function AnalyticsUpgradeStrip() {
+  return (
+    <div
+      className="relative flex min-h-[20vh] items-center justify-center overflow-hidden rounded-xl px-5 py-6"
+      style={{ background: "var(--content-bg)" }}
+    >
+      <div className="relative flex max-w-xl flex-col items-center justify-center px-4 text-center">
+        <p className="text-base font-semibold leading-tight text-stone-900 dark:text-stone-100">Discover more today</p>
+        <p className="mt-2 text-sm leading-5 text-stone-500 dark:text-stone-400">Unlock full analytics for deeper trends, retention cuts, and revenue insights.</p>
+        <button className="mt-5 inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-stone-100">
+          <Lock size={14} className="text-black" />
+          Upgrade plan
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  tooltip,
+  children,
+  className = "",
+}: {
+  title?: string;
+  description?: string;
+  tooltip?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`rounded-xl p-5 ${className}`} style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-      {title && <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-4">{title}</p>}
+      {title && (
+        <div className="mb-2">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">{title}</p>
+            {tooltip && <HeadingTooltip text={tooltip} />}
+          </div>
+          {description && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{description}</p>}
+        </div>
+      )}
       {children}
     </div>
   );
@@ -1257,6 +1407,627 @@ function AnalyticsDashboard() {
           </div>
         </SectionCard>
       </div>
+
+    </div>
+  );
+}
+
+function WaitingKpiCard({ icon: Icon, title, note }: { icon: LucideIcon; title: string; note: string }) {
+  return (
+    <div className="relative min-h-[116px] overflow-hidden rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+      <img src="/logo.png" alt="" className="pointer-events-none absolute -bottom-7 -right-7 h-24 w-24 object-contain opacity-[0.06] grayscale dark:opacity-[0.09]" />
+      <div className="relative z-10 flex h-full flex-col justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8 dark:text-blue-400">
+            <Icon size={15} />
+          </span>
+          <span className="rounded-full bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium leading-snug text-stone-700 dark:text-stone-200">{title}</p>
+          <p className="mt-1 text-xs font-medium text-stone-400 dark:text-stone-500">{note}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WaitingPanel({ title, body, children, className = "" }: { title: string; body?: string; children?: React.ReactNode; className?: string }) {
+  return (
+    <div className={`relative overflow-hidden rounded-xl p-5 ${className}`} style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+      <img src="/logo.png" alt="" className="pointer-events-none absolute -bottom-10 -right-10 h-36 w-36 object-contain opacity-[0.055] grayscale dark:opacity-[0.085]" />
+      <div className="relative z-10">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</p>
+            {body && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{body}</p>}
+          </div>
+          <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
+            Waiting for data
+          </span>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function WaitingBars({ items }: { items: string[] }) {
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div key={item}>
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <span className="truncate text-xs font-medium text-stone-600 dark:text-stone-400">{item}</span>
+            <span className="text-xs font-semibold text-stone-300 dark:text-stone-600">--</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+            <div className="h-full rounded-full bg-blue-500/35" style={{ width: `${[74, 58, 42, 30][index] ?? 24}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AnalyticsPartialDashboard() {
+  return (
+    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      <Greeting />
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {[
+          { icon: Activity, title: "Active users", note: "Waiting for user activity" },
+          { icon: Globe, title: "Page views", note: "Waiting for page events" },
+          { icon: BarChart3, title: "Sessions", note: "Waiting for sessions" },
+          { icon: DollarSign, title: "Current MRR", note: "Waiting for revenue data" },
+          { icon: Zap, title: "Events received", note: "Waiting for first events" },
+        ].map((card) => (
+          <WaitingKpiCard key={card.title} {...card} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.55fr)]">
+        <WaitingPanel title="Product activity" body="Page views, sessions, and active users will appear here once events are flowing.">
+          <div className="pointer-events-none h-[252px] opacity-45">
+            <LargeBentoChart chart={{ type: "line", label: "Waiting", values: [12, 18, 14, 24, 20, 28, 26, 34, 30, 38, 35, 42, 39, 48], labels: PAGE_VIEWS_DATA.map((item) => item.date) }} />
+          </div>
+        </WaitingPanel>
+        <AnalyticsIntegrationsCard
+          className="min-h-[310px] rounded-xl"
+          title="Analytics sources are being prepared"
+          body="Connect tools like JS SDK and Stripe to unlock live product and revenue analytics, plus Blu recommendations on what needs action."
+          href="/integrations"
+          linkText="Go to integrations"
+          docsHref="https://intempt.com/docs"
+          logos={[{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <WaitingPanel title="Traffic by channel" body="Channels will rank after sessions include referrer or UTM data.">
+          <WaitingBars items={["Organic", "Referral", "Campaign", "Direct"]} />
+        </WaitingPanel>
+        <WaitingPanel title="Top pages" body="Pages will rank after page view events are received.">
+          <WaitingBars items={["/", "/pricing", "/product", "/docs"]} />
+        </WaitingPanel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        <WaitingPanel title="Conversion funnel" body="Saved funnel steps will appear here once a funnel report has data.">
+          <div className="grid grid-cols-4 gap-2">
+            {["Visitors", "Signups", "Trial", "Paid"].map((step, index) => (
+              <div key={step} className="min-w-0">
+                <div className="flex min-h-[92px] flex-col justify-between rounded-lg p-2.5" style={{ background: "var(--muted)" }}>
+                  <div>
+                    <p className="truncate text-[11px] font-semibold text-stone-700 dark:text-stone-300">{step}</p>
+                    <p className="mt-1 text-[10px] text-stone-400">Waiting</p>
+                  </div>
+                  <p className="text-base font-semibold text-stone-300 dark:text-stone-600">--</p>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
+                  <div className="h-full rounded-full bg-blue-500/35" style={{ width: `${[92, 64, 38, 18][index]}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </WaitingPanel>
+
+        <WaitingPanel title="Retention" body="Retention appears after enough users return across cohorts.">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold leading-none tracking-tight text-stone-300 dark:text-stone-600">--</p>
+              <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">Average user retention</p>
+            </div>
+            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
+          </div>
+          <div className="pointer-events-none mt-5 h-28 opacity-45">
+            <LargeBentoChart chart={{ type: "line", label: "Retention", values: [8, 12, 9, 15, 11, 18, 14, 20, 16, 22, 18, 24, 20, 26], labels: RETENTION_DATA.map((item) => item.date) }} />
+          </div>
+        </WaitingPanel>
+
+        <WaitingPanel title="Revenue health" body="Revenue metrics appear after Stripe or commerce activity is connected.">
+          <div className="grid grid-cols-2 gap-3">
+            {["Current MRR", "Subscribers", "Trial to paid", "Churn"].map((item) => (
+              <div key={item} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <span className="text-[11px] font-medium leading-tight text-stone-500 dark:text-stone-400">{item}</span>
+                  <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
+                </div>
+                <p className="text-xl font-semibold leading-none tracking-tight text-stone-300 dark:text-stone-600">--</p>
+              </div>
+            ))}
+          </div>
+        </WaitingPanel>
+      </div>
+    </div>
+  );
+}
+
+const ANALYTICS_FULL_KPIS: HomeBentoCard[] = [
+  {
+    id: "analytics-full-active-users",
+    perspective: "summary",
+    eyebrow: "Engagement",
+    title: "Active users",
+    value: "1.87K",
+    body: "Users active in the last 30 days.",
+    icon: Activity,
+    signal: "-70%",
+  },
+  {
+    id: "analytics-full-page-views",
+    perspective: "summary",
+    eyebrow: "Engagement",
+    title: "Page views",
+    value: "4.06K",
+    body: "Tracked page views across sessions.",
+    icon: Globe,
+    signal: "+239%",
+  },
+  {
+    id: "analytics-full-sessions",
+    perspective: "summary",
+    eyebrow: "Traffic",
+    title: "Sessions",
+    value: "2.79K",
+    body: "User sessions in the last 30 days.",
+    icon: BarChart3,
+    signal: "+250%",
+  },
+  {
+    id: "analytics-full-mrr",
+    perspective: "summary",
+    eyebrow: "Revenue",
+    title: "Current MRR",
+    value: "$25.2K",
+    body: "Subscription MRR from connected revenue data.",
+    icon: DollarSign,
+    signal: "+2.6%",
+  },
+  {
+    id: "analytics-full-events",
+    perspective: "summary",
+    eyebrow: "Events",
+    title: "Events received",
+    value: "1.84M",
+    body: "Tracked product and website events.",
+    icon: Zap,
+    signal: "Live",
+  },
+];
+
+const ANALYTICS_ACTIVITY_DATA = PAGE_VIEWS_DATA.map((item, index) => ({
+  date: item.date,
+  pageViews: item.value,
+  sessions: SESSIONS_DATA[index]?.value ?? 0,
+  activeUsers: ACTIVE_USERS_DATA[index]?.value ?? 0,
+}));
+
+function FunnelWaterfallChart({ steps }: { steps: { stage: string; value: number }[] }) {
+  const chartWidth = 1000;
+  const chartHeight = 172;
+  const gap = 62;
+  const stepWidth = (chartWidth - gap * (steps.length - 1)) / steps.length;
+  const maxValue = Math.max(steps[0]?.value ?? 1, 1);
+  const barMeta = steps.map((step, index) => {
+    const height = Math.max(10, (step.value / maxValue) * chartHeight);
+    return {
+      ...step,
+      index,
+      x: index * (stepWidth + gap),
+      y: chartHeight - height,
+      height,
+      priorPct: index === 0 ? null : (step.value / Math.max(steps[index - 1].value, 1)) * 100,
+    };
+  });
+
+  return (
+    <div className="overflow-hidden">
+      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+        {barMeta.map((step) => (
+          <div key={step.stage} className="border-l-2 border-blue-500 pl-3">
+            <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{step.value.toLocaleString()}</p>
+            <p className="mt-2 truncate text-sm font-medium leading-none text-stone-600 dark:text-stone-400">
+              {step.index + 1} - {step.stage}
+            </p>
+            <p className="mt-1 text-xs font-medium text-stone-500 dark:text-stone-500">
+              {step.priorPct === null ? "First step" : `${step.priorPct.toFixed(1)}% of prior step`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 34}`} className="mt-4 h-[230px] w-full overflow-visible" role="img" aria-label="Conversion funnel waterfall">
+        {barMeta.slice(0, -1).map((step, index) => {
+          const next = barMeta[index + 1];
+          return (
+            <polygon
+              key={`connector-${step.stage}`}
+              points={`${step.x + stepWidth},${step.y} ${next.x},${next.y} ${next.x},${chartHeight} ${step.x + stepWidth},${chartHeight}`}
+              fill="rgba(0,128,255,0.28)"
+            />
+          );
+        })}
+        {barMeta.map((step, index) => (
+          <g key={step.stage}>
+            {step.y > 0 && (
+              <rect
+                x={step.x}
+                y={0}
+                width={stepWidth}
+                height={step.y}
+                rx={4}
+                fill="rgba(0,128,255,0.14)"
+              />
+            )}
+            <rect
+              x={step.x}
+              y={step.y}
+              width={stepWidth}
+              height={step.height}
+              rx={index === 0 ? 4 : 3}
+              fill="#0080FF"
+              opacity={0.82}
+            />
+            <text
+              x={step.x + stepWidth / 2}
+              y={chartHeight + 25}
+              textAnchor="middle"
+              className="fill-stone-500 dark:fill-stone-400"
+              style={{ fontSize: 13, fontWeight: 500 }}
+            >
+              Step {index + 1}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+const ANALYTICS_DONUT_COLORS = ["#0080FF", "#6BAEFF", "#A7CCFF", "#D7E9FF"];
+
+function DistributionDonutCard({
+  title,
+  body,
+  tooltip,
+  data,
+}: {
+  title: string;
+  body: string;
+  tooltip?: string;
+  data: { name: string; value: number | string; pct: number }[];
+}) {
+  const chartData = data.map((item) => ({
+    name: item.name,
+    value: typeof item.value === "number" ? item.value : Number.parseFloat(String(item.value).replace(/[^0-9.]/g, "")) || item.pct,
+    pct: item.pct,
+  }));
+  const topItem = data[0];
+
+  return (
+    <SectionCard>
+      <div className="mb-4">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</p>
+          {tooltip && <HeadingTooltip text={tooltip} />}
+        </div>
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{body}</p>
+      </div>
+      <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[170px_minmax(0,1fr)]">
+        <div className="relative h-42 min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={48}
+                outerRadius={72}
+                paddingAngle={2}
+                stroke="var(--content-bg)"
+                strokeWidth={3}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={entry.name} fill={ANALYTICS_DONUT_COLORS[index % ANALYTICS_DONUT_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <p className="text-sm font-semibold leading-none text-stone-900 dark:text-stone-100">Top</p>
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400">{topItem?.pct}% share</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {data.slice(0, 4).map((item, index) => (
+            <div key={item.name} className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: ANALYTICS_DONUT_COLORS[index % ANALYTICS_DONUT_COLORS.length] }} />
+                <span className="truncate text-xs font-medium text-stone-700 dark:text-stone-300">{item.name}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 text-xs tabular-nums">
+                <span className="font-semibold text-stone-800 dark:text-stone-100">{typeof item.value === "number" ? item.value.toLocaleString() : item.value}</span>
+                <span className="w-8 text-right text-stone-400">{item.pct}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function AnalyticsFullDashboard() {
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const videoSrc = TAB_VIDEOS.analytics;
+
+  return (
+    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
+
+      <div className="flex items-start justify-between gap-4">
+        <Greeting />
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <button
+            onClick={() => setChecklistOpen((value) => !value)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+              checklistOpen
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                : "text-stone-500 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            title="Setup checklist"
+          >
+            <ClipboardList size={14} />
+          </button>
+          <button
+            onClick={() => setVideoOpen(true)}
+            className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <Play size={11} className="fill-current text-blue-500" />
+            Watch intro
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          maxHeight: checklistOpen ? 600 : 0,
+          opacity: checklistOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+        }}
+      >
+        <AnalyticsSetupChecklist />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <SectionCard className="min-h-[390px]">
+          <div className="mb-2">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Activity</p>
+                <HeadingTooltip text="Used to see overall usage direction from page views, sessions, and active users in the last 30 days." />
+              </div>
+              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Page views, sessions, and active users over the last 30 days.</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={268}>
+            <ComposedChart data={ANALYTICS_ACTIVITY_DATA} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="pageViews" stroke="#0080FF" strokeWidth={2} fill="rgba(0,128,255,0.08)" dot={false} name="Page views" />
+              <Line type="monotone" dataKey="sessions" stroke="#7C3AED" strokeWidth={1.8} dot={false} name="Sessions" />
+              <Line type="monotone" dataKey="activeUsers" stroke="#F59E0B" strokeWidth={1.8} dot={false} name="Active users" />
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-6">
+            {[
+              { label: "Page views", color: "#0080FF" },
+              { label: "Sessions", color: "#7C3AED" },
+              { label: "Active users", color: "#F59E0B" },
+            ].map((item) => (
+              <span key={item.label} className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
+                <span className="h-3 w-3 rounded" style={{ background: item.color }} />
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Audience quality"
+          description="Shows if usage is healthy by combining daily, weekly, monthly, new, and returning users."
+          tooltip="Used to understand audience stickiness without opening the full Engagement board."
+          className="min-h-[390px]"
+        >
+          <div className="flex h-full flex-col justify-center gap-6 pb-4">
+            <div className="grid grid-cols-3 gap-4">
+              {ANALYTICS_AUDIENCE_RINGS.map((item) => {
+                const ringData = [
+                  { name: item.label, value: item.pct },
+                  { name: "Remaining", value: 100 - item.pct },
+                ];
+                return (
+                  <div key={item.label} className="flex items-center justify-center">
+                    <div className="relative h-32 w-32 xl:h-36 xl:w-36">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={ringData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="68%"
+                            outerRadius="92%"
+                            startAngle={90}
+                            endAngle={-270}
+                            paddingAngle={2}
+                            stroke="var(--content-bg)"
+                            strokeWidth={3}
+                          >
+                            <Cell fill="#0080FF" />
+                            <Cell fill="rgba(0,128,255,0.18)" />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <p className="text-xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{item.value}</p>
+                        <span className="mt-1.5 flex items-center justify-center gap-1">
+                          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400">{item.label}</span>
+                          <HeadingTooltip text={item.tooltip} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-3 gap-4 pt-1">
+              {[
+                { label: "New", value: "49.44K", note: "75%", tooltip: "Users whose first tracked activity happened in the last 30 days." },
+                { label: "Returning", value: "16.43K", note: "25%", tooltip: "Users who were active before and came back during the last 30 days." },
+                { label: "DAU / MAU stickiness", value: "3.2%", note: "", tooltip: "Average daily active users divided by monthly active users. Higher means users return more often." },
+              ].map((item) => (
+                <div key={item.label} className="min-h-[86px] rounded-lg px-4 py-3" style={{ background: "var(--muted)" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1">
+                        <p className="truncate text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</p>
+                        <HeadingTooltip text={item.tooltip} />
+                      </div>
+                      <p className="mt-2 text-base font-semibold leading-none text-stone-900 dark:text-stone-100">{item.value}</p>
+                    </div>
+                    {item.note && <span className="shrink-0 text-xs font-semibold text-stone-400">{item.note}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Revenue pulse"
+          description="Shows whether subscription revenue is growing, leaking, or on track this month."
+          tooltip="Used as the quick subscription health check from MRR, subscriber, churn, and NRR data."
+          className="min-h-[460px]"
+        >
+          <div className="flex h-full flex-col justify-center gap-6 pb-10">
+            <div className="relative">
+              <div className="absolute left-0 top-0 z-10">
+                <p className="text-3xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">$24.76K</p>
+                <p className="mt-1 text-xs font-medium text-stone-500 dark:text-stone-400">Current MRR · Aug 2026</p>
+              </div>
+              <div className="absolute right-0 top-0 z-10">
+                <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-500 dark:bg-red-500/10 dark:text-red-300">-$132.23</span>
+              </div>
+              <div className="h-48 pt-16">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={ANALYTICS_MRR_TREND} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.45} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${Math.round(Number(value) / 1000)}K`} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Area type="monotone" dataKey="mrr" stroke="#0080FF" strokeWidth={2.4} fill="rgba(0,128,255,0.12)" dot={false} activeDot={{ r: 4, fill: "#0080FF", strokeWidth: 0 }} name="MRR" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 pt-4">
+              {[
+                { label: "Goal progress", value: "24.8%", note: "$100K target", tooltip: "Compares current monthly recurring revenue against the configured MRR goal.", tone: "neutral" },
+                { label: "Net movement", value: "-$132.23", note: "Churn higher", tooltip: "Month-to-date MRR change after new business and churn.", tone: "negative" },
+                { label: "NRR", value: "98.9%", note: "+4.4pp", tooltip: "Net revenue retention after expansion, contraction, and churn.", tone: "positive" },
+              ].map((item) => (
+                <div key={item.label} className="min-h-[90px] rounded-lg px-4 py-3.5" style={{ background: "var(--muted)" }}>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <p className="truncate text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</p>
+                    <HeadingTooltip text={item.tooltip} />
+                  </div>
+                  <p className={`mt-2 text-base font-semibold leading-none ${item.tone === "negative" ? "text-red-500 dark:text-red-300" : "text-stone-900 dark:text-stone-100"}`}>{item.value}</p>
+                  <p className="mt-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Acquisition mix"
+          description="Shows where useful traffic is coming from and which source/page is tied to revenue."
+          tooltip="Used to summarize Traffic board source and page data without repeating top-10 tables."
+          className="min-h-[390px] overflow-hidden"
+        >
+          <div className="flex h-full flex-col items-center justify-center gap-3 pb-3">
+            <div className="h-64 w-full max-w-[440px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ANALYTICS_ACQUISITION_MIX}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={82}
+                    innerRadius={0}
+                    paddingAngle={2}
+                    stroke="var(--content-bg)"
+                    strokeWidth={3}
+                    labelLine={false}
+                    label={<AcquisitionPieLabel />}
+                  >
+                    {ANALYTICS_ACQUISITION_MIX.map((entry, index) => (
+                      <Cell key={entry.name} fill={ANALYTICS_DONUT_COLORS[index % ANALYTICS_DONUT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex w-full max-w-[420px] items-center justify-center gap-5 pt-1">
+              {ANALYTICS_ACQUISITION_MIX.map((item, index) => (
+                <div key={item.name} className="flex min-w-0 items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: ANALYTICS_DONUT_COLORS[index % ANALYTICS_DONUT_COLORS.length] }} />
+                  <p className="truncate text-xs font-semibold text-stone-800 dark:text-stone-200">{item.name} <span className="font-medium text-stone-500 dark:text-stone-400">({item.display})</span></p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+      </div>
+
+      <AnalyticsUpgradeStrip />
     </div>
   );
 }
@@ -1491,7 +2262,258 @@ const HOME_TABS = [
   { key: "marketing", label: "Marketing" },
   { key: "sales",     label: "Sales" },
   { key: "analytics", label: "Analytics" },
-];
+] as const;
+
+type HomeTabKey = typeof HOME_TABS[number]["key"];
+const HOME_TAB_VISIBILITY_KEY = "intempt:home-visible-tabs";
+
+function readVisibleHomeTabs(): HomeTabKey[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(HOME_TAB_VISIBILITY_KEY) ?? "[]");
+    const valid = new Set(HOME_TABS.map((tab) => tab.key));
+    const filtered = Array.isArray(stored) ? stored.filter((key): key is HomeTabKey => valid.has(key)) : [];
+    return filtered.length ? filtered : HOME_TABS.map((tab) => tab.key);
+  } catch {
+    return HOME_TABS.map((tab) => tab.key);
+  }
+}
+
+function HomeTabsHeader({
+  activeTab,
+  onChange,
+  visibleTabs,
+  onVisibleTabsChange,
+}: {
+  activeTab: HomeTabKey;
+  onChange: (key: HomeTabKey) => void;
+  visibleTabs: HomeTabKey[];
+  onVisibleTabsChange: (keys: HomeTabKey[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const visibleSet = new Set(visibleTabs);
+  const tabs = HOME_TABS.filter((tab) => visibleSet.has(tab.key));
+  const allVisible = visibleTabs.length === HOME_TABS.length;
+
+  function setVisible(next: HomeTabKey[]) {
+    const normalized = next.length ? next : [activeTab];
+    localStorage.setItem(HOME_TAB_VISIBILITY_KEY, JSON.stringify(normalized));
+    onVisibleTabsChange(normalized);
+  }
+
+  function toggleTab(key: HomeTabKey) {
+    if (visibleSet.has(key)) {
+      setVisible(visibleTabs.filter((tab) => tab !== key));
+      return;
+    }
+    setVisible(HOME_TABS.map((tab) => tab.key).filter((tab) => tab === key || visibleSet.has(tab)));
+  }
+
+  return (
+    <div className="flex items-start justify-between gap-3 px-4 pt-3 shrink-0">
+      <ViewTabs tabs={tabs} activeTab={activeTab} onChange={onChange} className="flex items-center gap-1 min-w-0 flex-wrap" />
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="relative">
+          <button
+            onClick={() => setOpen((value) => !value)}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+              open || !allVisible
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                : "text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-white/6 dark:hover:text-stone-200"
+            }`}
+            title="Choose home tabs"
+          >
+            <Settings size={15} />
+          </button>
+
+          {open && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+              <div
+                className="absolute right-0 top-11 z-50 w-56 rounded-xl py-1 shadow-lg"
+                style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+              >
+                <p className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500">
+                  Show home tabs
+                </p>
+                <button
+                  onClick={() => setVisible(HOME_TABS.map((tab) => tab.key))}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+                >
+                  <span
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+                    style={{ background: allVisible ? "#0080FF" : "transparent", border: allVisible ? "none" : "1.5px solid var(--border)" }}
+                  >
+                    {allVisible && <Check size={10} className="text-white" />}
+                  </span>
+                  <span className="text-xs font-medium text-stone-700 dark:text-stone-200">All</span>
+                </button>
+                <div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
+                {HOME_TABS.map((tab) => {
+                  const visible = visibleSet.has(tab.key);
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => toggleTab(tab.key)}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
+                    >
+                      <span
+                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+                        style={{ background: visible ? "#0080FF" : "transparent", border: visible ? "none" : "1.5px solid var(--border)" }}
+                      >
+                        {visible && <Check size={10} className="text-white" />}
+                      </span>
+                      <span className="text-xs font-medium text-stone-700 dark:text-stone-200">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type HomeMockState = "empty" | "partial" | "full";
+
+const PARTIAL_HOME_CONTENT: Record<Exclude<HomeTabKey, "analytics">, {
+  title: string;
+  body: string;
+  kpis: { label: string; value: string; change?: string; icon: LucideIcon; accent?: string }[];
+  source: { label: string; value: string; detail: string };
+  waiting: { label: string; value: string; detail: string };
+  steps: string[];
+  rec: HomeBentoCard;
+}> = {
+  design: {
+    title: "Brand workspace is ready",
+    body: "Brand setup is started. Create or import assets to populate creative, avatar, scene, and design system activity.",
+    kpis: [
+      { icon: Palette, label: "Brand kit", value: "Started", change: "1/4" },
+      { icon: FileImage, label: "Assets", value: "0", change: "Waiting" },
+      { icon: PenTool, label: "Design system", value: "Draft", change: "Setup" },
+      { icon: Clapperboard, label: "Generations", value: "0", change: "Waiting" },
+    ],
+    source: { label: "Connected", value: "Brand basics", detail: "Workspace, brand name, and first setup choices are available." },
+    waiting: { label: "Waiting for", value: "Creative assets", detail: "Add assets, avatars, scenes, or a design system to make this dashboard live." },
+    steps: ["Upload brand assets", "Create an avatar or scene", "Save a design system"],
+    rec: {
+      id: "design-partial-rec",
+      perspective: "blu",
+      eyebrow: "Blu recommendation",
+      title: "Start with brand assets",
+      body: "A logo, colors, and one reusable scene are enough to make Design useful immediately.",
+      action: "Open brand",
+      icon: Bot,
+      signal: "Next step",
+    },
+  },
+  marketing: {
+    title: "Marketing sources are ready",
+    body: "Some connectors are prepared. Campaign, journey, and commerce activity will appear after events start flowing.",
+    kpis: [
+      { icon: Route, label: "Journeys", value: "0", change: "Waiting" },
+      { icon: MailOpen, label: "Email sends", value: "0", change: "Waiting" },
+      { icon: Shuffle, label: "Experiments", value: "0", change: "Waiting" },
+      { icon: ShoppingCart, label: "Catalog events", value: "0", change: "Waiting" },
+    ],
+    source: { label: "Prepared", value: "Marketing stack", detail: "HubSpot, SendGrid, Shopify, and JS SDK are the relevant sources." },
+    waiting: { label: "Waiting for", value: "Campaign activity", detail: "Launch or sync journeys to see sends, opens, clicks, and conversions." },
+    steps: ["Connect email provider", "Connect Shopify or catalog feed", "Launch first journey"],
+    rec: {
+      id: "marketing-partial-rec",
+      perspective: "blu",
+      eyebrow: "Blu recommendation",
+      title: "Connect campaign and commerce data together",
+      body: "Marketing gets useful when sends, site events, and revenue can be tied to the same user.",
+      action: "Open integrations",
+      icon: Bot,
+      signal: "Next step",
+    },
+  },
+  sales: {
+    title: "Sales workspace is ready",
+    body: "Calendar setup is started. Meeting, booking, and attendance data will fill in as calls are scheduled.",
+    kpis: [
+      { icon: Calendar, label: "Upcoming meetings", value: "0", change: "Waiting" },
+      { icon: CalendarClock, label: "Booking types", value: "0", change: "Setup" },
+      { icon: Activity, label: "Attendance", value: "--", change: "Waiting" },
+      { icon: ClipboardList, label: "Reminders", value: "Off", change: "Setup" },
+    ],
+    source: { label: "Connected", value: "Calendar", detail: "Google Calendar can power availability, scheduler links, and upcoming meetings." },
+    waiting: { label: "Waiting for", value: "Scheduled calls", detail: "Create booking types and let meetings populate this page." },
+    steps: ["Connect Gmail for meeting context", "Create a booking type", "Enable reminders"],
+    rec: {
+      id: "sales-partial-rec",
+      perspective: "blu",
+      eyebrow: "Blu recommendation",
+      title: "Finish scheduler setup",
+      body: "Booking links and reminders are the fastest way to make the Sales home useful.",
+      action: "Open scheduler",
+      icon: Bot,
+      signal: "Next step",
+    },
+  },
+};
+
+function HomePartialDashboard({ tab }: { tab: Exclude<HomeTabKey, "analytics"> }) {
+  const config = PARTIAL_HOME_CONTENT[tab];
+
+  return (
+    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
+      <Greeting />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {config.kpis.map((item) => (
+          <MiniStat
+            key={item.label}
+            icon={item.icon}
+            label={item.label}
+            value={item.value}
+            change={item.change}
+            accent={item.accent}
+          />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
+        <SectionCard title={config.title} className="min-h-[220px]">
+          <p className="max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">{config.body}</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {[config.source, config.waiting].map((item) => (
+              <div key={item.label} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
+                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">{item.label}</p>
+                <p className="mt-1 text-sm font-semibold text-stone-900 dark:text-stone-100">{item.value}</p>
+                <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Next setup">
+          <div className="space-y-3">
+            {config.steps.map((step, index) => (
+              <div key={step} className="grid grid-cols-[24px_1fr] items-start gap-3">
+                <span className="pt-0.5 text-xs font-medium tabular-nums text-stone-400 dark:text-stone-500">{index + 1}</span>
+                <p className="text-sm font-medium leading-snug text-stone-800 dark:text-stone-100">{step}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <BluSuggestionCard card={config.rec} />
+        <SectionCard title="What unlocks next">
+          <p className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+            When these setup items are done, the full dashboard keeps the same layout and fills with real activity instead of placeholders.
+          </p>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
 
 type HomeBentoCard = {
   id: string;
@@ -1805,6 +2827,13 @@ function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
     card.status === "warning" ? "text-red-500"
     : card.status === "good"  ? "text-green-500"
     : "text-blue-500";
+  const signalNegative = card.signal?.trim().startsWith("-");
+  const signalPositive = card.signal?.trim().startsWith("+");
+  const signalClass = signalNegative
+    ? "bg-red-50 text-red-600 dark:bg-red-500/12 dark:text-red-400"
+    : signalPositive
+      ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300"
+      : "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300";
 
   return (
     <div
@@ -1817,7 +2846,7 @@ function SummaryKpiCard({ card }: { card: HomeBentoCard }) {
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
             <Icon size={15} />
           </span>
-          {card.signal && <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">{card.signal}</span>}
+          {card.signal && <span className={`rounded-full px-2 py-1 text-[11px] font-medium ${signalClass}`}>{card.signal}</span>}
         </div>
         <div>
           {displayValue && <p className={`text-2xl font-semibold leading-none tracking-tight ${valueClass}`}>{displayValue}</p>}
@@ -1964,6 +2993,8 @@ function AnalyticsIntegrationsCard({
   body = "Unlock users, page views, MRR, subscribers, and more.",
   href = "/integrations",
   linkText = "Go to integrations",
+  docsHref,
+  docsText = "Read docs",
   logos = [{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }] as EmptySourceLogo[],
 }: {
   className?: string;
@@ -1971,6 +3002,8 @@ function AnalyticsIntegrationsCard({
   body?: string;
   href?: string;
   linkText?: string;
+  docsHref?: string;
+  docsText?: string;
   logos?: EmptySourceLogo[];
 }) {
   return (
@@ -1985,12 +3018,22 @@ function AnalyticsIntegrationsCard({
         <p className="mt-1.5 text-xs font-medium leading-relaxed text-stone-400 dark:text-stone-500">
           {body}
         </p>
-        <a
-          href={href}
-          className="mt-5 inline-flex text-xs font-medium text-stone-600 underline decoration-dotted underline-offset-4 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-        >
-          {linkText}
-        </a>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href={href}
+            className="inline-flex text-xs font-medium text-stone-600 underline decoration-dotted underline-offset-4 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+          >
+            {linkText}
+          </a>
+          {docsHref && (
+            <a
+              href={docsHref}
+              className="inline-flex text-xs font-medium text-stone-500 underline decoration-dotted underline-offset-4 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+            >
+              {docsText}
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2298,7 +3341,7 @@ const EMPTY_HOME_SETUP: Record<string, {
   },
   analytics: {
     title: "Connect analytics sources",
-    body: "Unlock users, page views, MRR, subscribers, and more.",
+    body: "Connect tools like JS SDK and Stripe to capture product activity and unlock revenue insights.",
     href: "/integrations",
     linkText: "Go to integrations",
     logos: [{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }],
@@ -2605,6 +3648,7 @@ function EmptyHomeDashboard({ tab }: { tab: string }) {
               body={setup.body}
               href={setup.href}
               linkText={setup.linkText}
+              docsHref="https://intempt.com/docs"
               logos={setup.logos}
             />
           </div>
@@ -2660,30 +3704,52 @@ const MARKETING_HOME_KPIS: MarketingKpi[] = [
   },
 ];
 
-const MARKETING_OPERATIONS = [
-  { name: "Welcome series", type: "Journey", status: "active", metric: "1,240 sends", result: "12.4% conv." },
-  { name: "Cart abandonment", type: "Journey", status: "active", metric: "842 sends", result: "18.1% conv." },
-  { name: "Onboarding tips", type: "Experience", status: "winning", metric: "2 variants", result: "+8.6% lift" },
-  { name: "Popular right now", type: "Feed", status: "active", metric: "428 items", result: "68% coverage" },
-  { name: "Re-engagement Q2", type: "Journey", status: "paused", metric: "0 sends", result: "Needs review" },
-];
+type MarketingAttentionItem = {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  detail: string;
+  metric: string;
+  metricNote: string;
+  cta: string;
+};
 
-const MARKETING_HOME_ACTIONS = [
+const MARKETING_ATTENTION: MarketingAttentionItem[] = [
   {
-    priority: "Urgent",
-    title: "Clean stale audiences before the next send",
-    body: "Bounce rate is above the sender-risk threshold. Suppress old re-engagement segments first, then resume volume.",
-    impact: "Protect deliverability",
-    action: "Clean segment",
-    tone: "critical" as const,
+    id: "bounce",
+    severity: "critical",
+    title: "Email bounce rate is above the sender-risk threshold",
+    detail: "Suppress the stale re-engagement segments before resuming send volume, or deliverability for the whole domain is at risk.",
+    metric: "4.8%",
+    metricNote: "Expected 0.9%–1.6% · +220%",
+    cta: "Clean segment",
   },
   {
-    priority: "High",
-    title: "Ship the winning onboarding experience",
-    body: "The onboarding variant has a clear lift. Moving the winner live is more useful than keeping the test running.",
-    impact: "+8.6% conversion lift",
-    action: "Ship winner",
-    tone: "warning" as const,
+    id: "winner",
+    severity: "info",
+    title: "The onboarding experiment has a clear winner",
+    detail: "Variant B has held the lead for 9 days straight. Shipping it now is more useful than continuing to split traffic.",
+    metric: "+8.6%",
+    metricNote: "conversion lift vs. control",
+    cta: "Ship winner",
+  },
+  {
+    id: "open-rate",
+    severity: "warning",
+    title: "Open rate dropped a third below baseline",
+    detail: "Usually moves with deliverability — likely the same root cause as the bounce spike above.",
+    metric: "28.4%",
+    metricNote: "Expected 40%–46% · −33%",
+    cta: "Review sends",
+  },
+  {
+    id: "unsub",
+    severity: "warning",
+    title: "Unsubscribe rate is running hot on recent sends",
+    detail: "Roughly double the expected rate — check whether Re-engagement Q2 is targeting the right segment before resuming it.",
+    metric: "0.42%",
+    metricNote: "Expected 0.10%–0.22% · +110%",
+    cta: "Review journey",
   },
 ];
 
@@ -2728,39 +3794,157 @@ function MarketingStatusPill({ status }: { status: string }) {
   );
 }
 
-function MarketingBluActionCard({ rec }: { rec: typeof MARKETING_HOME_ACTIONS[number] }) {
-  const isCritical = rec.tone === "critical";
-  const color = isCritical ? "#ef4444" : "#f59e0b";
-
+function MarketingAttentionRow({ item }: { item: MarketingAttentionItem }) {
+  const color = item.severity === "critical" ? "#ef4444" : item.severity === "warning" ? "#f59e0b" : "#0080FF";
   return (
     <div
-      className="flex h-full min-h-[204px] flex-col rounded-xl p-5"
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+      className="flex flex-col gap-3 border-b py-4 first:pt-0 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+      style={{ borderColor: "var(--border)" }}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: isCritical ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)" }}>
-            <Bot size={14} style={{ color }} />
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-stone-800 dark:text-stone-100">Blu recommendation</p>
-            <p className="text-xs text-stone-400">{rec.impact}</p>
-          </div>
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
         </div>
-        <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: isCritical ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)", color }}>
-          {rec.priority}
-        </span>
       </div>
-      <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{rec.title}</p>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-500 dark:text-stone-400">{rec.body}</p>
-      <button
-        className="mt-5 inline-flex h-9 w-fit items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
-        style={{ background: "#0080FF" }}
-      >
-        {rec.action}
-        <ChevronRight size={12} />
-      </button>
+      <div className="flex shrink-0 items-center gap-4 pl-5 sm:pl-0">
+        <div className="text-right">
+          <p className="text-sm font-bold whitespace-nowrap" style={{ color }}>{item.metric}</p>
+          <p className="text-xs whitespace-nowrap text-stone-400">{item.metricNote}</p>
+        </div>
+        <button
+          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-xs font-semibold text-white transition-colors hover:opacity-90"
+          style={{ background: "#0080FF" }}
+        >
+          {item.cta}
+          <ChevronRight size={12} />
+        </button>
+      </div>
     </div>
+  );
+}
+
+const MARKETING_CHANNEL_ICONS: Record<string, LucideIcon> = {
+  email: MailOpen,
+  sms: MessageSquare,
+  push: Bell,
+  inapp: Smartphone,
+};
+
+function MarketingChannelMixCard() {
+  return (
+    <SectionCard title="Channel mix">
+      <p className="-mt-2 mb-4 text-xs text-stone-500 dark:text-stone-400">Share of sends across active channels over the last 26 days.</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {CHANNEL_MIX.map((c) => {
+          const Icon = MARKETING_CHANNEL_ICONS[c.icon] ?? MailOpen;
+          return (
+            <div key={c.channel} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ background: `${c.color}1F` }}>
+                  <Icon size={12} style={{ color: c.color }} />
+                </span>
+                <span className="truncate text-xs font-medium text-stone-700 dark:text-stone-300">{c.channel}</span>
+              </div>
+              <p className="text-lg font-bold leading-none text-stone-900 dark:text-stone-100">{c.pct}%</p>
+              <p className="mt-1 text-xs text-stone-400">{c.count.toLocaleString()} sends</p>
+              <div className="mt-2 h-1.5 rounded-full bg-stone-200 dark:bg-white/10">
+                <div className="h-1.5 rounded-full" style={{ width: `${c.pct}%`, background: c.color }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
+function MarketingJourneysCard() {
+  return (
+    <SectionCard title="Active journeys" className="h-full">
+      <div className="space-y-0">
+        {ACTIVE_JOURNEYS.map((j) => (
+          <div
+            key={j.name}
+            className="flex items-center justify-between gap-3 border-b py-3 last:border-0"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(0,128,255,0.08)" }}>
+                <Route size={14} className="text-blue-500" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{j.name}</p>
+                <p className="mt-0.5 text-xs text-stone-400">{j.sends.toLocaleString()} sends</p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">{j.rate}%</p>
+                <p className="text-xs text-stone-400">conv.</p>
+              </div>
+              <MarketingStatusPill status={j.status} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+function MarketingExperimentsCard() {
+  return (
+    <SectionCard title="Live experiments" className="h-full">
+      <div className="space-y-3">
+        {LIVE_EXPERIENCES.map((e) => {
+          const winning = e.status === "winning";
+          const color = winning ? "#16a34a" : "#0080FF";
+          return (
+            <div key={e.name} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{e.name}</span>
+                <span
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{ background: `${color}1F`, color }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                  {winning ? "Winner" : "Running"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-stone-400">{e.variants} variants</span>
+                <span className="text-sm font-bold" style={{ color: "#16a34a" }}>+{e.lift}% lift</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
+function MarketingSegmentsCard() {
+  const max = Math.max(...TOP_SEGMENTS.map((s) => s.rate));
+  return (
+    <SectionCard title="Top segments" className="h-full">
+      <div className="space-y-3.5">
+        {TOP_SEGMENTS.map((s) => (
+          <div key={s.name}>
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <span className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{s.name}</span>
+              <span className="shrink-0 text-xs text-stone-400">{s.members} members</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 flex-1 rounded-full bg-stone-100 dark:bg-white/8">
+                <div className="h-1.5 rounded-full bg-blue-400" style={{ width: `${(s.rate / max) * 100}%` }} />
+              </div>
+              <span className="w-10 shrink-0 text-right text-xs font-semibold text-stone-600 dark:text-stone-300">{s.rate}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -3224,7 +4408,7 @@ function MarketingHomeDashboard() {
             ) : (
               <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
                 <img
-                  src="https://img.youtube.com/vi/9LuIOESoiCc/maxresdefault.jpg"
+                  src="https://img.youtube.com/vi/9LuIOESoiCc/hqdefault.jpg"
                   alt="Intempt Marketing overview"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
@@ -3266,12 +4450,14 @@ function MarketingHomeDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div>
-          <SectionCard className="h-full">
+      <MarketingChannelMixCard />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="flex flex-col gap-3 lg:col-span-2">
+          <SectionCard>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Message performance</p>
+                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Send performance</p>
                 <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Daily delivery volume and response quality over the last 26 days.</p>
               </div>
               <div className="flex flex-wrap items-center gap-4">
@@ -3299,77 +4485,21 @@ function MarketingHomeDashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </SectionCard>
+          <MarketingJourneysCard />
         </div>
-        <div>
-          <SectionCard title="Marketing Operations" className="h-full">
-            <div className="space-y-0">
-              <div
-                className="grid grid-cols-4 gap-3 pb-2 border-b text-xs font-semibold text-slate-500 dark:text-slate-400"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <span>Item</span>
-                <span>Status</span>
-                <span className="text-right">Metric</span>
-                <span className="text-right">Result</span>
-              </div>
-              {MARKETING_OPERATIONS.map((j) => (
-                <div
-                  key={j.name}
-                  className="grid grid-cols-4 gap-3 items-center py-3 border-b last:border-0"
-                  style={{ borderColor: "var(--border)" }}
-                >
-                  <div className="min-w-0 pr-3">
-                    <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{j.name}</p>
-                    <p className="mt-0.5 text-xs text-stone-400">{j.type}</p>
-                  </div>
-                  <MarketingStatusPill status={j.status} />
-                  <span className="text-sm font-medium text-stone-600 dark:text-stone-300 text-right">
-                    {j.metric}
-                  </span>
-                  <span
-                    className="text-sm font-semibold text-right"
-                    style={{ color: j.result.includes("Needs") ? "#f59e0b" : j.result.includes("+") || j.result.includes("conv") ? "#16a34a" : "#64748b" }}
-                  >
-                    {j.result}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
+        <div className="flex flex-col gap-3">
+          <MarketingExperimentsCard />
+          <MarketingSegmentsCard />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
-        <SectionCard title="Anomaly Detection" className="h-full">
-          <div className="space-y-3">
-            {ANOMALIES.slice(0, 3).map((a) => {
-              const isCritical = a.status === "critical";
-              const color = isCritical ? "#ef4444" : "#f59e0b";
-              return (
-                <div key={a.metric} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold text-stone-800 dark:text-stone-100">{a.metric}</span>
-                    <span className="text-xs font-medium" style={{ color }}>{a.status}</span>
-                  </div>
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-xl font-bold leading-none" style={{ color }}>{a.actual}</p>
-                      <p className="mt-1 text-xs text-stone-400">Expected {a.expected}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold" style={{ color }}>{a.change}</p>
-                      <p className="mt-1 text-xs text-stone-400">{a.ago}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-        {MARKETING_HOME_ACTIONS.map((rec) => (
-          <MarketingBluActionCard key={rec.title} rec={rec} />
-        ))}
-      </div>
+      <SectionCard title="Needs attention">
+        <div>
+          {MARKETING_ATTENTION.map((item) => (
+            <MarketingAttentionRow key={item.id} item={item} />
+          ))}
+        </div>
+      </SectionCard>
     </div>
   );
 }
@@ -3583,29 +4713,50 @@ function SalesHomeDashboard() {
 export default function HomeView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const rawTab = searchParams.get("tab") ?? "design";
+  const rawTab = searchParams.get("tab") ?? "analytics";
   const [requestedTab, previewState] = rawTab.split("/");
   const tab = HOME_TABS.some((t) => t.key === requestedTab)
-    ? requestedTab
-    : "design";
-  const showEmptyPreview = previewState === "1";
+    ? requestedTab as HomeTabKey
+    : "analytics";
+  const [visibleHomeTabs, setVisibleHomeTabs] = useState<HomeTabKey[]>(readVisibleHomeTabs);
+  const activeTab: HomeTabKey = visibleHomeTabs.includes(tab) ? tab : visibleHomeTabs[0] ?? "analytics";
+  const homeState: HomeMockState =
+    previewState === "1" || previewState === "empty"
+      ? "empty"
+      : previewState === "partial"
+        ? "partial"
+        : "full";
 
-  function setTab(key: string) {
-    navigate(`/home?tab=${key}`, { replace: true });
+  useEffect(() => {
+    if (activeTab !== tab) navigate(`/home?tab=${activeTab}/${homeState}`, { replace: true });
+  }, [activeTab, homeState, navigate, tab]);
+
+  function setTab(key: HomeTabKey) {
+    navigate(`/home?tab=${key}/${homeState}`, { replace: true });
   }
 
+  // Pinboard manages its own scroll; other tabs scroll via the outer wrapper
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
-      <ViewTabs tabs={HOME_TABS} activeTab={tab} onChange={setTab} />
-      {showEmptyPreview
-        ? <EmptyHomeDashboard key={`${tab}-empty`} tab={tab} />
-        : tab === "design"
-          ? <DesignHomeDashboard key="design" />
-          : tab === "marketing"
-            ? <MarketingHomeDashboard key="marketing" />
-            : tab === "sales"
-              ? <SalesHomeDashboard key="sales" />
-              : <HomeBentoDashboard key={tab} tab={tab} />
+      <HomeTabsHeader
+        activeTab={activeTab}
+        onChange={setTab}
+        visibleTabs={visibleHomeTabs}
+        onVisibleTabsChange={setVisibleHomeTabs}
+      />
+      {homeState === "empty"
+        ? <EmptyHomeDashboard key={`${activeTab}-empty`} tab={activeTab} />
+        : homeState === "partial"
+          ? activeTab === "analytics"
+            ? <AnalyticsPartialDashboard key="analytics-partial" />
+            : <HomePartialDashboard key={`${activeTab}-partial`} tab={activeTab} />
+          : activeTab === "design"
+            ? <DesignHomeDashboard key="design" />
+            : activeTab === "marketing"
+              ? <MarketingHomeDashboard key="marketing" />
+              : activeTab === "sales"
+                ? <SalesHomeDashboard key="sales" />
+                : <AnalyticsFullDashboard key="analytics-full" />
       }
     </div>
   );
