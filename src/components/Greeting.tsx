@@ -9,7 +9,7 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-export default function Greeting({ name = "Rana" }: { name?: string }) {
+export default function Greeting({ name = "Rana V" }: { name?: string }) {
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function Greeting({ name = "Rana" }: { name?: string }) {
       style={{ letterSpacing: "-0.02em" }}
     >
       {greeting},{" "}
-      <span className="text-blue-500">{name}</span>.{" "}
+      <span className="text-blue-500">{name}</span>{" "}
       <span aria-hidden="true">👋</span>
     </h1>
   );

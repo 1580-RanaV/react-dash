@@ -11,7 +11,8 @@ import RecentDesigns from "./RecentDesigns";
 import RevenueMetricCard from "./MetricCard";
 import {
   ComposedChart, Bar, Line, AreaChart, Area, LabelList, PieChart, Pie, Cell,
-  XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
+  XAxis, YAxis, ZAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
+  ScatterChart, Scatter, ReferenceLine,
 } from "recharts";
 import {
   Globe, LayoutGrid, Activity, ChevronDown, Info,
@@ -21,7 +22,7 @@ import {
   AlertTriangle, AlertCircle, MessageSquare, Bell, Smartphone, Bot,
   ArrowDown, Check, Wand2, FileImage, Route,
   Clapperboard, PenTool, Shuffle, Package, Handshake, CalendarClock,
-  Play, X, ClipboardList, Settings, Video, Lock,
+  Play, X, ClipboardList, Settings, Video, GripVertical, Plus,
 } from "lucide-react";
 
 // ── static data ───────────────────────────────────────────────────────────────
@@ -225,6 +226,29 @@ const DESIGN_BRAND_ITEMS = [
   { label: "Logo (dark bg)",  ok: false },
   { label: "Design system",   ok: true  },
 ];
+const DESIGN_LATEST_GENERATIONS = [
+  { name: "Claude design - Email 1",         type: "Email", ago: "2 days ago",  icon: "email" },
+  { name: "Flash sale SMS with Liquid vars", type: "SMS",   ago: "3 days ago",  icon: "sms"   },
+  { name: "Raw HTML email output",           type: "Email", ago: "1 week ago",  icon: "email" },
+  { name: "Brand character holding a can",   type: "Image", ago: "1 month ago", icon: "image" },
+];
+const DESIGN_GENERATION_TREND = [
+  { date: "Jun 13", email: 4, image: 8  }, { date: "Jun 14", email: 6, image: 12 },
+  { date: "Jun 15", email: 3, image: 5  }, { date: "Jun 16", email: 7, image: 14 },
+  { date: "Jun 17", email: 5, image: 10 }, { date: "Jun 18", email: 4, image: 7  },
+  { date: "Jun 19", email: 9, image: 18 }, { date: "Jun 20", email: 7, image: 15 },
+  { date: "Jun 21", email: 5, image: 9  }, { date: "Jun 22", email: 10, image: 20 },
+  { date: "Jun 23", email: 6, image: 13 }, { date: "Jun 24", email: 5, image: 11 },
+  { date: "Jun 25", email: 8, image: 17 }, { date: "Jun 26", email: 5, image: 3  },
+  { date: "Jun 27", email: 6, image: 2  }, { date: "Jun 28", email: 4, image: 2  },
+  { date: "Jun 29", email: 5, image: 4  }, { date: "Jun 30", email: 8, image: 16 },
+  { date: "Jul 1",  email: 6, image: 13 }, { date: "Jul 2",  email: 5, image: 10 },
+  { date: "Jul 3",  email: 3, image: 6  }, { date: "Jul 4",  email: 7, image: 15 },
+  { date: "Jul 5",  email: 5, image: 11 }, { date: "Jul 6",  email: 4, image: 9  },
+  { date: "Jul 7",  email: 8, image: 16 }, { date: "Jul 8",  email: 6, image: 14 },
+  { date: "Jul 9",  email: 5, image: 10 }, { date: "Jul 10", email: 3, image: 7  },
+  { date: "Jul 11", email: 7, image: 15 }, { date: "Jul 12", email: 6, image: 12 },
+];
 
 // ── Marketing dashboard data ─────────────────────────────────────────────────
 
@@ -255,6 +279,10 @@ const SENDS_CHART_DATA = [
   { date: "Jul 6",  sends: 840,  opens: 358, clicks: 66  },
   { date: "Jul 7",  sends: 1150, opens: 490, clicks: 90  },
   { date: "Jul 8",  sends: 1020, opens: 434, clicks: 80  },
+  { date: "Jul 9",  sends: 890,  opens: 379, clicks: 69  },
+  { date: "Jul 10", sends: 760,  opens: 323, clicks: 59  },
+  { date: "Jul 11", sends: 1130, opens: 481, clicks: 88  },
+  { date: "Jul 12", sends: 1000, opens: 426, clicks: 78  },
 ];
 const ENGAGEMENT_FUNNEL = [
   { stage: "Sent",      value: 24800 },
@@ -264,39 +292,36 @@ const ENGAGEMENT_FUNNEL = [
   { stage: "Converted", value:   453 },
 ];
 const CHANNEL_MIX = [
-  { channel: "Email",  icon: "email",  count: 18400, pct: 74, color: "#0080FF" },
-  { channel: "SMS",    icon: "sms",    count:  3800, pct: 15, color: "#C37EE5" },
-  { channel: "Push",   icon: "push",   count:  1700, pct:  7, color: "#59B277" },
-  { channel: "In-app", icon: "inapp",  count:   900, pct:  4, color: "#FFC44D" },
+  { channel: "Email",  icon: "email",  count: 18400, pct: 74, revenue: 86400, color: "#0080FF" },
+  { channel: "SMS",    icon: "sms",    count:  3800, pct: 15, revenue: 34200, color: "#C37EE5" },
+  { channel: "Push",   icon: "push",   count:  1700, pct:  7, revenue:  9600, color: "#59B277" },
+  { channel: "In-app", icon: "inapp",  count:   900, pct:  4, revenue:  6100, color: "#FFC44D" },
 ];
-const ACTIVE_JOURNEYS = [
-  { name: "Welcome series",       sends: 1240, rate: 12.4, status: "active"  },
-  { name: "Cart abandonment",     sends:  842, rate: 18.1, status: "active"  },
-  { name: "Re-engagement Q2",     sends:    0, rate:  0,   status: "paused"  },
-  { name: "Trial expiry nudge",   sends:  312, rate:  9.6, status: "active"  },
-  { name: "VIP loyalty path",     sends:  540, rate: 22.8, status: "active"  },
+const LATEST_JOURNEYS = [
+  { name: "Welcome series",     sends24h:  86, status: "active" },
+  { name: "Cart abandonment",   sends24h:  64, status: "active" },
+  { name: "Re-engagement Q2",   sends24h:   0, status: "paused" },
+  { name: "Trial expiry nudge", sends24h:  21, status: "active" },
 ];
-const LIVE_EXPERIENCES = [
-  { name: "Hero CTA color",    variants: 3, lift: 4.2, status: "winning" },
-  { name: "Pricing layout",    variants: 2, lift: 1.1, status: "running" },
-  { name: "Onboarding tips",   variants: 2, lift: 8.6, status: "winning" },
+const LATEST_EXPERIMENTS = [
+  { name: "Hero CTA color",     variants: 3, status: "winning" },
+  { name: "Pricing layout",     variants: 2, status: "running" },
+  { name: "Onboarding tips",    variants: 2, status: "winning" },
+  { name: "Checkout copy test", variants: 2, status: "running" },
 ];
 const TOP_SEGMENTS = [
-  { name: "High-intent visitors",   members: "4.2k", rate: 24.1 },
-  { name: "Active trial users",     members: "1.1k", rate: 38.7 },
-  { name: "Newsletter subscribers", members: "8.1k", rate:  6.2 },
-  { name: "Churned (90-day)",       members: "2.4k", rate:  3.1 },
+  { name: "High-intent visitors",   members: "4.2K", membersCount: 4200, rate: 24.1, change: "+12%" },
+  { name: "Active trial users",     members: "1.1K", membersCount: 1100, rate: 38.7, change: "+8%"  },
+  { name: "Newsletter subscribers", members: "8.1K", membersCount: 8100, rate:  6.2, change: "+4%"  },
+  { name: "Churned (90-day)",       members: "2.4K", membersCount: 2400, rate:  3.1, change: "-6%"  },
 ];
-// ── Sales dashboard data ─────────────────────────────────────────────────────
-
-const MEETINGS_DATA = [
-  { week: "Jun 9", scheduled: 12, attended: 9  },
-  { week: "Jun 16", scheduled: 15, attended: 13 },
-  { week: "Jun 23", scheduled: 11, attended: 10 },
-  { week: "Jun 30", scheduled: 14, attended: 12 },
-  { week: "Jul 7",  scheduled: 9,  attended: 7  },
+const SEGMENT_COLORS = ["#0080FF", "#8B5CF6", "#14B8A6", "#F59E0B"];
+const SEGMENT_QUADRANTS = [
+  { title: "High engagement, smaller audience", hint: "Great for targeted experiments", bg: "rgba(139,92,246,0.08)", text: "#8B5CF6" },
+  { title: "High engagement, large audience",   hint: "Scale with journeys",             bg: "rgba(0,128,255,0.08)",  text: "#0080FF" },
+  { title: "Lower engagement",                  hint: "Nurture or win back",             bg: "rgba(245,158,11,0.08)", text: "#B45309" },
+  { title: "Large audience, growth opportunity", hint: "Build engagement",                bg: "rgba(20,184,166,0.08)", text: "#0F766E" },
 ];
-
 // ── Analytics dashboard data ─────────────────────────────────────────────────
 
 const REVENUE_TREND = [
@@ -933,24 +958,6 @@ function AcquisitionPieLabel({
   );
 }
 
-function AnalyticsUpgradeStrip() {
-  return (
-    <div
-      className="relative flex min-h-[20vh] items-center justify-center overflow-hidden rounded-xl px-5 py-6"
-      style={{ background: "var(--content-bg)" }}
-    >
-      <div className="relative flex max-w-xl flex-col items-center justify-center px-4 text-center">
-        <p className="text-base font-semibold leading-tight text-stone-900 dark:text-stone-100">Discover more today</p>
-        <p className="mt-2 text-sm leading-5 text-stone-500 dark:text-stone-400">Unlock full analytics for deeper trends, retention cuts, and revenue insights.</p>
-        <button className="mt-5 inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-stone-100">
-          <Lock size={14} className="text-black" />
-          Upgrade plan
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function SectionCard({
   title,
   description,
@@ -980,6 +987,47 @@ function SectionCard({
   );
 }
 
+// ── Per-card "connected, not enough data yet" empty state ──────────────────────
+//
+// Shown inside a card's content area when homeState === "partial": the workspace
+// has sources connected but doesn't have enough of *this specific card's* data
+// yet. Distinct from EmptyHomeDashboard (nothing connected at all).
+
+function CardEmptyState({
+  icon: Icon,
+  title,
+  body,
+  actionLabel,
+  actionHref,
+}: {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  actionLabel?: string;
+  actionHref?: string;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(0,128,255,0.08)" }}>
+        <Icon size={18} className="text-blue-500" />
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
+        <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-stone-500 dark:text-stone-400">{body}</p>
+      </div>
+      {actionLabel && actionHref && (
+        <a
+          href={actionHref}
+          className="mt-1 inline-flex h-8 items-center rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
+          style={{ background: "#0080FF" }}
+        >
+          {actionLabel}
+        </a>
+      )}
+    </div>
+  );
+}
+
 // ── Blu AI ───────────────────────────────────────────────────────────────────
 
 type BluRec = {
@@ -998,7 +1046,7 @@ const DESIGN_RECS: BluRec[] = [
     priority: "high",
     tag: "Brand Kit",
     title: "Upload your dark background logo",
-    body: "Your brand kit is 80% complete — the missing dark-bg logo means emails and dark-mode creatives render without proper branding. This affects an estimated 26% of your generated assets based on current usage patterns.",
+    body: "Your brand kit is 80% complete. The missing dark-bg logo means emails and dark-mode creatives render without proper branding. This affects an estimated 26% of your generated assets based on current usage patterns.",
     impact: "Consistent brand identity across all channels and dark themes",
     action: "Open Brand Kit",
   },
@@ -1006,7 +1054,7 @@ const DESIGN_RECS: BluRec[] = [
     id: "social-ads",
     priority: "growth",
     tag: "Recipes",
-    title: "Social Ads recipe is underutilized — only 9 runs",
+    title: "Social Ads recipe is underutilized: only 9 runs",
     body: "Social Ads represent just 7% of your asset output (9 runs vs 48 for Packshots). Email banners are already well-covered at 31 runs. Expanding to social creatives is the fastest way to increase channel coverage with your existing brand kit.",
     impact: "Est. 3–5× increase in social content output",
     action: "Create Recipe",
@@ -1015,7 +1063,7 @@ const DESIGN_RECS: BluRec[] = [
     id: "credits",
     priority: "high",
     tag: "Credits",
-    title: "Credits at 77% — schedule batches before your cycle ends",
+    title: "Credits at 77%: schedule batches before your cycle ends",
     body: "You've used 3,840 of 5,000 credits (77%). At the current pace of ~14 images per day, you'll hit the 80% warning threshold in about 2 days. Scheduling remaining runs in off-peak hours avoids throttling and ensures smooth delivery.",
     impact: "Prevent credit overage and keep generation uninterrupted",
     action: "View Schedule",
@@ -1036,7 +1084,7 @@ const MARKETING_RECS: BluRec[] = [
     id: "bounce-rate",
     priority: "urgent",
     tag: "Email Health",
-    title: "Email bounce rate hit 4.8% — your sender reputation is at risk",
+    title: "Email bounce rate hit 4.8%: your sender reputation is at risk",
     body: "Detected 12 minutes ago: bounce rate is 4.8%, which is 3× above your expected range (0.9–1.6%). If sustained above 3% for 24 hours, major ESPs may throttle or block delivery. Most likely cause: stale list segment in the paused Re-engagement Q2 journey.",
     impact: "Protect deliverability and maintain your sender score",
     action: "Investigate Now",
@@ -1045,8 +1093,8 @@ const MARKETING_RECS: BluRec[] = [
     id: "send-volume",
     priority: "urgent",
     tag: "Send Volume",
-    title: "Send volume is 76% below target — your pipeline is drying up",
-    body: "Only 1,200 sends in the last measurement period vs an expected 4,600–5,800. The paused Re-engagement Q2 journey accounts for most of the gap — it was contributing ~2,100 sends when active. Revenue impact compounds every day this is unaddressed.",
+    title: "Send volume is 76% below target: your pipeline is drying up",
+    body: "Only 1,200 sends in the last measurement period vs an expected 4,600–5,800. The paused Re-engagement Q2 journey accounts for most of the gap. It was contributing ~2,100 sends when active. Revenue impact compounds every day this is unaddressed.",
     impact: "Restore expected send volume and re-engage your audience",
     action: "Resume Journey",
   },
@@ -1054,8 +1102,8 @@ const MARKETING_RECS: BluRec[] = [
     id: "open-rate",
     priority: "high",
     tag: "Engagement",
-    title: "Open rate dropped to 28.4% — time for a subject line refresh",
-    body: "Open rate has declined 33% over 48 hours (from ~43% to 28.4%). Your last 3 campaigns followed similar \"[First name], don't miss...\" patterns. Subject fatigue is the likely culprit — A/B testing 2 new formats typically recovers 6–8 percentage points.",
+    title: "Open rate dropped to 28.4%: time for a subject line refresh",
+    body: "Open rate has declined 33% over 48 hours (from ~43% to 28.4%). Your last 3 campaigns followed similar \"[First name], don't miss...\" patterns. Subject fatigue is the likely culprit. A/B testing 2 new formats typically recovers 6–8 percentage points.",
     impact: "+6–8pp open rate improvement within 1–2 send cycles",
     action: "A/B Test Subjects",
   },
@@ -1063,8 +1111,8 @@ const MARKETING_RECS: BluRec[] = [
     id: "ab-winner",
     priority: "high",
     tag: "A/B Testing",
-    title: "Onboarding Tips A/B test has a clear winner — ship it now",
-    body: "Your Onboarding Tips experience shows a +8.6% lift after 14+ days running — well past statistical significance. Every day the losing variant stays live, you're suppressing conversion by an estimated 3–4%. This is ready to ship today.",
+    title: "Onboarding Tips A/B test has a clear winner: ship it now",
+    body: "Your Onboarding Tips experience shows a +8.6% lift after 14+ days running, well past statistical significance. Every day the losing variant stays live, you're suppressing conversion by an estimated 3–4%. This is ready to ship today.",
     impact: "+8.6% conversion uplift on the onboarding flow",
     action: "Ship Variant",
   },
@@ -1072,7 +1120,7 @@ const MARKETING_RECS: BluRec[] = [
     id: "sms-mix",
     priority: "growth",
     tag: "Channel Mix",
-    title: "SMS is only 15% of sends — test it for cart abandonment",
+    title: "SMS is only 15% of sends: test it for cart abandonment",
     body: "Email dominates at 74% of sends. Industry data shows SMS delivers 3–5× higher open rates for time-sensitive flows like cart abandonment. With only 3,800 SMS sends currently, shifting 10% of cart abandonment sends to SMS is a low-risk, high-reward test.",
     impact: "Est. +12% conversion rate on cart abandonment flow",
     action: "Create SMS Journey",
@@ -1084,16 +1132,16 @@ const ANALYTICS_RECS: BluRec[] = [
     id: "conversion-gap",
     priority: "urgent",
     tag: "Conversion",
-    title: "Visitor→Paid rate is 1.5% — well below the 2.5–3.5% benchmark",
-    body: "Of 18,400 visitors, only 274 convert to paid (1.5%). The steepest drop is Signups→Trial Started at 28.6% (840 of 2,940 signups). This points to onboarding friction — fixing this single step could unlock the most growth available to you right now.",
-    impact: "+$8k MRR at 3% conversion — the industry benchmark",
+    title: "Visitor→Paid rate is 1.5%, well below the 2.5–3.5% benchmark",
+    body: "Of 18,400 visitors, only 274 convert to paid (1.5%). The steepest drop is Signups→Trial Started at 28.6% (840 of 2,940 signups). This points to onboarding friction. Fixing this single step could unlock the most growth available to you right now.",
+    impact: "+$8k MRR at 3% conversion, the industry benchmark",
     action: "Audit Onboarding",
   },
   {
     id: "at-risk",
     priority: "urgent",
     tag: "Retention",
-    title: "840 customers are At-Risk — intervene before they become Lost",
+    title: "840 customers are At-Risk: intervene before they become Lost",
     body: "RFM analysis shows 840 formerly active customers have gone quiet. At your $156 ARPU, this cohort represents $131k in annual revenue exposure. A targeted win-back campaign now could save 20–30% of them before they permanently churn.",
     impact: "Est. $26–39k annual revenue recovered",
     action: "Create Win-Back",
@@ -1103,7 +1151,7 @@ const ANALYTICS_RECS: BluRec[] = [
     priority: "high",
     tag: "Trial",
     title: "Trial→Paid at 32.6% vs. 45–55% industry average",
-    body: "840 trial users, 274 converted to paid (32.6%). Data consistently shows a drop-off cliff at day 7–10 for unconverted trials. Targeted in-app messages at day 7 and day 14 are the highest-ROI fix at this stage — low effort, measurable impact.",
+    body: "840 trial users, 274 converted to paid (32.6%). Data consistently shows a drop-off cliff at day 7–10 for unconverted trials. Targeted in-app messages at day 7 and day 14 are the highest-ROI fix at this stage: low effort, measurable impact.",
     impact: "+12pp trial conversion = est. +$14k incremental MRR",
     action: "Set Up Nudges",
   },
@@ -1111,8 +1159,8 @@ const ANALYTICS_RECS: BluRec[] = [
     id: "seo-organic",
     priority: "growth",
     tag: "Acquisition",
-    title: "Organic search is your #1 channel — worth doubling down",
-    body: "Organic search drives $42.4k in attributed revenue — 36% more than paid social ($31.2k) at near-zero marginal cost. Your top 2 blog posts drive 10% of total site traffic. A focused SEO sprint targeting 3–5 high-intent keywords could 2× organic traffic in 90 days.",
+    title: "Organic search is your #1 channel: worth doubling down",
+    body: "Organic search drives $42.4k in attributed revenue, 36% more than paid social ($31.2k) at near-zero marginal cost. Your top 2 blog posts drive 10% of total site traffic. A focused SEO sprint targeting 3–5 high-intent keywords could 2× organic traffic in 90 days.",
     impact: "Est. 2× organic traffic and $20k+ additional attributed revenue in 90 days",
     action: "Plan SEO Sprint",
   },
@@ -1181,7 +1229,7 @@ function DesignDashboard() {
 
       {/* Generation chart + Credits + Brand kit */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <SectionCard title="Generation Activity — Last 14 Days" className="lg:col-span-2">
+        <SectionCard title="Generation Activity: Last 14 Days" className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={DESIGN_GEN_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
@@ -1235,7 +1283,7 @@ function DesignDashboard() {
 
       {/* Asset types + top recipes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SectionCard title="Asset Types — This Week">
+        <SectionCard title="Asset Types: This Week">
           <div className="space-y-3">
             {DESIGN_ASSET_TYPES.map((t) => (
               <div key={t.label} className="flex items-center gap-3">
@@ -1412,157 +1460,6 @@ function AnalyticsDashboard() {
   );
 }
 
-function WaitingKpiCard({ icon: Icon, title, note }: { icon: LucideIcon; title: string; note: string }) {
-  return (
-    <div className="relative min-h-[116px] overflow-hidden rounded-xl p-4" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-      <img src="/logo.png" alt="" className="pointer-events-none absolute -bottom-7 -right-7 h-24 w-24 object-contain opacity-[0.06] grayscale dark:opacity-[0.09]" />
-      <div className="relative z-10 flex h-full flex-col justify-between gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8 dark:text-blue-400">
-            <Icon size={15} />
-          </span>
-          <span className="rounded-full bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
-        </div>
-        <div>
-          <p className="text-sm font-medium leading-snug text-stone-700 dark:text-stone-200">{title}</p>
-          <p className="mt-1 text-xs font-medium text-stone-400 dark:text-stone-500">{note}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WaitingPanel({ title, body, children, className = "" }: { title: string; body?: string; children?: React.ReactNode; className?: string }) {
-  return (
-    <div className={`relative overflow-hidden rounded-xl p-5 ${className}`} style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-      <img src="/logo.png" alt="" className="pointer-events-none absolute -bottom-10 -right-10 h-36 w-36 object-contain opacity-[0.055] grayscale dark:opacity-[0.085]" />
-      <div className="relative z-10">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</p>
-            {body && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{body}</p>}
-          </div>
-          <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
-            Waiting for data
-          </span>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function WaitingBars({ items }: { items: string[] }) {
-  return (
-    <div className="space-y-3">
-      {items.map((item, index) => (
-        <div key={item}>
-          <div className="mb-1.5 flex items-center justify-between gap-3">
-            <span className="truncate text-xs font-medium text-stone-600 dark:text-stone-400">{item}</span>
-            <span className="text-xs font-semibold text-stone-300 dark:text-stone-600">--</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
-            <div className="h-full rounded-full bg-blue-500/35" style={{ width: `${[74, 58, 42, 30][index] ?? 24}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AnalyticsPartialDashboard() {
-  return (
-    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
-      <Greeting />
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {[
-          { icon: Activity, title: "Active users", note: "Waiting for user activity" },
-          { icon: Globe, title: "Page views", note: "Waiting for page events" },
-          { icon: BarChart3, title: "Sessions", note: "Waiting for sessions" },
-          { icon: DollarSign, title: "Current MRR", note: "Waiting for revenue data" },
-          { icon: Zap, title: "Events received", note: "Waiting for first events" },
-        ].map((card) => (
-          <WaitingKpiCard key={card.title} {...card} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.55fr)]">
-        <WaitingPanel title="Product activity" body="Page views, sessions, and active users will appear here once events are flowing.">
-          <div className="pointer-events-none h-[252px] opacity-45">
-            <LargeBentoChart chart={{ type: "line", label: "Waiting", values: [12, 18, 14, 24, 20, 28, 26, 34, 30, 38, 35, 42, 39, 48], labels: PAGE_VIEWS_DATA.map((item) => item.date) }} />
-          </div>
-        </WaitingPanel>
-        <AnalyticsIntegrationsCard
-          className="min-h-[310px] rounded-xl"
-          title="Analytics sources are being prepared"
-          body="Connect tools like JS SDK and Stripe to unlock live product and revenue analytics, plus Blu recommendations on what needs action."
-          href="/integrations"
-          linkText="Go to integrations"
-          docsHref="https://intempt.com/docs"
-          logos={[{ kind: "js" }, { kind: "brand", domain: "stripe.com", alt: "Stripe" }]}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <WaitingPanel title="Traffic by channel" body="Channels will rank after sessions include referrer or UTM data.">
-          <WaitingBars items={["Organic", "Referral", "Campaign", "Direct"]} />
-        </WaitingPanel>
-        <WaitingPanel title="Top pages" body="Pages will rank after page view events are received.">
-          <WaitingBars items={["/", "/pricing", "/product", "/docs"]} />
-        </WaitingPanel>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <WaitingPanel title="Conversion funnel" body="Saved funnel steps will appear here once a funnel report has data.">
-          <div className="grid grid-cols-4 gap-2">
-            {["Visitors", "Signups", "Trial", "Paid"].map((step, index) => (
-              <div key={step} className="min-w-0">
-                <div className="flex min-h-[92px] flex-col justify-between rounded-lg p-2.5" style={{ background: "var(--muted)" }}>
-                  <div>
-                    <p className="truncate text-[11px] font-semibold text-stone-700 dark:text-stone-300">{step}</p>
-                    <p className="mt-1 text-[10px] text-stone-400">Waiting</p>
-                  </div>
-                  <p className="text-base font-semibold text-stone-300 dark:text-stone-600">--</p>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-white/8">
-                  <div className="h-full rounded-full bg-blue-500/35" style={{ width: `${[92, 64, 38, 18][index]}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </WaitingPanel>
-
-        <WaitingPanel title="Retention" body="Retention appears after enough users return across cohorts.">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-3xl font-semibold leading-none tracking-tight text-stone-300 dark:text-stone-600">--</p>
-              <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">Average user retention</p>
-            </div>
-            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
-          </div>
-          <div className="pointer-events-none mt-5 h-28 opacity-45">
-            <LargeBentoChart chart={{ type: "line", label: "Retention", values: [8, 12, 9, 15, 11, 18, 14, 20, 16, 22, 18, 24, 20, 26], labels: RETENTION_DATA.map((item) => item.date) }} />
-          </div>
-        </WaitingPanel>
-
-        <WaitingPanel title="Revenue health" body="Revenue metrics appear after Stripe or commerce activity is connected.">
-          <div className="grid grid-cols-2 gap-3">
-            {["Current MRR", "Subscribers", "Trial to paid", "Churn"].map((item) => (
-              <div key={item} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <span className="text-[11px] font-medium leading-tight text-stone-500 dark:text-stone-400">{item}</span>
-                  <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">Waiting</span>
-                </div>
-                <p className="text-xl font-semibold leading-none tracking-tight text-stone-300 dark:text-stone-600">--</p>
-              </div>
-            ))}
-          </div>
-        </WaitingPanel>
-      </div>
-    </div>
-  );
-}
 
 const ANALYTICS_FULL_KPIS: HomeBentoCard[] = [
   {
@@ -1644,15 +1541,15 @@ function FunnelWaterfallChart({ steps }: { steps: { stage: string; value: number
 
   return (
     <div className="overflow-hidden">
-      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
         {barMeta.map((step) => (
-          <div key={step.stage} className="border-l-2 border-blue-500 pl-3">
-            <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{step.value.toLocaleString()}</p>
-            <p className="mt-2 truncate text-sm font-medium leading-none text-stone-600 dark:text-stone-400">
-              {step.index + 1} - {step.stage}
+          <div key={step.stage} className="min-w-0 border-l-2 border-blue-500 pl-2.5">
+            <p className="truncate text-xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{step.value.toLocaleString()}</p>
+            <p className="mt-2 text-xs font-medium leading-tight text-stone-600 dark:text-stone-400">
+              {step.stage}
             </p>
-            <p className="mt-1 text-xs font-medium text-stone-500 dark:text-stone-500">
-              {step.priorPct === null ? "First step" : `${step.priorPct.toFixed(1)}% of prior step`}
+            <p className="mt-1 text-[11px] font-medium leading-tight text-stone-500 dark:text-stone-500">
+              {step.priorPct === null ? "First step" : `${step.priorPct.toFixed(1)}% of prior`}
             </p>
           </div>
         ))}
@@ -1782,13 +1679,13 @@ function DistributionDonutCard({
   );
 }
 
-function AnalyticsFullDashboard() {
+function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.analytics;
 
   return (
-    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
       {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
 
       <div className="flex items-start justify-between gap-4">
@@ -1829,7 +1726,7 @@ function AnalyticsFullDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <SectionCard className="min-h-[390px]">
+        <SectionCard className="flex min-h-[390px] flex-col">
           <div className="mb-2">
             <div>
               <div className="flex items-center gap-1.5">
@@ -1839,37 +1736,54 @@ function AnalyticsFullDashboard() {
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Page views, sessions, and active users over the last 30 days.</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={268}>
-            <ComposedChart data={ANALYTICS_ACTIVITY_DATA} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={2} />
-              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="pageViews" stroke="#0080FF" strokeWidth={2} fill="rgba(0,128,255,0.08)" dot={false} name="Page views" />
-              <Line type="monotone" dataKey="sessions" stroke="#7C3AED" strokeWidth={1.8} dot={false} name="Sessions" />
-              <Line type="monotone" dataKey="activeUsers" stroke="#F59E0B" strokeWidth={1.8} dot={false} name="Active users" />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-6">
-            {[
-              { label: "Page views", color: "#0080FF" },
-              { label: "Sessions", color: "#7C3AED" },
-              { label: "Active users", color: "#F59E0B" },
-            ].map((item) => (
-              <span key={item.label} className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
-                <span className="h-3 w-3 rounded" style={{ background: item.color }} />
-                {item.label}
-              </span>
-            ))}
-          </div>
+          {noData ? (
+            <CardEmptyState
+              icon={Activity}
+              title="Waiting for events"
+              body="Page views, sessions, and active users will appear here once your tracked events start flowing in."
+            />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={268}>
+                <ComposedChart data={ANALYTICS_ACTIVITY_DATA} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+                  <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={2} />
+                  <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="pageViews" stroke="#0080FF" strokeWidth={2} fill="rgba(0,128,255,0.08)" dot={false} name="Page views" />
+                  <Line type="monotone" dataKey="sessions" stroke="#7C3AED" strokeWidth={1.8} dot={false} name="Sessions" />
+                  <Line type="monotone" dataKey="activeUsers" stroke="#F59E0B" strokeWidth={1.8} dot={false} name="Active users" />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-6">
+                {[
+                  { label: "Page views", color: "#0080FF" },
+                  { label: "Sessions", color: "#7C3AED" },
+                  { label: "Active users", color: "#F59E0B" },
+                ].map((item) => (
+                  <span key={item.label} className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
+                    <span className="h-3 w-3 rounded" style={{ background: item.color }} />
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </SectionCard>
 
         <SectionCard
           title="Audience quality"
           description="Shows if usage is healthy by combining daily, weekly, monthly, new, and returning users."
           tooltip="Used to understand audience stickiness without opening the full Engagement board."
-          className="min-h-[390px]"
+          className="flex min-h-[390px] flex-col"
         >
+          {noData ? (
+            <CardEmptyState
+              icon={Users}
+              title="Waiting for events"
+              body="Daily, weekly, and monthly active users will show up here once enough activity comes in."
+            />
+          ) : (
           <div className="flex h-full flex-col justify-center gap-6 pb-4">
             <div className="grid grid-cols-3 gap-4">
               {ANALYTICS_AUDIENCE_RINGS.map((item) => {
@@ -1934,14 +1848,24 @@ function AnalyticsFullDashboard() {
               ))}
             </div>
           </div>
+          )}
         </SectionCard>
 
         <SectionCard
           title="Revenue pulse"
           description="Shows whether subscription revenue is growing, leaking, or on track this month."
           tooltip="Used as the quick subscription health check from MRR, subscriber, churn, and NRR data."
-          className="min-h-[460px]"
+          className="flex min-h-[460px] flex-col"
         >
+          {noData ? (
+            <CardEmptyState
+              icon={DollarSign}
+              title="Waiting for revenue activity"
+              body="MRR, subscribers, and NRR will appear here once Stripe starts syncing subscription activity."
+              actionLabel="Go to integrations"
+              actionHref="/integrations"
+            />
+          ) : (
           <div className="flex h-full flex-col justify-center gap-6 pb-10">
             <div className="relative">
               <div className="absolute left-0 top-0 z-10">
@@ -1965,7 +1889,7 @@ function AnalyticsFullDashboard() {
             </div>
             <div className="grid grid-cols-3 gap-4 pt-4">
               {[
-                { label: "Goal progress", value: "24.8%", note: "$100K target", tooltip: "Compares current monthly recurring revenue against the configured MRR goal.", tone: "neutral" },
+                { label: "Subscribers", value: "2,219", note: "Net -7", tooltip: "Active paid subscribers from connected Stripe subscription data.", tone: "neutral" },
                 { label: "Net movement", value: "-$132.23", note: "Churn higher", tooltip: "Month-to-date MRR change after new business and churn.", tone: "negative" },
                 { label: "NRR", value: "98.9%", note: "+4.4pp", tooltip: "Net revenue retention after expansion, contraction, and churn.", tone: "positive" },
               ].map((item) => (
@@ -1980,14 +1904,22 @@ function AnalyticsFullDashboard() {
               ))}
             </div>
           </div>
+          )}
         </SectionCard>
 
         <SectionCard
           title="Acquisition mix"
           description="Shows where useful traffic is coming from and which source/page is tied to revenue."
           tooltip="Used to summarize Traffic board source and page data without repeating top-10 tables."
-          className="min-h-[390px] overflow-hidden"
+          className="flex min-h-[390px] flex-col overflow-hidden"
         >
+          {noData ? (
+            <CardEmptyState
+              icon={Globe}
+              title="Waiting for events"
+              body="Traffic channels will rank here once sessions include referrer or UTM data."
+            />
+          ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 pb-3">
             <div className="h-64 w-full max-w-[440px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -2024,10 +1956,9 @@ function AnalyticsFullDashboard() {
               ))}
             </div>
           </div>
+          )}
         </SectionCard>
       </div>
-
-      <AnalyticsUpgradeStrip />
     </div>
   );
 }
@@ -2377,144 +2308,6 @@ function HomeTabsHeader({
 
 type HomeMockState = "empty" | "partial" | "full";
 
-const PARTIAL_HOME_CONTENT: Record<Exclude<HomeTabKey, "analytics">, {
-  title: string;
-  body: string;
-  kpis: { label: string; value: string; change?: string; icon: LucideIcon; accent?: string }[];
-  source: { label: string; value: string; detail: string };
-  waiting: { label: string; value: string; detail: string };
-  steps: string[];
-  rec: HomeBentoCard;
-}> = {
-  design: {
-    title: "Brand workspace is ready",
-    body: "Brand setup is started. Create or import assets to populate creative, avatar, scene, and design system activity.",
-    kpis: [
-      { icon: Palette, label: "Brand kit", value: "Started", change: "1/4" },
-      { icon: FileImage, label: "Assets", value: "0", change: "Waiting" },
-      { icon: PenTool, label: "Design system", value: "Draft", change: "Setup" },
-      { icon: Clapperboard, label: "Generations", value: "0", change: "Waiting" },
-    ],
-    source: { label: "Connected", value: "Brand basics", detail: "Workspace, brand name, and first setup choices are available." },
-    waiting: { label: "Waiting for", value: "Creative assets", detail: "Add assets, avatars, scenes, or a design system to make this dashboard live." },
-    steps: ["Upload brand assets", "Create an avatar or scene", "Save a design system"],
-    rec: {
-      id: "design-partial-rec",
-      perspective: "blu",
-      eyebrow: "Blu recommendation",
-      title: "Start with brand assets",
-      body: "A logo, colors, and one reusable scene are enough to make Design useful immediately.",
-      action: "Open brand",
-      icon: Bot,
-      signal: "Next step",
-    },
-  },
-  marketing: {
-    title: "Marketing sources are ready",
-    body: "Some connectors are prepared. Campaign, journey, and commerce activity will appear after events start flowing.",
-    kpis: [
-      { icon: Route, label: "Journeys", value: "0", change: "Waiting" },
-      { icon: MailOpen, label: "Email sends", value: "0", change: "Waiting" },
-      { icon: Shuffle, label: "Experiments", value: "0", change: "Waiting" },
-      { icon: ShoppingCart, label: "Catalog events", value: "0", change: "Waiting" },
-    ],
-    source: { label: "Prepared", value: "Marketing stack", detail: "HubSpot, SendGrid, Shopify, and JS SDK are the relevant sources." },
-    waiting: { label: "Waiting for", value: "Campaign activity", detail: "Launch or sync journeys to see sends, opens, clicks, and conversions." },
-    steps: ["Connect email provider", "Connect Shopify or catalog feed", "Launch first journey"],
-    rec: {
-      id: "marketing-partial-rec",
-      perspective: "blu",
-      eyebrow: "Blu recommendation",
-      title: "Connect campaign and commerce data together",
-      body: "Marketing gets useful when sends, site events, and revenue can be tied to the same user.",
-      action: "Open integrations",
-      icon: Bot,
-      signal: "Next step",
-    },
-  },
-  sales: {
-    title: "Sales workspace is ready",
-    body: "Calendar setup is started. Meeting, booking, and attendance data will fill in as calls are scheduled.",
-    kpis: [
-      { icon: Calendar, label: "Upcoming meetings", value: "0", change: "Waiting" },
-      { icon: CalendarClock, label: "Booking types", value: "0", change: "Setup" },
-      { icon: Activity, label: "Attendance", value: "--", change: "Waiting" },
-      { icon: ClipboardList, label: "Reminders", value: "Off", change: "Setup" },
-    ],
-    source: { label: "Connected", value: "Calendar", detail: "Google Calendar can power availability, scheduler links, and upcoming meetings." },
-    waiting: { label: "Waiting for", value: "Scheduled calls", detail: "Create booking types and let meetings populate this page." },
-    steps: ["Connect Gmail for meeting context", "Create a booking type", "Enable reminders"],
-    rec: {
-      id: "sales-partial-rec",
-      perspective: "blu",
-      eyebrow: "Blu recommendation",
-      title: "Finish scheduler setup",
-      body: "Booking links and reminders are the fastest way to make the Sales home useful.",
-      action: "Open scheduler",
-      icon: Bot,
-      signal: "Next step",
-    },
-  },
-};
-
-function HomePartialDashboard({ tab }: { tab: Exclude<HomeTabKey, "analytics"> }) {
-  const config = PARTIAL_HOME_CONTENT[tab];
-
-  return (
-    <div className="px-6 pt-6 pb-8 space-y-3 animate-fade-up">
-      <Greeting />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {config.kpis.map((item) => (
-          <MiniStat
-            key={item.label}
-            icon={item.icon}
-            label={item.label}
-            value={item.value}
-            change={item.change}
-            accent={item.accent}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
-        <SectionCard title={config.title} className="min-h-[220px]">
-          <p className="max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">{config.body}</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {[config.source, config.waiting].map((item) => (
-              <div key={item.label} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
-                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">{item.label}</p>
-                <p className="mt-1 text-sm font-semibold text-stone-900 dark:text-stone-100">{item.value}</p>
-                <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Next setup">
-          <div className="space-y-3">
-            {config.steps.map((step, index) => (
-              <div key={step} className="grid grid-cols-[24px_1fr] items-start gap-3">
-                <span className="pt-0.5 text-xs font-medium tabular-nums text-stone-400 dark:text-stone-500">{index + 1}</span>
-                <p className="text-sm font-medium leading-snug text-stone-800 dark:text-stone-100">{step}</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <BluSuggestionCard card={config.rec} />
-        <SectionCard title="What unlocks next">
-          <p className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-            When these setup items are done, the full dashboard keeps the same layout and fills with real activity instead of placeholders.
-          </p>
-        </SectionCard>
-      </div>
-    </div>
-  );
-}
-
 type HomeBentoCard = {
   id: string;
   perspective: "summary" | "blu";
@@ -2579,7 +2372,7 @@ const HOME_BENTO: Record<string, { title: string; subtitle: string; cards: HomeB
     cards: [
       { id: "sales-users", perspective: "summary", eyebrow: "Accounts", title: "Active accounts", value: "142", body: "Known accounts with recent activity available for follow-up.", icon: Users, signal: "+8" },
       { id: "attended-meetings", perspective: "summary", eyebrow: "Meetings", title: "Meetings attended", value: "7", body: "Meetings attended in the last 7 days.", icon: Calendar, signal: "Last 7d" },
-      { id: "deals-won", perspective: "summary", eyebrow: "Deals", title: "Deals won this week", value: "4", body: "4 deals moved to Closed Won — $68k in recognized revenue.", icon: Handshake, signal: "$68k" },
+      { id: "deals-won", perspective: "summary", eyebrow: "Deals", title: "Deals won this week", value: "4", body: "4 deals moved to Closed Won, $68k in recognized revenue.", icon: Handshake, signal: "$68k" },
       { id: "pipeline", perspective: "summary", eyebrow: "Deals", title: "Active pipeline", value: "$284k", body: "Most value sits between Qualified and Proposal.", icon: Briefcase, signal: "+12%" },
       { id: "sales-health", perspective: "summary", eyebrow: "Health", title: "Sales health", value: "Warning", body: "Meeting attendance is lagging behind qualified deal growth.", icon: AlertTriangle, signal: "Watch", status: "warning" },
       { id: "upcoming-meetings", perspective: "summary", eyebrow: "Meetings", title: "Upcoming 3 meetings", value: "3", body: "Next meetings from your scheduler with join actions.", icon: Calendar },
@@ -3304,6 +3097,7 @@ const TAB_VIDEO_IDS: Record<string, string> = {
 };
 
 const EMPTY_HOME_SETUP: Record<string, {
+  welcome: string;
   title: string;
   body: string;
   href: string;
@@ -3311,6 +3105,7 @@ const EMPTY_HOME_SETUP: Record<string, {
   logos: EmptySourceLogo[];
 }> = {
   design: {
+    welcome: "Set up your brand so every generation feels on-brand.",
     title: "Set up your brand kit",
     body: "Add logo, colors, fonts, and product assets to unlock design workflows.",
     href: "/brand-kit",
@@ -3318,6 +3113,7 @@ const EMPTY_HOME_SETUP: Record<string, {
     logos: [{ kind: "icon", icon: Palette }, { kind: "icon", icon: FileImage }],
   },
   marketing: {
+    welcome: "Connect a source and this page fills in with real activity.",
     title: "Connect marketing sources",
     body: "Sync catalog, site activity, audiences, journeys, and more.",
     href: "/integrations",
@@ -3330,6 +3126,7 @@ const EMPTY_HOME_SETUP: Record<string, {
     ],
   },
   sales: {
+    welcome: "Connect your calendar and meetings start showing up right here.",
     title: "Set up meetings and scheduler",
     body: "Connect calendar, create booking types, reminders, and more.",
     href: "/meetings",
@@ -3340,6 +3137,7 @@ const EMPTY_HOME_SETUP: Record<string, {
     ],
   },
   analytics: {
+    welcome: "Connect a source and this page turns into a live dashboard.",
     title: "Connect analytics sources",
     body: "Connect tools like JS SDK and Stripe to capture product activity and unlock revenue insights.",
     href: "/integrations",
@@ -3565,220 +3363,65 @@ function HomeBentoDashboard({ tab }: { tab: string }) {
 
 function EmptyHomeDashboard({ tab }: { tab: string }) {
   const [inlinePlaying, setInlinePlaying] = useState(false);
-  const [videoCollapsed, setVideoCollapsed] = useState(false);
   const videoSrc = TAB_VIDEOS[tab] ?? TAB_VIDEOS.analytics;
   const videoId = TAB_VIDEO_IDS[tab] ?? TAB_VIDEO_IDS.analytics;
   const setup = EMPTY_HOME_SETUP[tab] ?? EMPTY_HOME_SETUP.analytics;
+  const checklist = TAB_CHECKLIST[tab] ?? TAB_CHECKLIST.analytics;
 
   return (
-    <div className="relative overflow-hidden px-6 pt-6 pb-8 animate-fade-up">
-      <img
-        src="/logo.png"
-        alt=""
-        className="pointer-events-none fixed -bottom-22 -right-22 z-0 h-90 w-90 -rotate-12 object-contain opacity-[0.014] grayscale dark:opacity-[0.03]"
-      />
-      <div className="relative z-10 flex items-start justify-between gap-4">
-        <Greeting />
-        <button
-          onClick={() => {
-            setVideoCollapsed(false);
-            setInlinePlaying(false);
-          }}
-          className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
-            videoCollapsed ? "w-28 px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
-          }`}
-          style={{ borderColor: "var(--border)" }}
-          aria-hidden={!videoCollapsed}
-          tabIndex={videoCollapsed ? 0 : -1}
-        >
-          <Play size={11} className="fill-current text-blue-500" />
-          <span className="whitespace-nowrap">Watch video</span>
-        </button>
-      </div>
-
-      <div className="relative z-10 mt-4 flex min-h-140 items-center">
-        <div className={`grid w-full items-stretch gap-3 ${videoCollapsed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
-          {!videoCollapsed && (
-            <div className="relative aspect-video overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
-              <button
-                onClick={() => {
-                  setVideoCollapsed(true);
-                  setInlinePlaying(false);
-                }}
-                className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
-                style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
-                aria-label="Close video"
-              >
-                <X size={14} />
-              </button>
-              {inlinePlaying ? (
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={videoSrc}
-                  title="Analytics setup video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
-                  <img
-                    src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-                    alt={`${tab} setup overview`}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.22) 58%, rgba(0,0,0,0.06) 100%)" }}
-                  />
-                  <span
-                    className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
-                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
-                  >
-                    <Play size={18} className="ml-0.5 fill-white text-white" />
-                  </span>
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className={`grid ${videoCollapsed ? "mx-auto w-full max-w-xl" : "lg:h-full"}`}>
-            <AnalyticsIntegrationsCard
-              className="h-full"
-              title={setup.title}
-              body={setup.body}
-              href={setup.href}
-              linkText={setup.linkText}
-              docsHref="https://intempt.com/docs"
-              logos={setup.logos}
-            />
-          </div>
+    <div className="flex min-h-140 shrink-0 flex-col items-center justify-center px-6 py-10 animate-fade-up">
+      <div className="w-full max-w-2xl space-y-6">
+        <div>
+          <Greeting />
+          <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400">{setup.welcome}</p>
         </div>
+
+        <div className="relative aspect-video overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
+          {inlinePlaying ? (
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={videoSrc}
+              title={`${tab} setup overview`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
+              <img
+                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                alt={`${tab} setup overview`}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.22) 58%, rgba(0,0,0,0.06) 100%)" }}
+              />
+              <span
+                className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
+              >
+                <Play size={18} className="ml-0.5 fill-white text-white" />
+              </span>
+            </button>
+          )}
+        </div>
+
+        {checklist}
+
+        <AnalyticsIntegrationsCard
+          title={setup.title}
+          body={setup.body}
+          href={setup.href}
+          linkText={setup.linkText}
+          docsHref="https://intempt.com/docs"
+          logos={setup.logos}
+        />
       </div>
     </div>
   );
 }
 
 // ── Marketing homepage ────────────────────────────────────────────────────────
-
-type MarketingKpi = {
-  label: string;
-  value: string;
-  detail: string;
-  trend: string;
-  tone: "good" | "warning" | "critical";
-  icon: LucideIcon;
-};
-
-const MARKETING_HOME_KPIS: MarketingKpi[] = [
-  {
-    label: "Attributed revenue",
-    value: "$22.6M",
-    detail: "Combined impact from journeys and experiments",
-    trend: "+18%",
-    tone: "good",
-    icon: DollarSign,
-  },
-  {
-    label: "Experiment lift",
-    value: "+8.6%",
-    detail: "Best active personalization result is ready to ship",
-    trend: "Winner",
-    tone: "good",
-    icon: Shuffle,
-  },
-  {
-    label: "Feed coverage",
-    value: "68%",
-    detail: "Catalog items eligible for personalized blocks",
-    trend: "+11%",
-    tone: "warning",
-    icon: Package,
-  },
-  {
-    label: "Bounce rate",
-    value: "4.8%",
-    detail: "Above the 3% sender risk threshold",
-    trend: "Critical",
-    tone: "critical",
-    icon: AlertCircle,
-  },
-];
-
-type MarketingAttentionItem = {
-  id: string;
-  severity: "critical" | "warning" | "info";
-  title: string;
-  detail: string;
-  metric: string;
-  metricNote: string;
-  cta: string;
-};
-
-const MARKETING_ATTENTION: MarketingAttentionItem[] = [
-  {
-    id: "bounce",
-    severity: "critical",
-    title: "Email bounce rate is above the sender-risk threshold",
-    detail: "Suppress the stale re-engagement segments before resuming send volume, or deliverability for the whole domain is at risk.",
-    metric: "4.8%",
-    metricNote: "Expected 0.9%–1.6% · +220%",
-    cta: "Clean segment",
-  },
-  {
-    id: "winner",
-    severity: "info",
-    title: "The onboarding experiment has a clear winner",
-    detail: "Variant B has held the lead for 9 days straight. Shipping it now is more useful than continuing to split traffic.",
-    metric: "+8.6%",
-    metricNote: "conversion lift vs. control",
-    cta: "Ship winner",
-  },
-  {
-    id: "open-rate",
-    severity: "warning",
-    title: "Open rate dropped a third below baseline",
-    detail: "Usually moves with deliverability — likely the same root cause as the bounce spike above.",
-    metric: "28.4%",
-    metricNote: "Expected 40%–46% · −33%",
-    cta: "Review sends",
-  },
-  {
-    id: "unsub",
-    severity: "warning",
-    title: "Unsubscribe rate is running hot on recent sends",
-    detail: "Roughly double the expected rate — check whether Re-engagement Q2 is targeting the right segment before resuming it.",
-    metric: "0.42%",
-    metricNote: "Expected 0.10%–0.22% · +110%",
-    cta: "Review journey",
-  },
-];
-
-function MarketingKpiCard({ item }: { item: MarketingKpi }) {
-  const Icon = item.icon;
-  const tone =
-    item.tone === "critical"
-      ? { text: "text-red-600 dark:text-red-400", bg: "rgba(239,68,68,0.08)" }
-      : item.tone === "warning"
-        ? { text: "text-amber-600 dark:text-amber-400", bg: "rgba(245,158,11,0.08)" }
-        : { text: "text-blue-600 dark:text-blue-400", bg: "rgba(0,128,255,0.08)" };
-
-  return (
-    <div
-      className="flex min-h-[128px] flex-col rounded-xl p-4"
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: tone.bg }}>
-          <Icon size={14} className={tone.text} />
-        </span>
-        <span className={`text-xs font-semibold ${tone.text}`}>{item.trend}</span>
-      </div>
-      <p className="text-2xl font-bold leading-none text-stone-900 dark:text-stone-50">{item.value}</p>
-      <p className="mt-2 text-xs font-medium text-stone-700 dark:text-stone-300">{item.label}</p>
-      <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
-    </div>
-  );
-}
 
 function MarketingStatusPill({ status }: { status: string }) {
   const isActive = status === "active" || status === "winning";
@@ -3789,158 +3432,412 @@ function MarketingStatusPill({ status }: { status: string }) {
         : "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400"
     }`}>
       <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-stone-400"}`} />
-      {status}
+      <span className="capitalize">{status}</span>
     </span>
   );
 }
 
-function MarketingAttentionRow({ item }: { item: MarketingAttentionItem }) {
-  const color = item.severity === "critical" ? "#ef4444" : item.severity === "warning" ? "#f59e0b" : "#0080FF";
+function MarketingChannelPieLabel({
+  cx,
+  cy,
+  midAngle,
+  outerRadius,
+  payload,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  payload?: { channel: string; pct: number; revenue: number };
+}) {
+  if (
+    typeof cx !== "number" ||
+    typeof cy !== "number" ||
+    typeof midAngle !== "number" ||
+    typeof outerRadius !== "number" ||
+    !payload
+  ) {
+    return null;
+  }
+  const radians = -midAngle * Math.PI / 180;
+  const startX = cx + (outerRadius + 2) * Math.cos(radians);
+  const startY = cy + (outerRadius + 2) * Math.sin(radians);
+  const midX = cx + (outerRadius + 16) * Math.cos(radians);
+  const midY = cy + (outerRadius + 16) * Math.sin(radians);
+  const endX = midX + (Math.cos(radians) >= 0 ? 16 : -16);
+  const textAnchor = Math.cos(radians) >= 0 ? "start" : "end";
+
   return (
-    <div
-      className="flex flex-col gap-3 border-b py-4 first:pt-0 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-      style={{ borderColor: "var(--border)" }}
-    >
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{item.detail}</p>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-4 pl-5 sm:pl-0">
-        <div className="text-right">
-          <p className="text-sm font-bold whitespace-nowrap" style={{ color }}>{item.metric}</p>
-          <p className="text-xs whitespace-nowrap text-stone-400">{item.metricNote}</p>
-        </div>
-        <button
-          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-xs font-semibold text-white transition-colors hover:opacity-90"
-          style={{ background: "#0080FF" }}
-        >
-          {item.cta}
-          <ChevronRight size={12} />
-        </button>
-      </div>
-    </div>
+    <g>
+      <path d={`M ${startX} ${startY} L ${midX} ${midY} L ${endX} ${midY}`} fill="none" stroke="var(--muted-foreground)" strokeOpacity="0.45" strokeWidth="1" />
+      <text x={endX} y={midY - 5} textAnchor={textAnchor} fill="var(--foreground)" className="text-[10px] font-semibold">
+        {payload.channel} ({payload.pct}%)
+      </text>
+      <text x={endX} y={midY + 9} textAnchor={textAnchor} fill="var(--muted-foreground)" className="text-[10px] font-medium">
+        ${(payload.revenue / 1000).toFixed(1)}K rev
+      </text>
+    </g>
   );
 }
 
-const MARKETING_CHANNEL_ICONS: Record<string, LucideIcon> = {
-  email: MailOpen,
-  sms: MessageSquare,
-  push: Bell,
-  inapp: Smartphone,
-};
-
-function MarketingChannelMixCard() {
+function MarketingChannelMixCard({ noData = false }: { noData?: boolean }) {
   return (
-    <SectionCard title="Channel mix">
-      <p className="-mt-2 mb-4 text-xs text-stone-500 dark:text-stone-400">Share of sends across active channels over the last 26 days.</p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {CHANNEL_MIX.map((c) => {
-          const Icon = MARKETING_CHANNEL_ICONS[c.icon] ?? MailOpen;
-          return (
-            <div key={c.channel} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ background: `${c.color}1F` }}>
-                  <Icon size={12} style={{ color: c.color }} />
-                </span>
-                <span className="truncate text-xs font-medium text-stone-700 dark:text-stone-300">{c.channel}</span>
-              </div>
-              <p className="text-lg font-bold leading-none text-stone-900 dark:text-stone-100">{c.pct}%</p>
-              <p className="mt-1 text-xs text-stone-400">{c.count.toLocaleString()} sends</p>
-              <div className="mt-2 h-1.5 rounded-full bg-stone-200 dark:bg-white/10">
-                <div className="h-1.5 rounded-full" style={{ width: `${c.pct}%`, background: c.color }} />
-              </div>
+    <SectionCard
+      title="Channel mix"
+      description="Share of sends and attributed revenue across active channels over the last 30 days."
+      tooltip="Used to see which send channels carry volume versus which ones actually convert to revenue."
+      className="flex min-h-[390px] flex-col overflow-hidden"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={MailOpen}
+          title="Waiting for events"
+          body="Channel share will appear here once you send across email, SMS, push, or in-app."
+        />
+      ) : (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3">
+        <div className="h-64 w-full max-w-[440px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={CHANNEL_MIX}
+                dataKey="count"
+                nameKey="channel"
+                cx="50%"
+                cy="50%"
+                outerRadius={82}
+                innerRadius={0}
+                paddingAngle={2}
+                stroke="var(--content-bg)"
+                strokeWidth={3}
+                labelLine={false}
+                label={<MarketingChannelPieLabel />}
+              >
+                {CHANNEL_MIX.map((entry) => (
+                  <Cell key={entry.channel} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex w-full flex-nowrap items-center justify-center gap-5 overflow-x-auto pt-1">
+          {CHANNEL_MIX.map((c) => (
+            <div key={c.channel} className="flex shrink-0 items-center gap-2">
+              <span className="h-3 w-3 shrink-0 rounded" style={{ background: c.color }} />
+              <p className="whitespace-nowrap text-xs font-semibold text-stone-800 dark:text-stone-200">
+                {c.channel} <span className="font-medium text-stone-500 dark:text-stone-400">({c.count.toLocaleString()})</span>
+              </p>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
+      )}
     </SectionCard>
   );
 }
 
-function MarketingJourneysCard() {
+function MarketingSendPerformanceCard({ noData = false }: { noData?: boolean }) {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (dataKey?: string) => {
+    if (!dataKey) return;
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(dataKey)) next.delete(dataKey);
+      else next.add(dataKey);
+      return next;
+    });
+  };
+
   return (
-    <SectionCard title="Active journeys" className="h-full">
-      <div className="space-y-0">
-        {ACTIVE_JOURNEYS.map((j) => (
-          <div
-            key={j.name}
-            className="flex items-center justify-between gap-3 border-b py-3 last:border-0"
-            style={{ borderColor: "var(--border)" }}
-          >
+    <SectionCard
+      title="Send performance"
+      description="Daily delivery volume and response quality across all channels over the last 30 days."
+      tooltip="Used to see overall send health. Click a series in the legend to isolate it."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Send}
+          title="Waiting for events"
+          body="Sends, opens, and clicks will chart here once your first messages go out."
+          actionLabel="Create journey"
+          actionHref="/journeys"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center gap-3">
+        <ResponsiveContainer width="100%" height={268}>
+          <AreaChart data={SENDS_CHART_DATA} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+            <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
+            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <Tooltip content={<ChartTooltip />} />
+            <Area type="monotone" dataKey="sends" hide={hidden.has("sends")} stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)" dot={false} name="Sends" />
+            <Area type="monotone" dataKey="opens" hide={hidden.has("opens")} stroke="#64748b" strokeWidth={1.5} fill="rgba(100,116,139,0.06)" dot={false} name="Opens" />
+            <Area type="monotone" dataKey="clicks" hide={hidden.has("clicks")} stroke="#16a34a" strokeWidth={1.5} fill="rgba(22,163,74,0.06)" dot={false} name="Clicks" />
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="flex flex-wrap items-center justify-center gap-6">
+          {[
+            { key: "sends", label: "Sends", color: "#0080FF" },
+            { key: "opens", label: "Opens", color: "#64748b" },
+            { key: "clicks", label: "Clicks", color: "#16a34a" },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => toggleSeries(item.key)}
+              className={`flex items-center gap-2 text-sm transition-opacity ${hidden.has(item.key) ? "opacity-40" : "text-stone-600 dark:text-stone-300"}`}
+            >
+              <span className="h-3 w-3 rounded" style={{ background: item.color }} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function MarketingCountBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400">
+      {children}
+    </span>
+  );
+}
+
+function MarketingLatestJourneysCard({ noData = false }: { noData?: boolean }) {
+  return (
+    <SectionCard
+      title="Latest journeys"
+      description="Your 4 most recent automated journeys and how much they sent in the last 24 hours."
+      tooltip="Used to see which journeys are actively sending right now versus paused or quiet."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Route}
+          title="Create your first journey"
+          body="Build an automated journey to see send activity show up here."
+          actionLabel="Create journey"
+          actionHref="/journeys"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center">
+        {LATEST_JOURNEYS.map((j) => (
+          <div key={j.name} className="flex items-center justify-between gap-3 border-b py-3.5 last:border-0" style={{ borderColor: "var(--border)" }}>
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(0,128,255,0.08)" }}>
-                <Route size={14} className="text-blue-500" />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(0,128,255,0.08)" }}>
+                <Route size={15} className="text-blue-500" />
               </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{j.name}</p>
-                <p className="mt-0.5 text-xs text-stone-400">{j.sends.toLocaleString()} sends</p>
-              </div>
+              <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{j.name}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">{j.rate}%</p>
-                <p className="text-xs text-stone-400">conv.</p>
-              </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <MarketingCountBadge>{j.sends24h.toLocaleString()} sends</MarketingCountBadge>
               <MarketingStatusPill status={j.status} />
             </div>
           </div>
         ))}
       </div>
+      )}
     </SectionCard>
   );
 }
 
-function MarketingExperimentsCard() {
+function MarketingLatestExperimentsCard({ noData = false }: { noData?: boolean }) {
   return (
-    <SectionCard title="Live experiments" className="h-full">
-      <div className="space-y-3">
-        {LIVE_EXPERIENCES.map((e) => {
-          const winning = e.status === "winning";
-          const color = winning ? "#16a34a" : "#0080FF";
-          return (
-            <div key={e.name} className="rounded-lg p-3" style={{ background: "var(--muted)" }}>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{e.name}</span>
-                <span
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                  style={{ background: `${color}1F`, color }}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-                  {winning ? "Winner" : "Running"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-stone-400">{e.variants} variants</span>
-                <span className="text-sm font-bold" style={{ color: "#16a34a" }}>+{e.lift}% lift</span>
-              </div>
+    <SectionCard
+      title="Latest experiments"
+      description="Your 4 most recent experiments and how many variants each is testing."
+      tooltip="Used to see what's actively being tested right now and how many variants are in play."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Shuffle}
+          title="Create your first experience"
+          body="Launch an A/B test or personalization to see it show up here."
+          actionLabel="Create experience"
+          actionHref="/experiences"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center">
+        {LATEST_EXPERIMENTS.map((e) => (
+          <div key={e.name} className="flex items-center justify-between gap-3 border-b py-3.5 last:border-0" style={{ borderColor: "var(--border)" }}>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(0,128,255,0.08)" }}>
+                <Shuffle size={15} className="text-blue-500" />
+              </span>
+              <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{e.name}</p>
             </div>
-          );
-        })}
+            <div className="flex shrink-0 items-center gap-2">
+              <MarketingCountBadge>{e.variants} variants</MarketingCountBadge>
+              <MarketingStatusPill status={e.status} />
+            </div>
+          </div>
+        ))}
       </div>
+      )}
     </SectionCard>
   );
 }
 
-function MarketingSegmentsCard() {
-  const max = Math.max(...TOP_SEGMENTS.map((s) => s.rate));
+function RadialProgress({ value, size = 56, stroke = 5, showValue = true }: { value: number; size?: number; stroke?: number; showValue?: boolean }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - Math.min(value, 100) / 100);
   return (
-    <SectionCard title="Top segments" className="h-full">
-      <div className="space-y-3.5">
-        {TOP_SEGMENTS.map((s) => (
-          <div key={s.name}>
-            <div className="mb-1.5 flex items-center justify-between gap-3">
-              <span className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{s.name}</span>
-              <span className="shrink-0 text-xs text-stone-400">{s.members} members</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 flex-1 rounded-full bg-stone-100 dark:bg-white/8">
-                <div className="h-1.5 rounded-full bg-blue-400" style={{ width: `${(s.rate / max) * 100}%` }} />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--muted)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#0080FF"
+          strokeWidth={stroke}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      {showValue && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-bold text-stone-900 dark:text-stone-100">{value}%</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MarketingSegmentsCard({ noData = false }: { noData?: boolean }) {
+  return (
+    <SectionCard
+      title="Top segments"
+      description="Members and engagement rate for the segments driving the most journey and experiment activity."
+      tooltip="Used to see which audience segments are worth building the next journey or experiment around."
+      className="flex min-h-[300px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Users}
+          title="Waiting for events"
+          body="Segments will rank here once there's enough activity to measure engagement."
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center">
+        {TOP_SEGMENTS.map((s, index) => (
+          <div key={s.name} className="flex items-center gap-3 border-b py-3 last:border-0" style={{ borderColor: "var(--border)" }}>
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                index === 0 ? "text-white" : "text-blue-600 dark:text-blue-400"
+              }`}
+              style={{ background: index === 0 ? "#0080FF" : "rgba(0,128,255,0.1)" }}
+            >
+              {index + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-stone-900 dark:text-stone-100">{s.name}</p>
+              <div className="mt-1">
+                <MarketingCountBadge>{s.members} members</MarketingCountBadge>
               </div>
-              <span className="w-10 shrink-0 text-right text-xs font-semibold text-stone-600 dark:text-stone-300">{s.rate}%</span>
             </div>
+            <div className="flex shrink-0 items-center gap-2.5">
+              <ChangeBadge change={s.change} />
+              <RadialProgress value={s.rate} />
+            </div>
+          </div>
+        ))}
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function SegmentScatterTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const s = payload[0].payload;
+  return (
+    <div
+      className="rounded-lg px-3.5 py-3 text-xs shadow-2xl"
+      style={{
+        background: "rgba(24,24,27,0.96)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        color: "#f8fafc",
+        boxShadow: "0 18px 48px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.18)",
+      }}
+    >
+      <p className="mb-1 text-sm font-semibold text-white">{s.name}</p>
+      <p className="text-stone-300">{s.rate}% engagement · {s.members} members</p>
+    </div>
+  );
+}
+
+function MarketingSegmentMapCard() {
+  return (
+    <SectionCard
+      title="Segment engagement map"
+      description="Engagement rate against audience size for your top segments, split into four action zones."
+      tooltip="Used to spot which segments are worth a targeted experiment versus a broad journey."
+      className="min-h-[420px]"
+    >
+      <ResponsiveContainer width="100%" height={300}>
+        <ScatterChart margin={{ top: 16, right: 24, bottom: 16, left: 8 }}>
+          <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} />
+          <XAxis
+            type="number"
+            dataKey="membersCount"
+            name="Members"
+            domain={[0, 10000]}
+            ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+            tickFormatter={(v) => (v === 0 ? "0" : `${v / 1000}k`)}
+            tick={{ fontSize: 10, fill: "#94a3b8" }}
+            tickLine={false}
+            axisLine={false}
+            label={{ value: "Members (audience size)", position: "insideBottom", dy: 18, fontSize: 11, fill: "#94a3b8" }}
+          />
+          <YAxis
+            type="number"
+            dataKey="rate"
+            name="Engagement rate"
+            unit="%"
+            domain={[0, 50]}
+            ticks={[0, 10, 20, 30, 40, 50]}
+            tick={{ fontSize: 10, fill: "#94a3b8" }}
+            tickLine={false}
+            axisLine={false}
+            label={{ value: "Engagement rate", angle: -90, position: "insideLeft", fontSize: 11, fill: "#94a3b8" }}
+          />
+          <ZAxis dataKey="membersCount" range={[500, 1800]} />
+          <ReferenceLine x={5000} stroke="var(--border)" strokeDasharray="4 4" />
+          <ReferenceLine y={20} stroke="var(--border)" strokeDasharray="4 4" />
+          <Tooltip content={<SegmentScatterTooltip />} cursor={false} />
+          <Scatter data={TOP_SEGMENTS} shape="circle">
+            {TOP_SEGMENTS.map((s, index) => (
+              <Cell key={s.name} fill={SEGMENT_COLORS[index % SEGMENT_COLORS.length]} />
+            ))}
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
+
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        {TOP_SEGMENTS.map((s, index) => (
+          <div key={s.name} className="flex items-center gap-2">
+            <span className="h-3 w-3 shrink-0 rounded" style={{ background: SEGMENT_COLORS[index % SEGMENT_COLORS.length] }} />
+            <p className="whitespace-nowrap text-xs font-semibold text-stone-800 dark:text-stone-200">
+              {s.name} <span className="font-medium text-stone-500 dark:text-stone-400">({s.rate}% / {s.members})</span>
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {SEGMENT_QUADRANTS.map((q) => (
+          <div key={q.title} className="rounded-lg px-3.5 py-3" style={{ background: q.bg }}>
+            <p className="text-xs font-semibold leading-snug" style={{ color: q.text }}>{q.title}</p>
+            <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{q.hint}</p>
           </div>
         ))}
       </div>
@@ -3948,175 +3845,405 @@ function MarketingSegmentsCard() {
   );
 }
 
-type SalesHomeKpi = {
-  label: string;
+type AnomalySeverity = "critical" | "warning";
+
+type AnomalyMetric = {
+  id: string;
+  metric: string;
+  severity: AnomalySeverity;
+  expectedLow: string;
+  expectedHigh: string;
+  unit: string;
   value: string;
-  detail: string;
-  trend: string;
-  tone: "good" | "warning" | "neutral";
-  icon: LucideIcon;
+  change: string;
 };
 
-const SALES_HOME_KPIS: SalesHomeKpi[] = [
-  {
-    label: "Upcoming meetings",
-    value: "3",
-    detail: "Scheduled meetings in the next 7 days",
-    trend: "Next 7d",
-    tone: "good",
-    icon: Calendar,
-  },
-  {
-    label: "Attended rate",
-    value: "77%",
-    detail: "Meetings attended across the current period",
-    trend: "-6pp",
-    tone: "warning",
-    icon: Activity,
-  },
-  {
-    label: "Booking types",
-    value: "4",
-    detail: "Reusable scheduler links available to share",
-    trend: "2 live",
-    tone: "good",
-    icon: CalendarClock,
-  },
-  {
-    label: "Calendar setup",
-    value: "1/3",
-    detail: "Calendar is connected, reminders still need setup",
-    trend: "Setup",
-    tone: "neutral",
-    icon: ClipboardList,
-  },
+// Only send volume and open rate are included here — both roll up from fields
+// Journeys already tracks (Sent, Opens). Bounce rate and unsubscribe rate aren't
+// confirmed tracked fields, so they're left out rather than shown as fake anomalies.
+const ANOMALY_METRICS: AnomalyMetric[] = [
+  { id: "send-volume", metric: "Combined send volume across active journeys", severity: "critical", expectedLow: "4.6k", expectedHigh: "5.8k", unit: "sends", value: "1.2k",  change: "-76%" },
+  { id: "open-rate",   metric: "Combined open rate across active journeys",   severity: "warning",  expectedLow: "40%",  expectedHigh: "46%",  unit: "",      value: "28.4%", change: "-33%" },
 ];
 
-const SALES_HOME_ACTIONS = [
-  {
-    priority: "High",
-    title: "Enable meeting reminders",
-    body: "Meetings and booking are supported now. Add 24 hour and 1 hour reminders to reduce no-shows.",
-    impact: "Improve attendance",
-    action: "Enable reminders",
-    tone: "warning" as const,
-  },
-  {
-    priority: "Setup",
-    title: "Publish the onboarding booking type",
-    body: "The scheduler can already manage reusable booking links. Review the draft onboarding slot and publish it.",
-    impact: "Make handoff bookable",
-    action: "Review booking",
-    tone: "neutral" as const,
-  },
-];
+const ANOMALY_SEVERITY_STYLES: Record<AnomalySeverity, { text: string; bg: string; dot: string }> = {
+  critical: { text: "text-red-600 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/12",     dot: "bg-red-500"   },
+  warning:  { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/12", dot: "bg-amber-500" },
+};
 
-function SalesKpiCard({ item }: { item: SalesHomeKpi }) {
-  const Icon = item.icon;
-
+function MarketingAnomalyRow({ item }: { item: AnomalyMetric }) {
+  const style = ANOMALY_SEVERITY_STYLES[item.severity];
   return (
-    <div
-      className="relative flex h-full min-h-[128px] overflow-hidden rounded-xl p-4"
-      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
-    >
-      <Icon
-        size={86}
-        className="pointer-events-none absolute -bottom-5 -right-5 text-blue-500 opacity-[0.05]"
-      />
-      <div className="relative z-10 flex min-h-full w-full flex-col">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-blue-500 dark:bg-white/8"
-          >
-            <Icon size={15} />
-          </span>
-          <span
-            className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium leading-none text-blue-600 dark:bg-blue-500/12 dark:text-blue-300"
-          >
-            {item.trend}
-          </span>
+    <div className="flex items-center justify-between gap-3 border-b py-3 last:border-0" style={{ borderColor: "var(--border)" }}>
+      <div className="min-w-0">
+        <p className="text-sm font-medium leading-snug text-stone-800 dark:text-stone-100">{item.metric}</p>
+        <div className="mt-1.5">
+          <MarketingCountBadge>
+            Typical range: {item.expectedLow} – {item.expectedHigh}{item.unit ? ` ${item.unit}` : ""}
+          </MarketingCountBadge>
         </div>
-        <div className="mt-auto">
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[34px] font-bold leading-none tracking-normal text-stone-950 dark:text-stone-50">{item.value}</p>
-              <p className="mt-2 text-sm font-semibold leading-tight text-stone-800 dark:text-stone-100">{item.label}</p>
-            </div>
-          </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${style.bg} ${style.text}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+          {item.severity}
+        </span>
+        <div className="text-right">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">Last 24h</p>
+          <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+            {item.value}{item.unit ? ` ${item.unit}` : ""}
+          </p>
+          <p className={`text-xs font-semibold ${style.text}`}>{item.change} vs. typical</p>
         </div>
       </div>
     </div>
   );
 }
 
-function SalesActionCard({ rec }: { rec: typeof SALES_HOME_ACTIONS[number] }) {
-  const isWarning = rec.tone === "warning";
-  const color = isWarning ? "#f59e0b" : "#0080FF";
-
+function MarketingAnomalyCard({ noData = false }: { noData?: boolean }) {
   return (
-    <div className="flex h-full min-h-[204px] flex-col rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: isWarning ? "rgba(245,158,11,0.08)" : "rgba(0,128,255,0.08)" }}>
-            <Bot size={14} style={{ color }} />
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-stone-800 dark:text-stone-100">Blu recommendation</p>
-            <p className="text-xs text-stone-400">{rec.impact}</p>
-          </div>
+    <SectionCard className="flex h-full flex-col">
+      <div>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Journey anomaly detection</p>
+          <HeadingTooltip text="Used to catch journey send volume or open rate moving outside its normal range, before it turns into a bigger problem." />
         </div>
-        <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: isWarning ? "rgba(245,158,11,0.08)" : "rgba(0,128,255,0.08)", color }}>
-          {rec.priority}
-        </span>
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Send volume and open rate across your active journeys, compared to their typical range.</p>
       </div>
-      <p className="text-sm font-semibold leading-snug text-stone-900 dark:text-stone-100">{rec.title}</p>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-500 dark:text-stone-400">{rec.body}</p>
-      <button className="mt-5 inline-flex h-9 w-fit items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90" style={{ background: "#0080FF" }}>
-        {rec.action}
-        <ChevronRight size={12} />
-      </button>
-    </div>
+      {noData ? (
+        <CardEmptyState
+          icon={AlertTriangle}
+          title="Waiting for events"
+          body="We'll flag unusual send volume or open rate here once your journeys have enough send history."
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center">
+        {ANOMALY_METRICS.map((item) => (
+          <MarketingAnomalyRow key={item.id} item={item} />
+        ))}
+      </div>
+      )}
+    </SectionCard>
   );
 }
 
 // ── Design homepage ────────────────────────────────────────────────────────────
 
-function DesignHomeDashboard() {
+const DESIGN_GENERATION_ICONS: Record<string, LucideIcon> = {
+  email: MailOpen,
+  sms: MessageSquare,
+  image: FileImage,
+};
+
+function DesignLatestGenerationsCard({ noData = false }: { noData?: boolean }) {
+  return (
+    <SectionCard
+      title="Latest generations"
+      description="Your 4 most recent assets generated from Blu and the asset library."
+      tooltip="Used to see what's been generated most recently across emails, SMS, and images."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Wand2}
+          title="Create your first asset"
+          body="Generate an email, image, or SMS with Blu to see it show up here."
+          actionLabel="Open asset library"
+          actionHref="/asset-library"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center">
+        {DESIGN_LATEST_GENERATIONS.map((item) => {
+          const Icon = DESIGN_GENERATION_ICONS[item.icon] ?? FileImage;
+          return (
+            <div key={item.name} className="flex items-center justify-between gap-3 border-b py-3.5 last:border-0" style={{ borderColor: "var(--border)" }}>
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(0,128,255,0.08)" }}>
+                  <Icon size={15} className="text-blue-500" />
+                </span>
+                <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{item.name}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <MarketingCountBadge>{item.type}</MarketingCountBadge>
+                <span className="text-xs text-stone-400">{item.ago}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function DesignGenerationActivityCard({ noData = false }: { noData?: boolean }) {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (dataKey?: string) => {
+    if (!dataKey) return;
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(dataKey)) next.delete(dataKey);
+      else next.add(dataKey);
+      return next;
+    });
+  };
+
+  return (
+    <SectionCard
+      title="Generations, last 30 days"
+      tooltip="Used to see overall creative output. Click a series in the legend to isolate it."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={FileImage}
+          title="Waiting for generations"
+          body="Email and image generation volume will chart here once you create your first asset."
+          actionLabel="Open asset library"
+          actionHref="/asset-library"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col justify-center gap-3">
+        <ResponsiveContainer width="100%" height={268}>
+          <AreaChart data={DESIGN_GENERATION_TREND} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+            <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
+            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <Tooltip content={<ChartTooltip />} />
+            <Area type="monotone" dataKey="email" hide={hidden.has("email")} stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)" dot={false} name="Email" />
+            <Area type="monotone" dataKey="image" hide={hidden.has("image")} stroke="#64748b" strokeWidth={1.5} fill="rgba(100,116,139,0.06)" dot={false} name="Image" />
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="flex flex-wrap items-center justify-center gap-6">
+          {[
+            { key: "email", label: "Email", color: "#0080FF" },
+            { key: "image", label: "Image", color: "#64748b" },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => toggleSeries(item.key)}
+              className={`flex items-center gap-2 text-sm transition-opacity ${hidden.has(item.key) ? "opacity-40" : "text-stone-600 dark:text-stone-300"}`}
+            >
+              <span className="h-3 w-3 rounded" style={{ background: item.color }} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+const DESIGN_CREDIT_USAGE = [
+  { type: "Email", pct: 45, known: true,  tooltip: "Percentage of generation credits used on emails this week." },
+  { type: "Image", pct: 32, known: true,  tooltip: "Percentage of generation credits used on images this week." },
+  { type: "N/A",   pct: 23, known: false, tooltip: "Not enough data yet to attribute this share to a specific content type." },
+];
+
+function DesignCreditRing({ item }: { item: typeof DESIGN_CREDIT_USAGE[number] }) {
+  const muted = !item.known;
+  const arcColor = muted ? "#94a3b8" : "#0080FF";
+  const trackColor = muted ? "rgba(148,163,184,0.18)" : "rgba(0,128,255,0.18)";
+  const ringData = [
+    { name: item.type, value: item.pct },
+    { name: "Remaining", value: 100 - item.pct },
+  ];
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative h-32 w-32 xl:h-36 xl:w-36">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={ringData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius="68%"
+              outerRadius="92%"
+              startAngle={90}
+              endAngle={-270}
+              paddingAngle={2}
+              stroke="var(--content-bg)"
+              strokeWidth={3}
+            >
+              <Cell fill={arcColor} />
+              <Cell fill={trackColor} />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex items-center justify-center text-center">
+          <p className={`text-xl font-semibold leading-none tracking-tight ${muted ? "text-stone-400 dark:text-stone-500" : "text-stone-900 dark:text-stone-100"}`}>
+            {muted ? "N/A" : `${item.pct}%`}
+          </p>
+        </div>
+      </div>
+      <span className="flex items-center justify-center gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400">{item.type}</span>
+        <HeadingTooltip text={item.tooltip} />
+      </span>
+    </div>
+  );
+}
+
+function DesignTopGeneratedTypesCard({ noData = false }: { noData?: boolean }) {
+  return (
+    <SectionCard
+      title="Credit usage by type"
+      description="Percentage of total credits used by content type this week."
+      tooltip="Used to see which content type consumes the most generation credits this week."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Layers}
+          title="Waiting for generations"
+          body="Credit usage by type will show up here once you've generated a few assets."
+          actionLabel="Open asset library"
+          actionHref="/asset-library"
+        />
+      ) : (
+      <div className="flex flex-1 items-center justify-center gap-6">
+        {DESIGN_CREDIT_USAGE.map((item) => (
+          <DesignCreditRing key={item.type} item={item} />
+        ))}
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+const DESIGN_TOP_USED = [
+  { label: "Top used design system", name: "Blossom",                 meta: "48 generations", image: null, palette: ["#D868A0", "#F0B8D4", "#5C1840", "#FCE8F4"] },
+  { label: "Top used avatar",        name: "Avatar A, Studio Portrait", meta: "31 generations", image: "/avatar.png", palette: null },
+  { label: "Top used scene",         name: "Lifestyle Kitchen Scene", meta: "22 generations", image: "/scene.png",  palette: null },
+  { label: "Top used pose",          name: "Standing Confident",      meta: "17 generations", image: "/pose.png",   palette: null },
+];
+
+function DesignTopUsedCard({ noData = false }: { noData?: boolean }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (noData) return;
+    const rotate = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % DESIGN_TOP_USED.length);
+        setVisible(true);
+      }, 300);
+    }, 3200);
+    return () => clearInterval(rotate);
+  }, [noData]);
+
+  const item = DESIGN_TOP_USED[index];
+
+  return (
+    <SectionCard
+      title="Most used"
+      description="Your top used design system, avatar, scene, and pose."
+      tooltip="Used to see which brand assets get reused the most across generations."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          icon={Palette}
+          title="Create your first asset"
+          body="Your most-used design system, avatar, scene, and pose will show up here once you've generated a few assets."
+          actionLabel="Open asset library"
+          actionHref="/asset-library"
+        />
+      ) : (
+      <>
+      <div className="flex flex-1 flex-col items-center justify-center overflow-hidden">
+        <div
+          className="flex flex-col items-center gap-3 text-center"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateX(0)" : "translateX(-10px)",
+            transition: "opacity 300ms ease, transform 300ms ease",
+          }}
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">{item.label}</span>
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              className="h-24 w-24 rounded-xl object-cover"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          ) : item.palette ? (
+            <div className="flex h-24 w-32 overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
+              {item.palette.map((color, i) => (
+                <div key={i} className="flex-1" style={{ background: color }} />
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-center gap-2">
+            {item.palette && (
+              <span
+                className="h-5 w-5 shrink-0 rounded-full ring-2 ring-white dark:ring-stone-800"
+                style={{ background: `conic-gradient(${item.palette[0]} 0deg 180deg, ${item.palette[1]} 180deg 360deg)` }}
+              />
+            )}
+            <div>
+              <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.name}</p>
+              <p className="mt-0.5 text-xs text-stone-400">{item.meta}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-center gap-1.5">
+        {DESIGN_TOP_USED.map((entry, i) => (
+          <span
+            key={entry.label}
+            className="h-1.5 w-1.5 rounded-full transition-colors"
+            style={{ background: i === index ? "#0080FF" : "var(--muted)" }}
+          />
+        ))}
+      </div>
+      </>
+      )}
+    </SectionCard>
+  );
+}
+
+function DesignHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.design;
 
-  const kpis = [
-    { label: "ASSETS CREATED",  value: "127",  sub: "+24% this week",       icon: FileImage, accent: "#0080FF" },
-    { label: "BRAND READINESS", value: "80%",  sub: "4 of 5 items complete", icon: Palette,   accent: "#26a269" },
-    { label: "DESIGN SYSTEMS",  value: "3",    sub: "+1 added this month",   icon: PenTool,   accent: "#C37EE5" },
-    { label: "AVATARS",         value: "6",    sub: "+1 added recently",     icon: Users,     accent: "#f59e0b" },
-  ] as const;
-
   return (
-    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
-      {videoOpen && videoSrc && (
-        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
-      )}
+    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-1">
+      <div className="flex items-start justify-between gap-4">
         <Greeting />
-        <button
-          onClick={() => setChecklistOpen((o) => !o)}
-          className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
-            checklistOpen
-              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
-              : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
-          }`}
-          style={{ borderColor: "var(--border)" }}
-          title="Brand setup checklist"
-        >
-          <ClipboardList size={14} />
-        </button>
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <button
+            onClick={() => setChecklistOpen((value) => !value)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+              checklistOpen
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
+                : "text-stone-500 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
+            }`}
+            style={{ borderColor: "var(--border)" }}
+            title="Brand setup checklist"
+          >
+            <ClipboardList size={14} />
+          </button>
+          <button
+            onClick={() => setVideoOpen(true)}
+            className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <Play size={11} className="fill-current text-blue-500" />
+            Watch intro
+          </button>
+        </div>
       </div>
 
-      {/* Collapsible checklist */}
       <div
         style={{
           maxHeight: checklistOpen ? 600 : 0,
@@ -4128,225 +4255,34 @@ function DesignHomeDashboard() {
         <BrandSetupChecklist />
       </div>
 
-      {/* ── Hero: video + 4 KPI tiles ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 items-stretch">
-        {/* Video card */}
-        <button
-          onClick={() => setVideoOpen(true)}
-          className="lg:col-span-3 relative overflow-hidden rounded-xl group text-left"
-          style={{ minHeight: 232, border: "1px solid var(--border)" }}
-        >
-          <img
-            src="https://img.youtube.com/vi/XAyYkqmHzhc/maxresdefault.jpg"
-            alt="Intempt Design overview"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.08) 100%)" }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span
-              className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
-              style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
-            >
-              <Play size={18} className="fill-white text-white ml-0.5" />
-            </span>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <span
-              className="inline-flex items-center gap-1.5 mb-2.5 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
-              style={{ background: "rgba(0,128,255,0.22)", border: "1px solid rgba(0,128,255,0.32)" }}
-            >
-              <Play size={8} className="fill-current" /> WATCH INTRO
-            </span>
-            <p className="text-[17px] font-semibold text-white leading-snug">How Intempt Design works</p>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
-              Brand kits, design systems, avatars &amp; AI-generated creative assets — channel-ready in minutes.
-            </p>
-          </div>
-        </button>
-
-        {/* 2×2 KPI tiles */}
-        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-          {kpis.map(({ label, value, sub, icon: Icon, accent }) => (
-            <div
-              key={label}
-              className="rounded-xl p-4 flex flex-col"
-              style={{ background: "var(--content-bg)", border: "1px solid var(--border)", minHeight: 110 }}
-            >
-              <div className="flex items-center gap-1.5 mb-3">
-                <Icon size={11} style={{ color: accent }} className="shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500 leading-none">
-                  {label}
-                </span>
-              </div>
-              <p className="text-[27px] font-semibold tabular-nums tracking-tight text-stone-900 dark:text-stone-50 leading-none mt-auto">
-                {value}
-              </p>
-              <p className="text-[11px] mt-2 text-stone-500 dark:text-stone-400">{sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Brand kit + Asset types ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Brand kit completeness */}
-        <div className="rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100">Brand Kit</p>
-            <span
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(245,158,11,0.10)", color: "#d97706" }}
-            >
-              1 missing
-            </span>
-          </div>
-          <div className="w-full h-1 rounded-full mb-4" style={{ background: "var(--muted)" }}>
-            <div className="h-1 rounded-full bg-blue-500 transition-all" style={{ width: "80%" }} />
-          </div>
-          <div>
-            {DESIGN_BRAND_ITEMS.map((b, i) => (
-              <div
-                key={b.label}
-                className="flex items-center justify-between py-2.5"
-                style={{ borderBottom: i < DESIGN_BRAND_ITEMS.length - 1 ? "1px solid var(--border)" : "none" }}
-              >
-                <span className="text-xs text-stone-600 dark:text-stone-400">{b.label}</span>
-                {b.ok ? (
-                  <span
-                    className="flex h-[18px] w-[18px] items-center justify-center rounded-full"
-                    style={{ background: "rgba(37,184,100,0.12)" }}
-                  >
-                    <Check size={9} className="text-emerald-600 dark:text-emerald-400" />
-                  </span>
-                ) : (
-                  <span
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
-                    style={{ background: "rgba(245,158,11,0.10)", color: "#d97706" }}
-                  >
-                    Missing
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Asset type breakdown */}
-        <div className="rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100 mb-4">
-            Asset Types
-            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500">
-              this week
-            </span>
-          </p>
-          <div className="space-y-3.5">
-            {DESIGN_ASSET_TYPES.map((t) => (
-              <div key={t.label} className="flex items-center gap-3">
-                <span className="text-xs text-stone-600 dark:text-stone-400 shrink-0 w-36 truncate">{t.label}</span>
-                <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--muted)" }}>
-                  <div className="h-1.5 rounded-full bg-blue-400" style={{ width: `${t.pct}%` }} />
-                </div>
-                <span className="text-xs font-semibold tabular-nums text-stone-700 dark:text-stone-300 w-6 text-right shrink-0">
-                  {t.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Generation chart + Credits ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-          <div className="flex items-start justify-between gap-4 mb-1">
-            <div>
-              <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100">Generation Activity</p>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">Images and videos created — last 14 days</p>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              {[
-                { label: "Images", color: "#0080FF" },
-                { label: "Videos", color: "#C37EE5" },
-              ].map((l) => (
-                <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-                  <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
-                  {l.label}
-                </div>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={DESIGN_GEN_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={3} />
-              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="images" stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)"   dot={false} name="Images" />
-              <Area type="monotone" dataKey="videos" stroke="#C37EE5" strokeWidth={1.5} fill="rgba(195,126,229,0.06)" dot={false} name="Videos" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Credits */}
-        <div className="rounded-xl p-5 flex flex-col" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
-          <p className="text-[13px] font-semibold text-stone-800 dark:text-stone-100 mb-4">Credits</p>
-          <div>
-            <p className="text-[32px] font-semibold tabular-nums tracking-tight text-stone-900 dark:text-stone-50 leading-none">3,840</p>
-            <p className="text-xs text-stone-400 mt-1 mb-4">of 5,000 used · 77%</p>
-          </div>
-          <div className="w-full h-2 rounded-full mb-3" style={{ background: "var(--muted)" }}>
-            <div className="h-2 rounded-full transition-all" style={{ width: "77%", background: "#f59e0b" }} />
-          </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">1,160 credits remaining this cycle</p>
-          <div
-            className="mt-auto flex items-start gap-2 rounded-lg p-3"
-            style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}
-          >
-            <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
-              Approaching 80% limit — schedule batch runs to avoid throttling.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Recent designs ── */}
-      <LatestGenerationsCard />
-
-      {/* ── Blu recommendations ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <BluCard rec={DESIGN_RECS[0]} />
-        <BluCard rec={DESIGN_RECS[1]} />
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <DesignGenerationActivityCard noData={noData} />
+        <DesignTopGeneratedTypesCard noData={noData} />
+        <DesignLatestGenerationsCard noData={noData} />
+        <DesignTopUsedCard noData={noData} />
       </div>
     </div>
   );
 }
 
-function MarketingHomeDashboard() {
+function MarketingHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [videoCollapsed, setVideoCollapsed] = useState(false);
-  const [inlinePlaying, setInlinePlaying] = useState(false);
   const videoSrc = TAB_VIDEOS.marketing;
 
   return (
-    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
-      {videoOpen && videoSrc && (
-        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
-      )}
+    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
 
-      <div className="flex items-start justify-between gap-4 mb-1">
+      <div className="flex items-start justify-between gap-4">
         <Greeting />
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <button
-            onClick={() => setChecklistOpen((o) => !o)}
-            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+            onClick={() => setChecklistOpen((value) => !value)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
               checklistOpen
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
-                : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+                : "text-stone-500 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
             }`}
             style={{ borderColor: "var(--border)" }}
             title="Setup checklist"
@@ -4355,20 +4291,15 @@ function MarketingHomeDashboard() {
           </button>
           <button
             onClick={() => setVideoOpen(true)}
-            className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
-              videoCollapsed ? "w-[112px] px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
-            }`}
+            className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
             style={{ borderColor: "var(--border)" }}
-            aria-hidden={!videoCollapsed}
-            tabIndex={videoCollapsed ? 0 : -1}
           >
             <Play size={11} className="fill-current text-blue-500" />
-            <span className="whitespace-nowrap">Watch video</span>
+            Watch intro
           </button>
         </div>
       </div>
 
-      {/* Collapsible setup checklist */}
       <div
         style={{
           maxHeight: checklistOpen ? 600 : 0,
@@ -4380,152 +4311,180 @@ function MarketingHomeDashboard() {
         <MarketingSetupChecklist />
       </div>
 
-      <div className="space-y-3">
-        <div className={`transition-all duration-300 ease-out ${videoCollapsed ? "max-h-0 overflow-hidden opacity-0" : "max-h-[260px] opacity-100"}`}>
-          <div
-            className="relative min-h-[220px] overflow-hidden rounded-xl"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            <button
-              onClick={() => {
-                setVideoCollapsed(true);
-                setInlinePlaying(false);
-              }}
-              className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
-              style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
-              aria-label="Close video"
-            >
-              <X size={14} />
-            </button>
-            {inlinePlaying ? (
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={videoSrc}
-                title="Marketing overview video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
-                <img
-                  src="https://img.youtube.com/vi/9LuIOESoiCc/hqdefault.jpg"
-                  alt="Intempt Marketing overview"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 58%, rgba(0,0,0,0.08) 100%)" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
-                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
-                  >
-                    <Play size={18} className="fill-white text-white ml-0.5" />
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <span
-                    className="inline-flex items-center gap-1.5 mb-2.5 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
-                    style={{ background: "rgba(0,128,255,0.22)", border: "1px solid rgba(0,128,255,0.32)" }}
-                  >
-                    <Play size={8} className="fill-current" /> Play video
-                  </span>
-                  <p className="text-[17px] font-semibold text-white leading-snug">
-                    Marketing command center
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
-                    Journeys, experiments, catalog feeds, and channel performance in one operating view.
-                  </p>
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {MARKETING_HOME_KPIS.map((item) => (
-            <MarketingKpiCard key={item.label} item={item} />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <MarketingSendPerformanceCard noData={noData} />
+        <MarketingChannelMixCard noData={noData} />
+        <MarketingLatestExperimentsCard noData={noData} />
+        <MarketingLatestJourneysCard noData={noData} />
       </div>
 
-      <MarketingChannelMixCard />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="flex flex-col gap-3 lg:col-span-2">
-          <SectionCard>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Send performance</p>
-                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Daily delivery volume and response quality over the last 26 days.</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
-                {[
-                  { label: "Sends",  color: "#0080FF" },
-                  { label: "Opens",  color: "#64748b" },
-                  { label: "Clicks", color: "#16a34a" },
-                ].map((l) => (
-                  <div key={l.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-                    <span className="w-3 h-0.5 rounded-full inline-block" style={{ background: l.color }} />
-                    {l.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={210}>
-              <AreaChart data={SENDS_CHART_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
-                <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="sends"  stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)"   dot={false} name="Sends"  />
-                <Area type="monotone" dataKey="opens"  stroke="#64748b" strokeWidth={1.5} fill="rgba(100,116,139,0.06)" dot={false} name="Opens"  />
-                <Area type="monotone" dataKey="clicks" stroke="#16a34a" strokeWidth={1.5} fill="rgba(22,163,74,0.06)"  dot={false} name="Clicks" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </SectionCard>
-          <MarketingJourneysCard />
-        </div>
-        <div className="flex flex-col gap-3">
-          <MarketingExperimentsCard />
-          <MarketingSegmentsCard />
-        </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <MarketingSegmentsCard noData={noData} />
+        <MarketingAnomalyCard noData={noData} />
       </div>
 
-      <SectionCard title="Needs attention">
-        <div>
-          {MARKETING_ATTENTION.map((item) => (
-            <MarketingAttentionRow key={item.id} item={item} />
-          ))}
-        </div>
-      </SectionCard>
+      {/* <MarketingSegmentMapCard /> */}
     </div>
   );
 }
 
-function SalesHomeDashboard() {
+// ── Sales homepage ─────────────────────────────────────────────────────────────
+
+const SALES_MEETINGS_TREND = [
+  { week: "Jun 9",  scheduled: 12, attended: 9  },
+  { week: "Jun 16", scheduled: 15, attended: 13 },
+  { week: "Jun 23", scheduled: 11, attended: 10 },
+  { week: "Jun 30", scheduled: 14, attended: 12 },
+  { week: "Jul 7",  scheduled: 9,  attended: 7  },
+];
+
+const SALES_PIPELINE = {
+  valueWon: 186400,
+  forecast: 240000,
+  pipelineHealth: 72,
+  winRate: 42,
+  winRateChange: "+3%",
+  lossRate: 18,
+  lossRateChange: "-2%",
+  maxWin: 24500,
+};
+
+type SalesTask = { id: string; title: string; due: string };
+
+const SALES_OVERDUE_TASKS: SalesTask[] = [
+  { id: "t1", title: "Follow up with FieldsUSA on pricing", due: "Jun 18" },
+  { id: "t2", title: "Send renewal contract to Linea",      due: "Jun 18" },
+  { id: "t3", title: "Update deal stage for Acme Corp",     due: "Jun 18" },
+  { id: "t4", title: "Confirm demo attendees for Thursday", due: "Jun 18" },
+];
+
+const SALES_TODAY_TASKS: SalesTask[] = [
+  { id: "t6", title: "Prep agenda for Linea renewal call", due: "Today" },
+];
+
+function SalesTaskRow({ task, overdue, done, onToggle }: { task: SalesTask; overdue: boolean; done: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <button
+        onClick={onToggle}
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+        style={{ borderColor: done ? "#0080FF" : "var(--border)", background: done ? "#0080FF" : "transparent" }}
+        aria-label={done ? "Mark task incomplete" : "Mark task complete"}
+      >
+        {done && <Check size={10} className="text-white" />}
+      </button>
+      <GripVertical size={14} className="shrink-0 text-stone-300 dark:text-stone-600" />
+      <p className={`min-w-0 flex-1 truncate text-sm ${done ? "text-stone-400 line-through" : "text-stone-800 dark:text-stone-100"}`}>
+        {task.title}
+      </p>
+      <span className={`shrink-0 text-xs font-medium ${overdue && !done ? "text-red-500" : "text-stone-400"}`}>{task.due}</span>
+    </div>
+  );
+}
+
+function SalesTasksCard({ noData = false }: { noData?: boolean }) {
+  const [overdueOpen, setOverdueOpen] = useState(true);
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [todayTasks, setTodayTasks] = useState<SalesTask[]>(noData ? [] : SALES_TODAY_TASKS);
+  const [newTask, setNewTask] = useState("");
+  const overdueTasks = noData ? [] : SALES_OVERDUE_TASKS;
+
+  const toggleDone = (id: string) => {
+    setDoneIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const addTask = () => {
+    const title = newTask.trim();
+    if (!title) return;
+    setTodayTasks((prev) => [...prev, { id: `custom-${Date.now()}`, title, due: "Today" }]);
+    setNewTask("");
+  };
+
+  return (
+    <SectionCard
+      title="Tasks"
+      description="Overdue and today's tasks across your deals and meetings."
+      tooltip="Used to track outstanding to-dos without leaving Home. Add a task directly in the Today section."
+      className="flex h-[390px] flex-col overflow-hidden"
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {overdueTasks.length > 0 && (
+            <>
+              <button onClick={() => setOverdueOpen((value) => !value)} className="flex items-center gap-2 py-2">
+                <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">Overdue</span>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white">
+                  {overdueTasks.length}
+                </span>
+                <ChevronDown size={14} className={`text-stone-400 transition-transform ${overdueOpen ? "" : "-rotate-90"}`} />
+              </button>
+              {overdueOpen && (
+                <div>
+                  {overdueTasks.map((task) => (
+                    <SalesTaskRow key={task.id} task={task} overdue done={doneIds.has(task.id)} onToggle={() => toggleDone(task.id)} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="mt-3 flex items-center gap-2 py-2">
+            <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">Today</span>
+            <span className="text-xs font-medium text-stone-400">{todayTasks.length}</span>
+          </div>
+          {todayTasks.length > 0 ? (
+            <div>
+              {todayTasks.map((task) => (
+                <SalesTaskRow key={task.id} task={task} overdue={false} done={doneIds.has(task.id)} onToggle={() => toggleDone(task.id)} />
+              ))}
+            </div>
+          ) : (
+            noData && (
+              <p className="py-2 text-xs text-stone-400">No tasks yet. Add one below to get started.</p>
+            )
+          )}
+        </div>
+
+        <div className="mt-3 flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border)" }}>
+          <Plus size={14} className="shrink-0 text-stone-400" />
+          <input
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addTask();
+            }}
+            placeholder="Add a task..."
+            className="w-full min-w-0 bg-transparent text-sm text-stone-800 outline-none placeholder:text-stone-400 dark:text-stone-100"
+          />
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [videoCollapsed, setVideoCollapsed] = useState(false);
-  const [inlinePlaying, setInlinePlaying] = useState(false);
   const videoSrc = TAB_VIDEOS.sales;
 
   return (
-    <div className="px-4 pb-4 pt-4 space-y-3 animate-fade-up">
-      {videoOpen && videoSrc && (
-        <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />
-      )}
+    <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
+      {videoOpen && videoSrc && <VideoOverlay src={videoSrc} onClose={() => setVideoOpen(false)} />}
 
-      <div className="flex items-start justify-between gap-4 mb-1">
+      <div className="flex items-start justify-between gap-4">
         <Greeting />
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <button
-            onClick={() => setChecklistOpen((o) => !o)}
-            className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
+            onClick={() => setChecklistOpen((value) => !value)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
               checklistOpen
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400"
-                : "hover:bg-stone-50 dark:hover:bg-white/6 text-stone-500 dark:text-stone-400"
+                : "text-stone-500 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
             }`}
             style={{ borderColor: "var(--border)" }}
             title="Setup checklist"
@@ -4534,15 +4493,11 @@ function SalesHomeDashboard() {
           </button>
           <button
             onClick={() => setVideoOpen(true)}
-            className={`inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border text-xs font-medium text-stone-600 transition-all duration-300 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6 ${
-              videoCollapsed ? "w-[112px] px-3 opacity-100" : "pointer-events-none w-0 px-0 opacity-0"
-            }`}
+            className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-white/6"
             style={{ borderColor: "var(--border)" }}
-            aria-hidden={!videoCollapsed}
-            tabIndex={videoCollapsed ? 0 : -1}
           >
             <Play size={11} className="fill-current text-blue-500" />
-            <span className="whitespace-nowrap">Watch video</span>
+            Watch intro
           </button>
         </div>
       </div>
@@ -4558,99 +4513,23 @@ function SalesHomeDashboard() {
         <SalesSetupChecklist />
       </div>
 
-      <div className={`grid grid-cols-1 gap-3 ${videoCollapsed ? "" : "lg:grid-cols-2"} items-stretch`}>
-        <div className={`transition-all duration-300 ease-out ${videoCollapsed ? "max-h-0 overflow-hidden opacity-0" : "max-h-[420px] opacity-100"}`}>
-          <div className="relative aspect-video overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
-            <button
-              onClick={() => {
-                setVideoCollapsed(true);
-                setInlinePlaying(false);
-              }}
-              className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-white transition-colors hover:bg-white/20"
-              style={{ borderColor: "rgba(255,255,255,0.34)", background: "rgba(0,0,0,0.28)" }}
-              aria-label="Close video"
-            >
-              <X size={14} />
-            </button>
-            {inlinePlaying ? (
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={videoSrc}
-                title="Sales overview video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <button onClick={() => setInlinePlaying(true)} className="absolute inset-0 group text-left">
-                <img
-                  src="https://img.youtube.com/vi/UQNNQb7JPvw/hqdefault.jpg"
-                  alt="Intempt Sales overview"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 58%, rgba(0,0,0,0.08) 100%)" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
-                    style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.34)" }}
-                  >
-                    <Play size={18} className="fill-white text-white ml-0.5" />
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <p className="text-[17px] font-semibold text-white leading-snug">
-                    Sales command center
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.58)" }}>
-                    Meetings, scheduler links, calendar setup, and attendance health in one operating view.
-                  </p>
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${videoCollapsed ? "xl:grid-cols-4" : "lg:h-full lg:grid-rows-2"}`}>
-          {SALES_HOME_KPIS.map((item) => (
-            <SalesKpiCard key={item.label} item={item} />
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SectionCard title="Meeting Attendance" className="h-full">
-          <div className="mb-3 flex items-center gap-4">
-            {[
-              { label: "Scheduled", color: "#0080FF" },
-              { label: "Attended", color: "#16a34a" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: item.color }} />
-                {item.label}
-              </div>
-            ))}
-          </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <ComposedChart data={MEETINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-              <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
-              <Line dataKey="attended" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 3, strokeWidth: 0 }} name="Attended" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </SectionCard>
-
-        <div className="h-full rounded-xl p-5" style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}>
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <SectionCard className="flex min-h-[390px] flex-col">
           <div className="mb-5 flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Coming up</p>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
               Meetings
             </span>
           </div>
+          {noData ? (
+            <CardEmptyState
+              icon={Calendar}
+              title="No meetings scheduled"
+              body="Book or sync a meeting to see it show up here."
+              actionLabel="Open meetings"
+              actionHref="/meetings"
+            />
+          ) : (
           <div className="space-y-4">
             {[
               { date: "JUN 10", title: "FieldsUSA demo", time: "7:00 PM", due: "in 4 hours" },
@@ -4681,30 +4560,149 @@ function SalesHomeDashboard() {
               );
             })}
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
-        <SectionCard title="Setup Health" className="h-full">
-          <div className="space-y-3">
-            {[
-              { label: "Calendar connected", status: "Done", done: true },
-              { label: "Booking types created", status: "2 live", done: true },
-              { label: "Reminders configured", status: "Missing", done: false },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--muted)" }}>
-                <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{item.label}</span>
-                <span className={`text-xs font-semibold ${item.done ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400"}`}>
-                  {item.status}
-                </span>
-              </div>
-            ))}
-          </div>
+          )}
         </SectionCard>
 
-        {SALES_HOME_ACTIONS.map((rec) => (
-          <SalesActionCard key={rec.title} rec={rec} />
-        ))}
+        <SectionCard
+          title="Meeting Attendance"
+          description="Scheduled vs. completed meetings by week."
+          tooltip="Derived from each meeting's status field. There's no dedicated attendance report yet, so this is aggregated client-side from your meetings list."
+          className="flex min-h-[390px] flex-col"
+        >
+          {noData ? (
+            <CardEmptyState
+              icon={Video}
+              title="Waiting for meetings"
+              body="Scheduled vs. completed meetings will chart here once you have meeting history."
+              actionLabel="Open meetings"
+              actionHref="/meetings"
+            />
+          ) : (
+          <div className="flex flex-1 flex-col justify-center gap-3">
+            <div className="flex items-center justify-center gap-4">
+              {[
+                { label: "Scheduled", color: "#0080FF" },
+                { label: "Attended", color: "#16a34a" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: item.color }} />
+                  {item.label}
+                </div>
+              ))}
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <ComposedChart data={SALES_MEETINGS_TREND} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+                <XAxis dataKey="week" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="scheduled" fill="rgba(0,128,255,0.15)" radius={[2, 2, 0, 0]} name="Scheduled" maxBarSize={28} />
+                <Line dataKey="attended" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 3, strokeWidth: 0 }} name="Attended" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+        </SectionCard>
+
+        <SalesTasksCard noData={noData} />
+
+        <SectionCard
+          title="Pipeline"
+          description="Deal value, win rate, and loss rate for open and closed deals this period."
+          tooltip="Used to see how much revenue is currently in active deals and how efficiently they're closing."
+          className="flex min-h-[390px] flex-col"
+        >
+          {noData ? (
+            <CardEmptyState
+              icon={Handshake}
+              title="Create your first deal"
+              body="Deal value, win rate, and pipeline health will show up here once you add a deal."
+              actionLabel="Open deals"
+              actionHref="/deals"
+            />
+          ) : (
+          <div className="flex flex-1 items-stretch gap-6">
+            <div className="flex w-1/2 shrink-0 items-center justify-center">
+              <div className="relative h-56 w-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Health", value: SALES_PIPELINE.pipelineHealth },
+                        { name: "Remaining", value: 100 - SALES_PIPELINE.pipelineHealth },
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="68%"
+                      outerRadius="92%"
+                      startAngle={90}
+                      endAngle={-270}
+                      paddingAngle={2}
+                      stroke="var(--content-bg)"
+                      strokeWidth={3}
+                    >
+                      <Cell fill="#0080FF" />
+                      <Cell fill="rgba(0,128,255,0.18)" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                  <p className="text-4xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">
+                    {SALES_PIPELINE.pipelineHealth}
+                  </p>
+                  <span className="mt-2.5 flex items-center justify-center gap-1">
+                    <span className="text-[10px] font-medium uppercase leading-tight text-stone-400">Pipeline health</span>
+                    <HeadingTooltip text="A 0 to 100 score summarizing deal velocity, win rate, and forecast coverage." />
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col justify-center space-y-4">
+              <div>
+                <div className="flex items-end justify-between gap-3">
+                  <p className="text-xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">
+                    ${(SALES_PIPELINE.valueWon / 1000).toFixed(1)}K
+                  </p>
+                  <span className="text-xs font-medium text-stone-400">of ${(SALES_PIPELINE.forecast / 1000).toFixed(0)}K forecast</span>
+                </div>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Value won this period</p>
+                <div className="mt-2 h-2 rounded-full bg-stone-100 dark:bg-white/8">
+                  <div
+                    className="h-2 rounded-full bg-blue-500"
+                    style={{ width: `${Math.min((SALES_PIPELINE.valueWon / SALES_PIPELINE.forecast) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {[
+                { label: "Win rate", value: SALES_PIPELINE.winRate, change: SALES_PIPELINE.winRateChange, color: "#16a34a" },
+                { label: "Loss rate", value: SALES_PIPELINE.lossRate, change: SALES_PIPELINE.lossRateChange, color: "#ef4444" },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-300">{item.label}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.value}%</span>
+                      <ChangeBadge change={item.change} />
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-stone-100 dark:bg-white/8">
+                    <div className="h-2 rounded-full" style={{ width: `${item.value}%`, background: item.color }} />
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex items-center justify-between rounded-lg px-3 py-2.5" style={{ background: "var(--muted)" }}>
+                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Largest deal won</span>
+                <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">${(SALES_PIPELINE.maxWin / 1000).toFixed(1)}K</span>
+              </div>
+            </div>
+          </div>
+          )}
+        </SectionCard>
       </div>
     </div>
   );
@@ -4746,17 +4744,13 @@ export default function HomeView() {
       />
       {homeState === "empty"
         ? <EmptyHomeDashboard key={`${activeTab}-empty`} tab={activeTab} />
-        : homeState === "partial"
-          ? activeTab === "analytics"
-            ? <AnalyticsPartialDashboard key="analytics-partial" />
-            : <HomePartialDashboard key={`${activeTab}-partial`} tab={activeTab} />
-          : activeTab === "design"
-            ? <DesignHomeDashboard key="design" />
-            : activeTab === "marketing"
-              ? <MarketingHomeDashboard key="marketing" />
-              : activeTab === "sales"
-                ? <SalesHomeDashboard key="sales" />
-                : <AnalyticsFullDashboard key="analytics-full" />
+        : activeTab === "design"
+          ? <DesignHomeDashboard key="design" noData={homeState === "partial"} />
+          : activeTab === "marketing"
+            ? <MarketingHomeDashboard key="marketing" noData={homeState === "partial"} />
+            : activeTab === "sales"
+              ? <SalesHomeDashboard key="sales" noData={homeState === "partial"} />
+              : <AnalyticsFullDashboard key="analytics-full" noData={homeState === "partial"} />
       }
     </div>
   );

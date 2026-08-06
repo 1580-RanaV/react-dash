@@ -189,9 +189,9 @@ function FloatingBluWindow({
 type HomeState = "empty" | "partial" | "full";
 
 const HOME_STATE_TABS: { key: HomeState; label: string }[] = [
-  { key: "empty", label: "Empty" },
-  { key: "partial", label: "Partial" },
-  { key: "full", label: "Full" },
+  { key: "empty", label: "New" },
+  { key: "partial", label: "No data" },
+  { key: "full", label: "Loaded" },
 ];
 
 const HOME_TAB_KEYS = new Set(["design", "marketing", "sales", "analytics"]);
