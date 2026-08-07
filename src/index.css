@@ -315,6 +315,11 @@ input, select, textarea {
   100% { background-position: -200% 0; }
 }
 
+@keyframes shimmer-sunrise {
+  0%   { background-position-y: 27px; }
+  100% { background-position-y: -45px; }
+}
+
 @keyframes reveal-image {
   0%   { opacity: 0.5; filter: blur(24px); }
   100% { opacity: 1;   filter: blur(0px); }

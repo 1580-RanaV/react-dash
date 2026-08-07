@@ -1,6 +1,6 @@
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -232,24 +232,6 @@ const DESIGN_LATEST_GENERATIONS = [
   { name: "Raw HTML email output",           type: "Email", ago: "1 week ago",  icon: "email" },
   { name: "Brand character holding a can",   type: "Image", ago: "1 month ago", icon: "image" },
 ];
-const DESIGN_GENERATION_TREND = [
-  { date: "Jun 13", email: 4, image: 8  }, { date: "Jun 14", email: 6, image: 12 },
-  { date: "Jun 15", email: 3, image: 5  }, { date: "Jun 16", email: 7, image: 14 },
-  { date: "Jun 17", email: 5, image: 10 }, { date: "Jun 18", email: 4, image: 7  },
-  { date: "Jun 19", email: 9, image: 18 }, { date: "Jun 20", email: 7, image: 15 },
-  { date: "Jun 21", email: 5, image: 9  }, { date: "Jun 22", email: 10, image: 20 },
-  { date: "Jun 23", email: 6, image: 13 }, { date: "Jun 24", email: 5, image: 11 },
-  { date: "Jun 25", email: 8, image: 17 }, { date: "Jun 26", email: 5, image: 3  },
-  { date: "Jun 27", email: 6, image: 2  }, { date: "Jun 28", email: 4, image: 2  },
-  { date: "Jun 29", email: 5, image: 4  }, { date: "Jun 30", email: 8, image: 16 },
-  { date: "Jul 1",  email: 6, image: 13 }, { date: "Jul 2",  email: 5, image: 10 },
-  { date: "Jul 3",  email: 3, image: 6  }, { date: "Jul 4",  email: 7, image: 15 },
-  { date: "Jul 5",  email: 5, image: 11 }, { date: "Jul 6",  email: 4, image: 9  },
-  { date: "Jul 7",  email: 8, image: 16 }, { date: "Jul 8",  email: 6, image: 14 },
-  { date: "Jul 9",  email: 5, image: 10 }, { date: "Jul 10", email: 3, image: 7  },
-  { date: "Jul 11", email: 7, image: 15 }, { date: "Jul 12", email: 6, image: 12 },
-];
-
 // ── Marketing dashboard data ─────────────────────────────────────────────────
 
 const SENDS_CHART_DATA = [
@@ -379,25 +361,32 @@ function InfoBadge() {
 }
 
 function HeadingTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
   return (
-    <span className="group relative inline-flex shrink-0 items-center">
+    <span
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
       <span
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-stone-400 transition-colors hover:text-blue-500 dark:text-stone-500 dark:hover:text-blue-400"
+        className="flex h-3.5 w-3.5 cursor-default select-none items-center justify-center rounded-full bg-stone-200/80 text-stone-400 transition-colors hover:bg-stone-300/60 dark:bg-white/10 dark:text-stone-500 dark:hover:bg-white/18"
         tabIndex={0}
         aria-label={text}
       >
-        <Info size={12} />
+        <Info size={9} />
       </span>
-      <span
-        className="pointer-events-none absolute left-1/2 top-6 z-50 w-56 -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-medium leading-relaxed text-stone-600 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-stone-200"
-        style={{
-          background: "var(--content-bg)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 14px 36px rgba(0,0,0,0.16)",
-        }}
-      >
-        {text}
-      </span>
+      {show && (
+        <span
+          className="animate-tooltip-in pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-52 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
+          style={{ background: "rgba(24,24,27,0.93)", backdropFilter: "blur(4px)" }}
+        >
+          <span
+            className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+            style={{ borderBottomColor: "rgba(24,24,27,0.93)" }}
+          />
+          {text}
+        </span>
+      )}
     </span>
   );
 }
@@ -994,35 +983,79 @@ function SectionCard({
 // yet. Distinct from EmptyHomeDashboard (nothing connected at all).
 
 function CardEmptyState({
-  icon: Icon,
-  title,
-  body,
+  text,
   actionLabel,
   actionHref,
+  onAction,
 }: {
-  icon: LucideIcon;
-  title: string;
-  body: string;
+  text: string;
   actionLabel?: string;
   actionHref?: string;
+  onAction?: () => void;
 }) {
+  const textWidth = 240;
+  const logoSize = 144;
+  const fadeMask = "linear-gradient(to bottom, black 0%, black 28%, transparent 52%)";
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(0,128,255,0.08)" }}>
-        <Icon size={18} className="text-blue-500" />
-      </span>
-      <div>
-        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
-        <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-stone-500 dark:text-stone-400">{body}</p>
+    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <div className="relative mx-auto overflow-hidden" style={{ width: logoSize, height: logoSize / 2 }}>
+        <img
+          src="/hq.png"
+          alt=""
+          style={{
+            width: logoSize,
+            height: logoSize,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            filter: "grayscale(1)",
+            opacity: 0.55,
+            WebkitMaskImage: fadeMask,
+            maskImage: fadeMask,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: logoSize,
+            height: logoSize,
+            background: "linear-gradient(to top, transparent 0%, rgba(255,255,255,0.9) 50%, transparent 100%)",
+            backgroundSize: "100% 90px",
+            backgroundRepeat: "no-repeat",
+            animation: "shimmer-sunrise 2s ease-in-out infinite alternate",
+            WebkitMaskImage: "url(/hq.png)",
+            maskImage: "url(/hq.png)",
+            WebkitMaskSize: `${logoSize}px ${logoSize}px`,
+            maskSize: `${logoSize}px ${logoSize}px`,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            mixBlendMode: "overlay",
+          }}
+        />
       </div>
-      {actionLabel && actionHref && (
-        <a
-          href={actionHref}
-          className="mt-1 inline-flex h-8 items-center rounded-lg px-3.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
-          style={{ background: "#0080FF" }}
-        >
-          {actionLabel}
-        </a>
+      <p className="-mt-0.5 text-xs leading-relaxed text-stone-400 dark:text-stone-500" style={{ width: textWidth }}>
+        {text}
+      </p>
+      {actionLabel && (actionHref || onAction) && (
+        actionHref ? (
+          <a
+            href={actionHref}
+            className="mt-4 text-xs font-medium text-stone-600 underline decoration-dotted decoration-stone-400 underline-offset-4 transition-colors hover:text-stone-800 dark:text-stone-300 dark:decoration-stone-500 dark:hover:text-stone-100"
+          >
+            {actionLabel}
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onAction}
+            className="mt-4 text-xs font-medium text-stone-600 underline decoration-dotted decoration-stone-400 underline-offset-4 transition-colors hover:text-stone-800 dark:text-stone-300 dark:decoration-stone-500 dark:hover:text-stone-100"
+          >
+            {actionLabel}
+          </button>
+        )
       )}
     </div>
   );
@@ -1737,11 +1770,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
             </div>
           </div>
           {noData ? (
-            <CardEmptyState
-              icon={Activity}
-              title="Waiting for events"
-              body="Page views, sessions, and active users will appear here once your tracked events start flowing in."
-            />
+            <CardEmptyState text="Page views, sessions, and active users will appear here once your tracked events start flowing in." />
           ) : (
             <>
               <ResponsiveContainer width="100%" height={268}>
@@ -1778,11 +1807,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
           className="flex min-h-[390px] flex-col"
         >
           {noData ? (
-            <CardEmptyState
-              icon={Users}
-              title="Waiting for events"
-              body="Daily, weekly, and monthly active users will show up here once enough activity comes in."
-            />
+            <CardEmptyState text="Daily, weekly, and monthly active users will show up here once enough activity comes in." />
           ) : (
           <div className="flex h-full flex-col justify-center gap-6 pb-4">
             <div className="grid grid-cols-3 gap-4">
@@ -1859,10 +1884,8 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
         >
           {noData ? (
             <CardEmptyState
-              icon={DollarSign}
-              title="Waiting for revenue activity"
-              body="MRR, subscribers, and NRR will appear here once Stripe starts syncing subscription activity."
-              actionLabel="Go to integrations"
+              text="MRR, subscribers, and NRR will appear here once Stripe starts syncing subscription activity."
+              actionLabel="Check integrations"
               actionHref="/integrations"
             />
           ) : (
@@ -1914,11 +1937,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
           className="flex min-h-[390px] flex-col overflow-hidden"
         >
           {noData ? (
-            <CardEmptyState
-              icon={Globe}
-              title="Waiting for events"
-              body="Traffic channels will rank here once sessions include referrer or UTM data."
-            />
+            <CardEmptyState text="Traffic channels will rank here once sessions include referrer or UTM data." />
           ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 pb-3">
             <div className="h-64 w-full max-w-[440px]">
@@ -3489,11 +3508,7 @@ function MarketingChannelMixCard({ noData = false }: { noData?: boolean }) {
       className="flex min-h-[390px] flex-col overflow-hidden"
     >
       {noData ? (
-        <CardEmptyState
-          icon={MailOpen}
-          title="Waiting for events"
-          body="Channel share will appear here once you send across email, SMS, push, or in-app."
-        />
+        <CardEmptyState text="Channel share will appear here once you send across email, SMS, push, or in-app." />
       ) : (
       <div className="flex flex-1 flex-col items-center justify-center gap-3">
         <div className="h-64 w-full max-w-[440px]">
@@ -3558,9 +3573,7 @@ function MarketingSendPerformanceCard({ noData = false }: { noData?: boolean }) 
     >
       {noData ? (
         <CardEmptyState
-          icon={Send}
-          title="Waiting for events"
-          body="Sends, opens, and clicks will chart here once your first messages go out."
+          text="Sends, opens, and clicks will chart here once your first messages go out."
           actionLabel="Create journey"
           actionHref="/journeys"
         />
@@ -3617,9 +3630,7 @@ function MarketingLatestJourneysCard({ noData = false }: { noData?: boolean }) {
     >
       {noData ? (
         <CardEmptyState
-          icon={Route}
-          title="Create your first journey"
-          body="Build an automated journey to see send activity show up here."
+          text="Build an automated journey to see send activity show up here."
           actionLabel="Create journey"
           actionHref="/journeys"
         />
@@ -3655,9 +3666,7 @@ function MarketingLatestExperimentsCard({ noData = false }: { noData?: boolean }
     >
       {noData ? (
         <CardEmptyState
-          icon={Shuffle}
-          title="Create your first experience"
-          body="Launch an A/B test or personalization to see it show up here."
+          text="Launch an A/B test or personalization to see it show up here."
           actionLabel="Create experience"
           actionHref="/experiences"
         />
@@ -3721,11 +3730,7 @@ function MarketingSegmentsCard({ noData = false }: { noData?: boolean }) {
       className="flex min-h-[300px] flex-col"
     >
       {noData ? (
-        <CardEmptyState
-          icon={Users}
-          title="Waiting for events"
-          body="Segments will rank here once there's enough activity to measure engagement."
-        />
+        <CardEmptyState text="Segments will rank here once there's enough activity to measure engagement." />
       ) : (
       <div className="flex flex-1 flex-col justify-center">
         {TOP_SEGMENTS.map((s, index) => (
@@ -3911,11 +3916,7 @@ function MarketingAnomalyCard({ noData = false }: { noData?: boolean }) {
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Send volume and open rate across your active journeys, compared to their typical range.</p>
       </div>
       {noData ? (
-        <CardEmptyState
-          icon={AlertTriangle}
-          title="Waiting for events"
-          body="We'll flag unusual send volume or open rate here once your journeys have enough send history."
-        />
+        <CardEmptyState text="We'll flag unusual send volume or open rate here once there's enough send history." />
       ) : (
       <div className="flex flex-1 flex-col justify-center">
         {ANOMALY_METRICS.map((item) => (
@@ -3945,9 +3946,7 @@ function DesignLatestGenerationsCard({ noData = false }: { noData?: boolean }) {
     >
       {noData ? (
         <CardEmptyState
-          icon={Wand2}
-          title="Create your first asset"
-          body="Generate an email, image, or SMS with Blu to see it show up here."
+          text="Generate an email, image, or SMS with Blu to see it show up here."
           actionLabel="Open asset library"
           actionHref="/asset-library"
         />
@@ -3976,137 +3975,45 @@ function DesignLatestGenerationsCard({ noData = false }: { noData?: boolean }) {
   );
 }
 
-function DesignGenerationActivityCard({ noData = false }: { noData?: boolean }) {
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const toggleSeries = (dataKey?: string) => {
-    if (!dataKey) return;
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(dataKey)) next.delete(dataKey);
-      else next.add(dataKey);
-      return next;
-    });
-  };
+const DESIGN_REACH = {
+  sends: 214000,
+  opens: 66340,
+  clicks: 9860,
+};
+
+function DesignReachCard({ noData = false }: { noData?: boolean }) {
+  const { sends, opens, clicks } = DESIGN_REACH;
+  const openRate = Math.round((opens / sends) * 100);
+  const clickRate = Math.round((clicks / sends) * 1000) / 10;
+  const fmt = (n: number) => (n >= 1000 ? `${Math.round(n / 100) / 10}K` : `${n}`);
 
   return (
     <SectionCard
-      title="Generations, last 30 days"
-      tooltip="Used to see overall creative output. Click a series in the legend to isolate it."
+      title="Reach from generated assets"
+      description="Reach and click-through where a generated asset was used."
+      tooltip="Totals across all sends that include a Blu-generated email, image, or SMS."
       className="flex min-h-[390px] flex-col"
     >
       {noData ? (
         <CardEmptyState
-          icon={FileImage}
-          title="Waiting for generations"
-          body="Email and image generation volume will chart here once you create your first asset."
+          text="Reach and click-through will show up here once a generated asset goes out."
           actionLabel="Open asset library"
           actionHref="/asset-library"
         />
       ) : (
-      <div className="flex flex-1 flex-col justify-center gap-3">
-        <ResponsiveContainer width="100%" height={268}>
-          <AreaChart data={DESIGN_GENERATION_TREND} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-            <CartesianGrid strokeDasharray="" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
-            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <Tooltip content={<ChartTooltip />} />
-            <Area type="monotone" dataKey="email" hide={hidden.has("email")} stroke="#0080FF" strokeWidth={1.5} fill="rgba(0,128,255,0.06)" dot={false} name="Email" />
-            <Area type="monotone" dataKey="image" hide={hidden.has("image")} stroke="#64748b" strokeWidth={1.5} fill="rgba(100,116,139,0.06)" dot={false} name="Image" />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className="flex flex-wrap items-center justify-center gap-6">
-          {[
-            { key: "email", label: "Email", color: "#0080FF" },
-            { key: "image", label: "Image", color: "#64748b" },
-          ].map((item) => (
-            <button
-              key={item.key}
-              onClick={() => toggleSeries(item.key)}
-              className={`flex items-center gap-2 text-sm transition-opacity ${hidden.has(item.key) ? "opacity-40" : "text-stone-600 dark:text-stone-300"}`}
-            >
-              <span className="h-3 w-3 rounded" style={{ background: item.color }} />
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      )}
-    </SectionCard>
-  );
-}
-
-const DESIGN_CREDIT_USAGE = [
-  { type: "Email", pct: 45, known: true,  tooltip: "Percentage of generation credits used on emails this week." },
-  { type: "Image", pct: 32, known: true,  tooltip: "Percentage of generation credits used on images this week." },
-  { type: "N/A",   pct: 23, known: false, tooltip: "Not enough data yet to attribute this share to a specific content type." },
-];
-
-function DesignCreditRing({ item }: { item: typeof DESIGN_CREDIT_USAGE[number] }) {
-  const muted = !item.known;
-  const arcColor = muted ? "#94a3b8" : "#0080FF";
-  const trackColor = muted ? "rgba(148,163,184,0.18)" : "rgba(0,128,255,0.18)";
-  const ringData = [
-    { name: item.type, value: item.pct },
-    { name: "Remaining", value: 100 - item.pct },
-  ];
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative h-32 w-32 xl:h-36 xl:w-36">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={ringData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius="68%"
-              outerRadius="92%"
-              startAngle={90}
-              endAngle={-270}
-              paddingAngle={2}
-              stroke="var(--content-bg)"
-              strokeWidth={3}
-            >
-              <Cell fill={arcColor} />
-              <Cell fill={trackColor} />
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex items-center justify-center text-center">
-          <p className={`text-xl font-semibold leading-none tracking-tight ${muted ? "text-stone-400 dark:text-stone-500" : "text-stone-900 dark:text-stone-100"}`}>
-            {muted ? "N/A" : `${item.pct}%`}
-          </p>
-        </div>
-      </div>
-      <span className="flex items-center justify-center gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400">{item.type}</span>
-        <HeadingTooltip text={item.tooltip} />
-      </span>
-    </div>
-  );
-}
-
-function DesignTopGeneratedTypesCard({ noData = false }: { noData?: boolean }) {
-  return (
-    <SectionCard
-      title="Credit usage by type"
-      description="Percentage of total credits used by content type this week."
-      tooltip="Used to see which content type consumes the most generation credits this week."
-      className="flex min-h-[390px] flex-col"
-    >
-      {noData ? (
-        <CardEmptyState
-          icon={Layers}
-          title="Waiting for generations"
-          body="Credit usage by type will show up here once you've generated a few assets."
-          actionLabel="Open asset library"
-          actionHref="/asset-library"
-        />
-      ) : (
-      <div className="flex flex-1 items-center justify-center gap-6">
-        {DESIGN_CREDIT_USAGE.map((item) => (
-          <DesignCreditRing key={item.type} item={item} />
+      <div className="flex flex-1 items-center justify-center gap-10">
+        {[
+          { value: fmt(sends), label: "Reach", tooltip: "Total sends that include a Blu-generated asset." },
+          { value: `${openRate}%`, label: "Open rate", tooltip: "Open rate on sends that include a Blu-generated asset." },
+          { value: `${clickRate}%`, label: "Click rate", tooltip: "Click-through rate on sends that include a Blu-generated asset." },
+        ].map((item) => (
+          <div key={item.label} className="text-center">
+            <p className="text-3xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{item.value}</p>
+            <span className="mt-2 flex items-center justify-center gap-1">
+              <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</span>
+              <HeadingTooltip text={item.tooltip} />
+            </span>
+          </div>
         ))}
       </div>
       )}
@@ -4114,96 +4021,136 @@ function DesignTopGeneratedTypesCard({ noData = false }: { noData?: boolean }) {
   );
 }
 
-const DESIGN_TOP_USED = [
-  { label: "Top used design system", name: "Blossom",                 meta: "48 generations", image: null, palette: ["#D868A0", "#F0B8D4", "#5C1840", "#FCE8F4"] },
-  { label: "Top used avatar",        name: "Avatar A, Studio Portrait", meta: "31 generations", image: "/avatar.png", palette: null },
-  { label: "Top used scene",         name: "Lifestyle Kitchen Scene", meta: "22 generations", image: "/scene.png",  palette: null },
-  { label: "Top used pose",          name: "Standing Confident",      meta: "17 generations", image: "/pose.png",   palette: null },
-];
+const DESIGN_ASSET_USAGE = {
+  generated: 214,
+  usedInJourneys: 128,
+};
 
-function DesignTopUsedCard({ noData = false }: { noData?: boolean }) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    if (noData) return;
-    const rotate = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex((i) => (i + 1) % DESIGN_TOP_USED.length);
-        setVisible(true);
-      }, 300);
-    }, 3200);
-    return () => clearInterval(rotate);
-  }, [noData]);
-
-  const item = DESIGN_TOP_USED[index];
+function DesignAssetUsageCard({ noData = false }: { noData?: boolean }) {
+  const { generated, usedInJourneys } = DESIGN_ASSET_USAGE;
+  const usedPct = Math.round((usedInJourneys / generated) * 100);
 
   return (
     <SectionCard
-      title="Most used"
-      description="Your top used design system, avatar, scene, and pose."
-      tooltip="Used to see which brand assets get reused the most across generations."
+      title="Generated vs. used"
+      description="How many generated assets have actually been used."
+      tooltip="Assets are counted as used once they're attached to a live or draft journey step."
       className="flex min-h-[390px] flex-col"
     >
       {noData ? (
         <CardEmptyState
-          icon={Palette}
-          title="Create your first asset"
-          body="Your most-used design system, avatar, scene, and pose will show up here once you've generated a few assets."
+          text="Generated vs. used will show up here once you've generated a few assets."
           actionLabel="Open asset library"
           actionHref="/asset-library"
         />
       ) : (
-      <>
-      <div className="flex flex-1 flex-col items-center justify-center overflow-hidden">
-        <div
-          className="flex flex-col items-center gap-3 text-center"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateX(0)" : "translateX(-10px)",
-            transition: "opacity 300ms ease, transform 300ms ease",
-          }}
-        >
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">{item.label}</span>
-          {item.image ? (
-            <img
-              src={item.image}
-              alt={item.name}
-              className="h-24 w-24 rounded-xl object-cover"
-              style={{ border: "1px solid var(--border)" }}
-            />
-          ) : item.palette ? (
-            <div className="flex h-24 w-32 overflow-hidden rounded-xl" style={{ border: "1px solid var(--border)" }}>
-              {item.palette.map((color, i) => (
-                <div key={i} className="flex-1" style={{ background: color }} />
-              ))}
+      <div className="flex flex-1 items-center justify-center gap-8">
+        <div className="text-center">
+          <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{generated}</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Generated assets</p>
+        </div>
+
+        <div className="relative h-56 w-56 shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={[
+                  { name: "Used", value: usedInJourneys },
+                  { name: "Not used", value: generated - usedInJourneys },
+                ]}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius="68%"
+                outerRadius="92%"
+                startAngle={90}
+                endAngle={-270}
+                paddingAngle={2}
+                stroke="var(--content-bg)"
+                strokeWidth={3}
+              >
+                <Cell fill="#0080FF" />
+                <Cell fill="rgba(0,128,255,0.18)" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+            <p className="text-4xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">
+              {usedPct}%
+            </p>
+            <span className="mt-2.5 flex items-center justify-center gap-1">
+              <span className="text-[10px] font-medium uppercase leading-tight text-stone-400">Used</span>
+              <HeadingTooltip text="Share of generated assets attached to at least one journey step." />
+            </span>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-2xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{usedInJourneys}</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Used assets</p>
+        </div>
+      </div>
+      )}
+    </SectionCard>
+  );
+}
+
+const DESIGN_ADOPTION_MIX = { uploaded: 47 };
+
+function DesignAdoptionMixCard({ noData = false }: { noData?: boolean }) {
+  const generatedByBlu = DESIGN_ASSET_USAGE.generated;
+  const uploaded = DESIGN_ADOPTION_MIX.uploaded;
+  const total = generatedByBlu + uploaded;
+  const generatedPct = Math.round((generatedByBlu / total) * 100);
+
+  return (
+    <SectionCard
+      title="Adoption mix"
+      description="Share of your asset library generated by Blu versus manually uploaded."
+      tooltip="Used to see how much of your asset library is AI generated versus manually uploaded."
+      className="flex min-h-[390px] flex-col"
+    >
+      {noData ? (
+        <CardEmptyState
+          text="Adoption mix will show up here once you've generated a few assets."
+          actionLabel="Open asset library"
+          actionHref="/asset-library"
+        />
+      ) : (
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-2">
+        <div className="flex items-center gap-1">
+          <p className="text-4xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">
+            {generatedPct}%
+          </p>
+          <HeadingTooltip text="Share of your asset library created with Blu rather than uploaded manually." />
+        </div>
+        <p className="-mt-2 text-xs font-medium uppercase tracking-[0.08em] text-stone-400">Generated by Blu</p>
+
+        <div className="w-full max-w-sm">
+          <div className="flex h-3.5 w-full overflow-hidden rounded-full" style={{ background: "var(--muted)" }}>
+            <div className="h-full" style={{ width: `${generatedPct}%`, background: "#0080FF" }} />
+            <div className="h-full" style={{ width: `${100 - generatedPct}%`, background: "rgba(0,128,255,0.35)" }} />
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "#0080FF" }} />
+              <div>
+                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Generated by Blu</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{generatedByBlu} assets</p>
+              </div>
             </div>
-          ) : null}
-          <div className="flex items-center gap-2">
-            {item.palette && (
-              <span
-                className="h-5 w-5 shrink-0 rounded-full ring-2 ring-white dark:ring-stone-800"
-                style={{ background: `conic-gradient(${item.palette[0]} 0deg 180deg, ${item.palette[1]} 180deg 360deg)` }}
-              />
-            )}
-            <div>
-              <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.name}</p>
-              <p className="mt-0.5 text-xs text-stone-400">{item.meta}</p>
+            <div className="flex items-center gap-2 text-right">
+              <div>
+                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Manually uploaded</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{uploaded} assets</p>
+              </div>
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "rgba(0,128,255,0.35)" }} />
             </div>
           </div>
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-center gap-1.5">
-        {DESIGN_TOP_USED.map((entry, i) => (
-          <span
-            key={entry.label}
-            className="h-1.5 w-1.5 rounded-full transition-colors"
-            style={{ background: i === index ? "#0080FF" : "var(--muted)" }}
-          />
-        ))}
-      </div>
-      </>
       )}
     </SectionCard>
   );
@@ -4256,10 +4203,10 @@ function DesignHomeDashboard({ noData = false }: { noData?: boolean }) {
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <DesignGenerationActivityCard noData={noData} />
-        <DesignTopGeneratedTypesCard noData={noData} />
+        <DesignReachCard noData={noData} />
+        <DesignAssetUsageCard noData={noData} />
         <DesignLatestGenerationsCard noData={noData} />
-        <DesignTopUsedCard noData={noData} />
+        <DesignAdoptionMixCard noData={noData} />
       </div>
     </div>
   );
@@ -4388,6 +4335,7 @@ function SalesTasksCard({ noData = false }: { noData?: boolean }) {
   const [todayTasks, setTodayTasks] = useState<SalesTask[]>(noData ? [] : SALES_TODAY_TASKS);
   const [newTask, setNewTask] = useState("");
   const overdueTasks = noData ? [] : SALES_OVERDUE_TASKS;
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const toggleDone = (id: string) => {
     setDoneIds((prev) => {
@@ -4445,7 +4393,11 @@ function SalesTasksCard({ noData = false }: { noData?: boolean }) {
             </div>
           ) : (
             noData && (
-              <p className="py-2 text-xs text-stone-400">No tasks yet. Add one below to get started.</p>
+              <CardEmptyState
+                text="No tasks yet."
+                actionLabel="Create new task"
+                onAction={() => inputRef.current?.focus()}
+              />
             )
           )}
         </div>
@@ -4453,6 +4405,7 @@ function SalesTasksCard({ noData = false }: { noData?: boolean }) {
         <div className="mt-3 flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border)" }}>
           <Plus size={14} className="shrink-0 text-stone-400" />
           <input
+            ref={inputRef}
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             onKeyDown={(e) => {
@@ -4523,9 +4476,7 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
           </div>
           {noData ? (
             <CardEmptyState
-              icon={Calendar}
-              title="No meetings scheduled"
-              body="Book or sync a meeting to see it show up here."
+              text="Book or sync a meeting to see it show up here."
               actionLabel="Open meetings"
               actionHref="/meetings"
             />
@@ -4571,9 +4522,7 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
         >
           {noData ? (
             <CardEmptyState
-              icon={Video}
-              title="Waiting for meetings"
-              body="Scheduled vs. completed meetings will chart here once you have meeting history."
+              text="Scheduled vs. completed meetings will chart here once you have meeting history."
               actionLabel="Open meetings"
               actionHref="/meetings"
             />
@@ -4614,9 +4563,7 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
         >
           {noData ? (
             <CardEmptyState
-              icon={Handshake}
-              title="Create your first deal"
-              body="Deal value, win rate, and pipeline health will show up here once you add a deal."
+              text="Deal value, win rate, and pipeline health will show up here once you add a deal."
               actionLabel="Open deals"
               actionHref="/deals"
             />
