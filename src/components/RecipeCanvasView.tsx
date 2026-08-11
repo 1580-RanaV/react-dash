@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Users2, BarChart3, Zap, GitBranch, CheckCircle2, XCircle,
   Loader2, Play, ShieldCheck, ChevronDown, Plus, GripVertical,
-  Pencil, Trash2, X, AlertTriangle, Check,
+  Pencil, Trash2, X, AlertTriangle, Check, MousePointer2, Hand, Minus,
 } from "lucide-react";
 import BackButton from "./BackButton";
 import Toggle from "./Toggle";
@@ -32,7 +32,7 @@ const INITIAL_NODES: FlowNode[] = [
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
+export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack: () => void; readOnly?: boolean }) {
   const [nodes,       setNodes]       = useState<FlowNode[]>(INITIAL_NODES);
   const [nodeStates,  setNodeStates]  = useState<Record<string, NodeState>>(
     () => Object.fromEntries(INITIAL_NODES.map((n) => [n.id, "idle" as NodeState]))
@@ -98,6 +98,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
   // Canvas pan / zoom
   const [zoom, setZoom] = useState(1);
   const [pan,  setPan]  = useState({ x: 0, y: 0 });
+  const [tool, setTool] = useState<"select" | "pan">("select");
   const dragging    = useRef(false);
   const hasDragged  = useRef(false);
   const lastMouse   = useRef({ x: 0, y: 0 });
@@ -315,6 +316,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
         isFading={fadingIds.has(node.id)}
         isDragging={draggingId === node.id}
         isDragOver={dragOverId === node.id}
+        readOnly={readOnly}
         onClick={() => handleNodeClick(node.id)}
         onStartEdit={() => handleStartEdit(node)}
         onStartDelete={() => handleStartDelete(node.id)}
@@ -401,6 +403,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
       `}</style>
 
       {/* Top bar */}
+      {!readOnly && (
       <div
         className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b"
         style={{ background: "var(--content-bg)", borderColor: "var(--border)" }}
@@ -492,6 +495,7 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       </div>
+      )}
 
       {/* Canvas wrapper — relative so overlays can position against it */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
@@ -525,6 +529,56 @@ export default function RecipeCanvasView({ onBack }: { onBack: () => void }) {
               {addAtEndButton}
             </div>
           </div>
+        </div>
+
+        {/* Zoom / tool controls */}
+        <div
+          className={`absolute bottom-4 z-10 flex items-center gap-1.5 ${readOnly ? "left-1/2 -translate-x-1/2 rounded-xl p-1" : "left-4 rounded-full p-1.5"}`}
+          style={
+            readOnly
+              ? { background: "var(--content-bg)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }
+              : { background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }
+          }
+        >
+          <button
+            onClick={() => setTool("select")}
+            title="Select"
+            className={`flex items-center justify-center rounded-md transition-colors ${readOnly ? "h-9 w-9" : "h-7 w-7"}`}
+            style={tool === "select" ? { background: "rgba(0,128,255,0.1)", color: "#0080FF" } : { color: "var(--icon)" }}
+          >
+            <MousePointer2 size={14} />
+          </button>
+          <button
+            onClick={() => setTool("pan")}
+            title="Pan"
+            className={`flex items-center justify-center rounded-md transition-colors ${readOnly ? "h-9 w-9" : "h-7 w-7"}`}
+            style={tool === "pan" ? { background: "rgba(0,128,255,0.1)", color: "#0080FF" } : { color: "var(--icon)" }}
+          >
+            <Hand size={14} />
+          </button>
+
+          <div className="h-5 w-px" style={{ background: "var(--border)" }} />
+
+          <button
+            onClick={() => setZoom((z) => Math.max(0.25, parseFloat((z - 0.1).toFixed(2))))}
+            title="Zoom out"
+            className={`flex items-center justify-center rounded-md text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6 ${readOnly ? "h-9 w-9" : "h-7 w-7"}`}
+          >
+            <Minus size={14} />
+          </button>
+          <span
+            className={`flex min-w-11 items-center justify-center rounded-md px-2 text-center text-xs font-semibold tabular-nums text-stone-600 dark:text-stone-300 ${readOnly ? "h-9" : "py-1"}`}
+            style={{ background: "var(--muted)" }}
+          >
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={() => setZoom((z) => Math.min(3, parseFloat((z + 0.1).toFixed(2))))}
+            title="Zoom in"
+            className={`flex items-center justify-center rounded-md text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6 ${readOnly ? "h-9 w-9" : "h-7 w-7"}`}
+          >
+            <Plus size={14} />
+          </button>
         </div>
 
         {/* ── Edit floating window ─────────────────────────────────────────── */}
@@ -796,7 +850,7 @@ function Connector({ fading, onAdd, fromState, isAnimating }: { fading: boolean;
 
 function FlowNodeCard({
   node, state, isSelected, isEditing, isConfirming, isFading,
-  isDragging, isDragOver,
+  isDragging, isDragOver, readOnly,
   onClick, onStartEdit, onStartDelete,
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: {
@@ -808,6 +862,7 @@ function FlowNodeCard({
   isFading: boolean;
   isDragging: boolean;
   isDragOver: boolean;
+  readOnly?: boolean;
   onClick: () => void;
   onStartEdit: () => void;
   onStartDelete: () => void;
@@ -894,7 +949,7 @@ function FlowNodeCard({
       </div>
 
       {/* Selected action row — right-aligned */}
-      {isSelected && (
+      {isSelected && !readOnly && (
         <div
           className="flex items-center justify-end gap-1 px-4 pb-3"
           style={{ borderTop: "1px solid var(--border)" }}

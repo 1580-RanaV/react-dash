@@ -50,11 +50,12 @@ import {
   Zap,
   Eye,
   ChefHat,
+  Pencil,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
-import TypingDots from "./TypingDots";
+import LoadingState from "./LoadingState";
 import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
 
 type MentionChip = {
@@ -329,6 +330,7 @@ type ChatMessage = {
   role: "user" | "blu";
   text: string;
   attachments?: ReferenceAttachment[];
+  images?: { id: string; url: string }[];
   mentions?: MentionChip[];
   recipes?: RecipeChip[];
   feedbackForm?: boolean;
@@ -502,6 +504,15 @@ export default function BluChat({
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<{ id: string; url: string; uploading: boolean }[]>([]);
+
+  function removeImagePreview(id: string) {
+    setImagePreviews((prev) => {
+      const found = prev.find((p) => p.id === id);
+      if (found) URL.revokeObjectURL(found.url);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
   const [planMode, setPlanMode] = useState(false);
   const [webMode, setWebMode] = useState(false);
   const [imageSettings, setImageSettings] = useState({
@@ -531,6 +542,8 @@ export default function BluChat({
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingMsgText, setEditingMsgText] = useState("");
   const plusRef = useRef<HTMLDivElement>(null);
   const mentionRef = useRef<HTMLDivElement>(null);
   const mentionSearchRef = useRef<HTMLInputElement>(null);
@@ -899,6 +912,17 @@ export default function BluChat({
     setEditingQueueId(null);
   }
 
+  function startMsgEdit(msg: ChatMessage) {
+    setEditingMsgId(msg.id);
+    setEditingMsgText(msg.text);
+  }
+
+  function saveMsgEdit(id: string) {
+    const trimmed = editingMsgText.trim();
+    if (trimmed) setMessages((current) => current.map((m) => m.id === id ? { ...m, text: trimmed } : m));
+    setEditingMsgId(null);
+  }
+
   function sendMessage(overrideText?: string) {
     if (inputLocked) return;
     const text = overrideText ?? getEditorText();
@@ -924,10 +948,19 @@ export default function BluChat({
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
+    let generalReplyIndex = 0;
 
     setMessages((current) => {
       const ts = Date.now();
-      const userMsg: ChatMessage = { id: `user-${ts}`, role: "user", text, attachments, mentions: currentMentions, recipes: currentRecipes.length ? currentRecipes : undefined };
+      const userMsg: ChatMessage = {
+        id: `user-${ts}`,
+        role: "user",
+        text,
+        attachments,
+        images: imagePreviews.length ? imagePreviews.map((p) => ({ id: p.id, url: p.url })) : undefined,
+        mentions: currentMentions,
+        recipes: currentRecipes.length ? currentRecipes : undefined,
+      };
       const next: ChatMessage[] = [...current, userMsg];
       if (isPlan) {
         next.push({
@@ -959,11 +992,8 @@ export default function BluChat({
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else {
-        next.push({
-          id: `blu-${ts}`,
-          role: "blu",
-          text: BLU_REPLIES[(current.length) % BLU_REPLIES.length],
-        });
+        generalReplyIndex = current.length;
+        next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       }
       return next;
     });
@@ -984,11 +1014,27 @@ export default function BluChat({
           return next;
         });
       }, 3000);
+    } else if (!isPlan && !isFailed && !isError && !isFeedback && !isCreateRecipe) {
+      setTimeout(() => {
+        setMessages((current) => {
+          const typingIdx = current.findIndex((m) => m.isTyping);
+          if (typingIdx === -1) return current;
+          const ts = Date.now();
+          const next = [...current];
+          next[typingIdx] = {
+            id: `blu-${ts}`,
+            role: "blu",
+            text: BLU_REPLIES[generalReplyIndex % BLU_REPLIES.length],
+          };
+          return next;
+        });
+      }, 2000);
     }
 
     if (!overrideText) {
       clearEditor();
       setAttachments([]);
+      setImagePreviews([]);
       setMentionOpen(false);
       setMentionCategory(null);
       setPlusOpen(false);
@@ -1047,7 +1093,12 @@ export default function BluChat({
         className={`flex items-center gap-2.5 px-4 py-2.75 shrink-0 ${onHeaderMouseDown ? "cursor-move select-none" : ""}`}
         onMouseDown={onHeaderMouseDown}
       >
-        <img src="/mascot.png" alt="Blu" width={28} height={28} className="rounded-full shrink-0 object-contain pointer-events-none" />
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full pointer-events-none"
+          style={{ background: "rgba(0,128,255,0.12)" }}
+        >
+          <img src="/mascot.png" alt="Blu" width={20} height={20} className="object-contain" />
+        </span>
         <div className="flex-1 min-w-0 pointer-events-none">
           <p className="text-base font-semibold text-stone-800 dark:text-stone-100 leading-none">Blu</p>
         </div>
@@ -1229,25 +1280,44 @@ export default function BluChat({
           </div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className="flex gap-2.5 items-start animate-fade-up">
-            {/* Avatar */}
-            {msg.role === "user" ? (
-              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 mt-0.5">
-                <img src="/dp.png" alt="You" width={24} height={24} className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <img src="/mascot.png" alt="Blu" width={24} height={24} className="rounded-full shrink-0 mt-0.5 object-contain" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                  {msg.role === "user" ? "Rana" : "Blu"}
+          <div key={msg.id} className={`flex animate-fade-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div className={`group flex max-w-[85%] flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              {/* Avatar */}
+              {msg.role === "user" ? (
+                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
+                  <img src="/dp.png" alt="You" width={20} height={20} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                  style={{ background: "rgba(0,128,255,0.12)" }}
+                >
+                  <img src="/mascot.png" alt="Blu" width={14} height={14} className="object-contain" />
                 </span>
-              </div>
+              )}
+              <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+                {msg.role === "user" ? "Rana" : "Blu"}
+              </span>
+            </div>
+            <div className="min-w-0">
+              {msg.images?.length ? (
+                <div className="mb-2 flex flex-wrap justify-end gap-1.5">
+                  {msg.images.map((img) => (
+                    <div
+                      key={img.id}
+                      className="h-16 w-16 shrink-0 overflow-hidden rounded-lg"
+                      style={{ border: "1px solid var(--border)" }}
+                    >
+                      <img src={img.url} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               {msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.isTyping ? (
-                <TypingDots />
+                <LoadingState label="Thinking" variant="Ripple" />
               ) : msg.isError ? (
                 <div
                   className="inline-flex flex-col gap-2.5 rounded-xl px-4 py-3"
@@ -1271,8 +1341,38 @@ export default function BluChat({
                     Report bug
                   </button>
                 </div>
+              ) : msg.role === "user" && editingMsgId === msg.id ? (
+                <div className="flex flex-col items-end gap-1.5">
+                  <textarea
+                    autoFocus
+                    value={editingMsgText}
+                    onChange={(e) => setEditingMsgText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveMsgEdit(msg.id); }
+                      if (e.key === "Escape") setEditingMsgId(null);
+                    }}
+                    className="w-full min-w-52 resize-none rounded-lg px-3 py-2 text-sm text-stone-700 outline-none dark:text-stone-200"
+                    style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
+                    rows={Math.min(6, Math.max(1, editingMsgText.split("\n").length))}
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setEditingMsgId(null)}
+                      className="rounded-md px-2.5 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/8"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => saveMsgEdit(msg.id)}
+                      className="rounded-md px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:opacity-90"
+                      style={{ background: "#0080FF" }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
+                <p className={`text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "text-right" : ""}`}>
                   {msg.text}
                 </p>
               )}
@@ -1304,7 +1404,7 @@ export default function BluChat({
                 <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} />
               )}
               {msg.mentions?.length ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
                   {msg.mentions.map((m) => (
                     <span
                       key={m.id}
@@ -1317,7 +1417,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.recipes?.length ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
                   {msg.recipes.map((r) => (
                     <span
                       key={r.key}
@@ -1330,7 +1430,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.attachments?.length ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
                   {msg.attachments.map((item) => (
                     <span
                       key={`${msg.id}-${item.category}`}
@@ -1341,8 +1441,8 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {msg.role === "blu" && !msg.feedbackForm && !msg.isTyping && !msg.isError && !msg.isPlan && (
-                <div className="mt-2 flex items-center gap-0.5">
+              {!msg.feedbackForm && !msg.isTyping && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
+                <div className="mt-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                   {/* Copy */}
                   <div className="group/tip relative">
                     <button
@@ -1359,45 +1459,63 @@ export default function BluChat({
                     >
                       {copiedId === msg.id ? <Check size={13} /> : <Copy size={13} />}
                     </button>
-                    <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                    <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
                       {copiedId === msg.id ? "Copied!" : "Copy"}
                     </span>
                   </div>
-                  {/* Upvote */}
-                  <div className="group/tip relative">
-                    <button
-                      onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "up" ? undefined as never : "up" }))}
-                      className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-                        reactions[msg.id] === "up"
-                          ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
-                          : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
-                      }`}
-                    >
-                      <ThumbsUp size={13} fill={reactions[msg.id] === "up" ? "currentColor" : "none"} />
-                    </button>
-                    <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
-                      Upvote
-                    </span>
-                  </div>
-                  {/* Downvote */}
-                  <div className="group/tip relative">
-                    <button
-                      onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "down" ? undefined as never : "down" }))}
-                      className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-                        reactions[msg.id] === "down"
-                          ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
-                          : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
-                      }`}
-                    >
-                      <ThumbsDown size={13} fill={reactions[msg.id] === "down" ? "currentColor" : "none"} />
-                    </button>
-                    <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
-                      Downvote
-                    </span>
-                  </div>
+                  {msg.role === "user" && (
+                    <div className="group/tip relative">
+                      <button
+                        onClick={() => startMsgEdit(msg)}
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                        Edit
+                      </span>
+                    </div>
+                  )}
+                  {msg.role === "blu" && (
+                    <>
+                      {/* Upvote */}
+                      <div className="group/tip relative">
+                        <button
+                          onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "up" ? undefined as never : "up" }))}
+                          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                            reactions[msg.id] === "up"
+                              ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
+                              : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                          }`}
+                        >
+                          <ThumbsUp size={13} fill={reactions[msg.id] === "up" ? "currentColor" : "none"} />
+                        </button>
+                        <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                          Upvote
+                        </span>
+                      </div>
+                      {/* Downvote */}
+                      <div className="group/tip relative">
+                        <button
+                          onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "down" ? undefined as never : "down" }))}
+                          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                            reactions[msg.id] === "down"
+                              ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
+                              : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                          }`}
+                        >
+                          <ThumbsDown size={13} fill={reactions[msg.id] === "down" ? "currentColor" : "none"} />
+                        </button>
+                        <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                          Downvote
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
+          </div>
           </div>
         ))}
         </div>
@@ -1431,10 +1549,19 @@ export default function BluChat({
           onChange={(e) => {
             const files = Array.from(e.target.files ?? []);
             files.forEach((file) => {
-              setAttachments((prev) => [
-                ...prev.filter((a) => a.category !== "File"),
-                { category: "File", title: file.name, subtitle: "", bg: "" },
-              ]);
+              if (file.type.startsWith("image/")) {
+                const id = `img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                const url = URL.createObjectURL(file);
+                setImagePreviews((prev) => [...prev, { id, url, uploading: true }]);
+                setTimeout(() => {
+                  setImagePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, uploading: false } : p)));
+                }, 3000);
+              } else {
+                setAttachments((prev) => [
+                  ...prev.filter((a) => a.category !== "File"),
+                  { category: "File", title: file.name, subtitle: "", bg: "" },
+                ]);
+              }
             });
             e.target.value = "";
           }}
@@ -1668,6 +1795,30 @@ export default function BluChat({
               ))}
             </div>
           )}
+          {imagePreviews.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {imagePreviews.map((img) => (
+                <div
+                  key={img.id}
+                  className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  <img src={img.url} alt="" className="h-full w-full object-cover" />
+                  {img.uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => removeImagePreview(img.id)}
+                    className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={9} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="relative">
             {editorEmpty && (() => {
               const ph = PLACEHOLDERS[placeholderIdx];
@@ -1888,6 +2039,7 @@ export default function BluChat({
                           setPlusOpen(false);
                           setReferencesOpen(false);
                           setSelectedReference(null);
+                          if (item.label === "Attach Files") openFilePicker();
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors
                           ${i > 0 ? "border-t" : ""}`}

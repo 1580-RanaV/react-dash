@@ -10,10 +10,12 @@ export default function SubTabCorner({
   tabs,
   active,
   onChange,
+  size = "sm",
 }: {
   tabs: SubTab[];
   active: string;
   onChange: (key: string) => void;
+  size?: "sm" | "md";
 }) {
   return (
     <div className="max-w-full overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -23,7 +25,9 @@ export default function SubTabCorner({
             key={tab.key}
             type="button"
             onClick={() => onChange(tab.key)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors duration-100 whitespace-nowrap ${
+            className={`flex items-center gap-1.5 rounded-lg font-medium transition-colors duration-100 whitespace-nowrap ${
+              size === "md" ? "h-9 px-4 text-sm" : "px-3.5 py-1.5 text-sm"
+            } ${
               active === tab.key
                 ? "bg-white dark:bg-white/12 text-stone-900 dark:text-stone-100 shadow-sm"
                 : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"

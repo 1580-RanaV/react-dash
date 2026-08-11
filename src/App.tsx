@@ -19,6 +19,8 @@ import { AvatarDetailPage } from "./components/AvatarDetailView";
 import { SceneDetailPage } from "./components/SceneDetailView";
 import { PoseDetailPage } from "./components/PoseDetailView";
 import BluFullscreenView from "./components/BluFullscreenView";
+import PublicRecipeView from "./components/public-view/PublicRecipeView";
+import PublicWorkflowView from "./components/public-view/PublicWorkflowView";
 import { RecipeDetailView, RECIPES } from "./components/RecipesView";
 import RecipeCanvasView from "./components/RecipeCanvasView";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
@@ -128,6 +130,12 @@ export default function App() {
 
           {/* Blu fullscreen — opens in new tab, no shell */}
           <Route path="/blu" element={<BluFullscreenView />} />
+
+          {/* Public recipe preview — opens in new tab, no shell */}
+          <Route path="/public-recipe" element={<PublicRecipeView />} />
+
+          {/* Public workflow preview — opens in new tab, no shell */}
+          <Route path="/public-workflow" element={<PublicWorkflowView />} />
 
           {/* Home onboarding — full page, no DashboardShell */}
           <Route path="/home/onb" element={<HomeOnboardingView />} />

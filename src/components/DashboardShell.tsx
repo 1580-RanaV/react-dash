@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, Workflow, Waypoints } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
 import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
@@ -252,13 +252,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     const open              = () => setBluOpen(true);
     const toggle            = () => setBluOpen((o) => !o);
     const openRecipeCanvas  = () => navigate("/recipe-canvas");
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggle();
+      }
+    };
     window.addEventListener("open-blu-chat",       open);
     window.addEventListener("toggle-blu-chat",     toggle);
     window.addEventListener("open-recipe-canvas",  openRecipeCanvas);
+    window.addEventListener("keydown",             onKeyDown);
     return () => {
       window.removeEventListener("open-blu-chat",       open);
       window.removeEventListener("toggle-blu-chat",     toggle);
       window.removeEventListener("open-recipe-canvas",  openRecipeCanvas);
+      window.removeEventListener("keydown",             onKeyDown);
     };
   }, [navigate]);
 
@@ -328,6 +336,20 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <NotificationsMenu />
           <ShellHomeStateSwitcher />
+          <button
+            onClick={() => window.open("/public-recipe", "_blank")}
+            className="flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+          >
+            <Workflow size={13} className="shrink-0" />
+            Public recipe
+          </button>
+          <button
+            onClick={() => window.open("/public-workflow", "_blank")}
+            className="flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+          >
+            <Waypoints size={13} className="shrink-0" />
+            Public workflow
+          </button>
           <UpgradeButton />
           {/* <LanguageSwitcher /> */}
           <ProfileMenu />
