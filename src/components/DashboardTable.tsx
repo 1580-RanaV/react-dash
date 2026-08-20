@@ -142,6 +142,7 @@ export default function DashboardTable({
   hideToolbar = false,
   selectable = false,
   onDeleteSelected,
+  sortControl,
 }: {
   columns: TableColumn[];
   rows: TableRow[];
@@ -159,6 +160,8 @@ export default function DashboardTable({
   hideToolbar?: boolean;
   selectable?: boolean;
   onDeleteSelected?: (ids: string[]) => void;
+  /** Overrides the built-in single-field Sort button with a custom control (e.g. a multi-sort menu). */
+  sortControl?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState(false);
@@ -322,6 +325,7 @@ export default function DashboardTable({
           </div>
 
           {/* Sort button */}
+          {sortControl ?? (
           <div ref={sortRef} className="relative">
             <button
               onClick={() => hasSort && setSortOpen((o) => !o)}
@@ -399,6 +403,7 @@ export default function DashboardTable({
               </div>
             )}
           </div>
+          )}
 
           <div ref={columnsRef} className="relative">
             <button

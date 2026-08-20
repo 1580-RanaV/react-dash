@@ -136,6 +136,6 @@ export function PoseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const pose = POSES.find((p) => p.id === id);
-  if (!pose) return <Navigate to="/poses" replace />;
-  return <PoseDetailView pose={pose} onBack={() => navigate("/poses")} />;
+  if (!pose) return <Navigate to="/studio?tab=poses" replace />;
+  return <PoseDetailView pose={pose} onBack={() => navigate("/studio?tab=poses")} />;
 }

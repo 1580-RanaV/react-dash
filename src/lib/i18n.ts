@@ -12,10 +12,7 @@ const en: Record<string, string> = {
   Integrations: "Integrations",
   // Design section
   Design: "Design",
-  Avatars: "Avatars",
-  Scenes: "Scenes",
-  Poses: "Poses",
-  "Design System": "Design System",
+  Studio: "Studio",
   // Marketing section
   Marketing: "Marketing",
   Catalog: "Catalog",
@@ -26,6 +23,7 @@ const en: Record<string, string> = {
   Sales: "Sales",
   Accounts: "Accounts",
   Deals: "Deals",
+  Tasks: "Tasks",
   Meetings: "Meetings",
   Scheduler: "Scheduler",
   // Analytics section
@@ -48,10 +46,7 @@ const lt: Record<string, string> = {
   Integrations: "Integracijos",
   // Design section
   Design: "Dizainas",
-  Avatars: "Avatarai",
-  Scenes: "Scenos",
-  Poses: "Pozos",
-  "Design System": "Dizaino sistema",
+  Studio: "Studija",
   // Marketing section
   Marketing: "Rinkodara",
   Catalog: "Katalogas",
@@ -62,6 +57,7 @@ const lt: Record<string, string> = {
   Sales: "Pardavimai",
   Accounts: "Paskyros",
   Deals: "Sandoriai",
+  Tasks: "Užduotys",
   Meetings: "Susitikimai",
   Scheduler: "Planuoklis",
   // Analytics section
@@ -84,10 +80,7 @@ const ru: Record<string, string> = {
   Integrations: "Интеграции",
   // Design section
   Design: "Дизайн",
-  Avatars: "Аватары",
-  Scenes: "Сцены",
-  Poses: "Позы",
-  "Design System": "Дизайн-система",
+  Studio: "Студия",
   // Marketing section
   Marketing: "Маркетинг",
   Catalog: "Каталог",
@@ -98,6 +91,7 @@ const ru: Record<string, string> = {
   Sales: "Продажи",
   Accounts: "Аккаунты",
   Deals: "Сделки",
+  Tasks: "Задачи",
   Meetings: "Встречи",
   Scheduler: "Планировщик",
   // Analytics section

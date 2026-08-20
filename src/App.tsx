@@ -15,6 +15,7 @@ import AssetCreatorView from "./components/AssetCreatorView";
 import AssetDetailView from "./components/AssetDetailView";
 import UserDetailView from "./components/UserDetailView";
 import AccountDetailView from "./components/AccountDetailView";
+import DealDetailView from "./components/DealDetailView";
 import { AvatarDetailPage } from "./components/AvatarDetailView";
 import { SceneDetailPage } from "./components/SceneDetailView";
 import { PoseDetailPage } from "./components/PoseDetailView";
@@ -26,6 +27,7 @@ import RecipeCanvasView from "./components/RecipeCanvasView";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
 import HomeView from "./components/HomeView";
 import HomeOnboardingView from "./components/HomeOnboardingView";
+import LogoLoaderView from "./components/LogoLoaderView";
 
 function RecipeCanvasPage() {
   const navigate = useNavigate();
@@ -140,6 +142,9 @@ export default function App() {
           {/* Home onboarding — full page, no DashboardShell */}
           <Route path="/home/onb" element={<HomeOnboardingView />} />
 
+          {/* Logo loader experiment — full page, no DashboardShell */}
+          <Route path="/loader" element={<LogoLoaderView />} />
+
           {/* Dashboard shell wraps all other routes */}
           <Route
             path="/*"
@@ -150,6 +155,7 @@ export default function App() {
                   <Route path="/home/pinboard" element={<Navigate to="/home" replace />} />
                   <Route path="/users/:id/*" element={<UserDetailView />} />
                   <Route path="/accounts/:id/*" element={<AccountDetailView />} />
+                  <Route path="/deals/:id/*" element={<DealDetailView />} />
                   <Route path="/experiences/:id" element={<ExperienceDetailPage />} />
                   <Route path="/journeys/new" element={<JourneyNewCanvas />} />
                   <Route path="/journeys/:id" element={<JourneyDetailPage />} />

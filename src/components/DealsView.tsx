@@ -52,7 +52,7 @@ const COLUMNS: TableColumn[] = [
   { key: "closeDate", label: "Close date",  width: "12%" },
 ];
 
-const ROWS: TableRow[] = [
+const ROWS_BASE: TableRow[] = [
   {
     id: "d1",
     cells: {
@@ -158,6 +158,8 @@ const ROWS: TableRow[] = [
     },
   },
 ];
+
+const ROWS: TableRow[] = ROWS_BASE.map((row) => ({ ...row, href: `/deals/${row.id}` }));
 
 // ── view ──────────────────────────────────────────────────────────────────────
 

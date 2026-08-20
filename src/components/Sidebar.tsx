@@ -15,10 +15,7 @@ import {
   UserCheck,
   Plug,
   Library,
-  UserCircle,
-  Clapperboard,
-  PersonStanding,
-  PenTool,
+  Aperture,
   Package,
 
   Rss,
@@ -26,6 +23,7 @@ import {
   Shuffle,
   Building2,
   Handshake,
+  SquareCheck,
   CalendarDays,
   CalendarClock,
   Database,
@@ -72,10 +70,7 @@ const nav: NavSection[] = [
   {
     heading: "Design",
     items: [
-      { label: "Avatars", icon: <UserCircle size={15} /> },
-      { label: "Scenes", icon: <Clapperboard size={15} /> },
-      { label: "Poses", icon: <PersonStanding size={15} /> },
-      { label: "Design System", icon: <PenTool size={15} /> },
+      { label: "Studio", icon: <Aperture size={15} /> },
     ],
   },
   {
@@ -96,7 +91,10 @@ const nav: NavSection[] = [
       {
         label: "Accounts",
         icon: <Building2 size={15} />,
-        children: [{ label: "Deals", icon: <Handshake size={15} /> }],
+        children: [
+          { label: "Tasks", icon: <SquareCheck size={15} /> },
+          { label: "Deals", icon: <Handshake size={15} /> },
+        ],
       },
       {
         label: "Meetings",
@@ -274,16 +272,14 @@ const NAV_VIEWS: Record<string, string> = {
   Integrations: "integrations",
   Recipes: "recipes",
   "Asset Library": "asset-library",
-  Avatars: "avatars",
-  Scenes: "scenes",
-  Poses: "poses",
-  "Design System": "design-system",
+  Studio: "studio",
   Catalog: "catalog",
   Feeds: "feeds",
   Journeys: "journeys",
   Experiences: "experiences",
   Accounts: "accounts",
   Deals: "deals",
+  Tasks: "tasks",
   Meetings: "meetings",
   Scheduler: "scheduler",
   "Out-of-the-box": "out-of-the-box",

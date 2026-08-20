@@ -1,18 +1,18 @@
 
 
 import { useState } from "react";
-import { Briefcase, Building2, Calendar, ChevronDown, DollarSign, Tag, User } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
+import DueDateField from "./DueDateField";
 
 const DEAL_STAGES = ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
 const DEAL_TYPES = ["New Business", "Existing Business", "Renewal", "Upsell"];
 const PRIORITIES = ["High", "Medium", "Low"];
 const OWNERS = ["Rohan", "Somya Nayak", "Sid Chaudhary"];
 
-function FieldLabel({ icon, label, required }: { icon: React.ReactNode; label: string; required?: boolean }) {
+function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
     <label className="flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-      <span className="text-stone-400 dark:text-stone-500">{icon}</span>
       {label}
       {required && <span className="text-rose-500">*</span>}
     </label>
@@ -143,7 +143,7 @@ export default function CreateDealDrawer({ onClose }: { onClose: () => void }) {
     >
       <div className="space-y-5">
         <div>
-          <FieldLabel icon={<Briefcase size={14} />} label="Deal name" required />
+          <FieldLabel label="Deal name" required />
           <TextInput
             placeholder="e.g., Acme Corp — Enterprise Plan"
             value={dealName}
@@ -153,12 +153,12 @@ export default function CreateDealDrawer({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <FieldLabel icon={<Building2 size={14} />} label="Account" />
+          <FieldLabel label="Account" />
           <TextInput placeholder="e.g., Acme Corp" value={account} onChange={setAccount} />
         </div>
 
         <div>
-          <FieldLabel icon={<Tag size={14} />} label="Deal stage" required />
+          <FieldLabel label="Deal stage" required />
           <SelectInput
             options={DEAL_STAGES}
             value={stage}
@@ -169,33 +169,28 @@ export default function CreateDealDrawer({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <FieldLabel icon={<DollarSign size={14} />} label="Value" />
+          <FieldLabel label="Value" />
           <TextInput placeholder="e.g., 12000" value={value} onChange={setValue} />
         </div>
 
         <div>
-          <FieldLabel icon={<User size={14} />} label="Deal owner" />
+          <FieldLabel label="Deal owner" />
           <SelectInput options={OWNERS} value={owner} onChange={setOwner} placeholder="Select owner..." />
         </div>
 
         <div>
-          <FieldLabel icon={<Briefcase size={14} />} label="Deal type" />
+          <FieldLabel label="Deal type" />
           <SelectInput options={DEAL_TYPES} value={type} onChange={setType} placeholder="Select type..." />
         </div>
 
         <div>
-          <FieldLabel icon={<Tag size={14} />} label="Priority" />
+          <FieldLabel label="Priority" />
           <SelectInput options={PRIORITIES} value={priority} onChange={setPriority} placeholder="Select priority..." />
         </div>
 
         <div>
-          <FieldLabel icon={<Calendar size={14} />} label="Close date" />
-          <input
-            type="date"
-            value={closeDate}
-            onChange={(e) => setCloseDate(e.target.value)}
-            className="h-10 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:text-stone-100"
-          />
+          <FieldLabel label="Close date" />
+          <DueDateField onChange={setCloseDate} />
         </div>
       </div>
     </SlidingSidebar>

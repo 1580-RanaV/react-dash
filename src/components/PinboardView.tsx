@@ -72,7 +72,7 @@ function inferWidgetHref(widget: PinnedWidget): string | undefined {
   if (widget.type === "meeting") return "/meetings/rd-check-in";
   if (widget.type === "recipe" && widget.meta?.recipeId) return `/recipes/${widget.meta.recipeId}`;
   if (widget.type === "asset" && widget.meta?.assetId) return `/asset-library/${widget.meta.assetId}`;
-  if (widget.type === "design" && id.startsWith("design-system-")) return `/design-system?theme=${id.replace("design-system-", "")}`;
+  if (widget.type === "design" && id.startsWith("design-system-")) return `/studio?tab=design-system&theme=${id.replace("design-system-", "")}`;
   if (widget.type === "journey" && id.startsWith("journey-")) return `/journeys/${id.replace("journey-", "")}`;
   if (widget.type === "product") return id.startsWith("product-") ? `/catalog/products/${id.replace("product-", "")}` : "/catalog";
 
@@ -86,7 +86,7 @@ function inferWidgetHref(widget: PinnedWidget): string | undefined {
     case "kpi":
       return "/boards";
     case "design":
-      return "/design-system";
+      return "/studio?tab=design-system";
     case "asset":
       return "/asset-library";
     case "journey":
@@ -255,7 +255,7 @@ function MarqueeRow({ tools, reverse, duration }: { tools: Tool[]; reverse?: boo
 const PINBOARD_CTAS = [
   { href: "/integrations",  label: "Connect tools"   },
   { href: "/boards",        label: "Explore reports" },
-  { href: "/design-system", label: "Browse designs"  },
+  { href: "/studio?tab=design-system", label: "Browse designs"  },
 ] as const;
 
 function EmptyPinboard() {

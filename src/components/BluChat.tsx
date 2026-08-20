@@ -51,6 +51,8 @@ import {
   Eye,
   ChefHat,
   Pencil,
+  ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
@@ -120,6 +122,12 @@ Steps:
 
 Target: medical professionals aged 40–65, South Asian market.`;
 
+const RUN_TASKS: RunTask[] = [
+  { id: "create-avatar", label: "Create Avatar", detail: "Creating avatar", icon: "avatar" },
+  { id: "create-pose", label: "Create Pose", detail: "Creating pose", icon: "pose" },
+  { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
+];
+
 function ExecChecklist({ steps }: { steps: string[] }) {
   const [current, setCurrent] = useState(0);
   const doneCount = Math.min(current, steps.length);
@@ -182,8 +190,14 @@ function PlanCard({ content, onApprove, onSkip }: {
   onApprove: () => void;
   onSkip: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [decided, setDecided] = useState<"approved" | "skipped" | null>(null);
+  const firstLine = content.split("\n")[0];
+  const steps = content
+    .split("\n")
+    .filter((line) => /^\d+\./.test(line.trim()))
+    .slice(0, 4);
 
   function handleApprove() {
     setDecided("approved");
@@ -197,40 +211,87 @@ function PlanCard({ content, onApprove, onSkip }: {
   return (
     <>
       <div className="shrink-0 px-3 pb-2 pt-2">
-        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}>
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Plan</p>
-          </div>
-          <div className="relative px-4 pb-1" style={{ minHeight: "4.5rem" }}>
-            <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed line-clamp-4 whitespace-pre-wrap">
-              {content.split("\n")[0]}
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{
+            border: "1px solid var(--border)",
+            background: "var(--content-bg)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div className="px-4 py-4">
+            <p className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">
+              Want me to execute this plan?
             </p>
-            <div
-              className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none"
-              style={{ background: "linear-gradient(to bottom, transparent, var(--content-bg))", backdropFilter: "blur(1px)", WebkitBackdropFilter: "blur(1px)", maskImage: "linear-gradient(to bottom, transparent, black)" }}
-            />
+            <p
+              className="mt-1.5 min-h-12 text-[13px] leading-[1.6] text-stone-600 dark:text-stone-300"
+              style={{ animation: "fade-in 180ms ease-out both" }}
+            >
+              {firstLine}
+            </p>
           </div>
-          <div className="px-4 pt-3 pb-3 flex items-center gap-2">
+
+          <div
+            className="grid transition-[grid-template-rows,opacity] duration-300"
+            style={{
+              gridTemplateRows: detailsOpen ? "1fr" : "0fr",
+              opacity: detailsOpen ? 1 : 0,
+              transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            <div className="overflow-hidden">
+              <div className="px-3 pb-3">
+                <div className="rounded-xl bg-stone-50 px-3 py-2.5 dark:bg-white/[0.04]">
+                  <p className="pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                    Steps
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {steps.map((step) => (
+                      <p key={step} className="text-[12.5px] leading-snug text-stone-600 dark:text-stone-300">
+                        {step}
+                      </p>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setReviewOpen(true)}
+                      className="mt-0.5 self-start text-[12.5px] font-semibold text-blue-500 transition-colors hover:text-blue-600"
+                    >
+                      Open full review
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-stone-200 bg-stone-50 px-3 py-2.5 dark:border-(--border) dark:bg-white/[0.035]">
             <button
               onClick={handleSkip}
-              className="text-sm font-medium text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
+              className="h-7 rounded-lg px-2.5 text-[12.5px] font-medium text-stone-500 transition-colors hover:bg-white hover:text-stone-800 dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
             >
               Skip
             </button>
-            <div className="flex-1" />
-            <button
-              onClick={() => setReviewOpen(true)}
-              className="h-8 px-4 rounded-lg border border-stone-200 dark:border-(--border) bg-white dark:bg-(--input) text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-white/8 transition-colors"
-            >
-              Review
-            </button>
-            <button
-              onClick={handleApprove}
-              className="h-8 px-4 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: "#0080FF" }}
-            >
-              Approve
-            </button>
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-expanded={detailsOpen}
+                onClick={() => setDetailsOpen((current) => !current)}
+                className={`h-7 rounded-lg px-2.5 text-[12.5px] font-medium transition-[background-color,transform] duration-100 active:scale-[0.96] ${
+                  detailsOpen
+                    ? "bg-white text-stone-900 dark:bg-white/10 dark:text-stone-100"
+                    : "bg-white text-stone-600 hover:bg-stone-100 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10"
+                }`}
+              >
+                Details
+              </button>
+              <button
+                onClick={handleApprove}
+                className="h-7 rounded-lg px-3 text-[12.5px] font-semibold text-white transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.96]"
+                style={{ background: decided === "approved" ? "#0080FF" : "#0080FF" }}
+              >
+                {decided === "approved" ? "Approved" : "Approve"}
+              </button>
+            </span>
           </div>
         </div>
       </div>
@@ -302,6 +363,147 @@ function RecipeRow({ recipe, onSelect }: { recipe: SlashRecipe; onSelect: (r: Sl
   );
 }
 
+function CreationRunStatus({ tasks }: { tasks: RunTask[] }) {
+  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const timers = tasks.map((task, index) => (
+      setTimeout(() => {
+        setCompleted((current) => ({ ...current, [task.id]: true }));
+      }, 2000)
+    ));
+
+    return () => timers.forEach(clearTimeout);
+  }, [tasks]);
+
+  return (
+    <div className="mt-1 flex w-full max-w-sm flex-col gap-2">
+      {tasks.map((task, index) => {
+        const done = completed[task.id];
+
+        return (
+          <div
+            key={task.id}
+            className="overflow-hidden rounded-xl"
+            style={{
+              background: "var(--content-bg)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              animation: `fade-up 420ms cubic-bezier(0.23,1,0.32,1) ${index * 80}ms both`,
+            }}
+          >
+            <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
+              <RunNumberBadge index={index + 1} done={done} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100">
+                  {task.label}
+                </span>
+                <span className="block truncate text-[12px] text-stone-400 dark:text-stone-500">
+                  {done ? "Completed" : task.detail}
+                </span>
+              </span>
+              {done ? (
+                <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-blue-50 px-2 text-[11.5px] font-semibold text-blue-500 dark:bg-blue-500/12 dark:text-blue-300">
+                  Completed
+                </span>
+              ) : (
+                <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-stone-100 px-2 text-[11.5px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
+                  Pending
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RunNumberBadge({ index, done }: { index: number; done?: boolean }) {
+  const size = 28;
+  const stroke = 2.25;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <span
+      className={`relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums transition-colors ${
+        done ? "text-white" : "text-stone-600 dark:text-stone-300"
+      }`}
+      style={{ background: done ? "#0080FF" : "transparent" }}
+    >
+      <svg
+        width={size}
+        height={size}
+        className="absolute inset-0"
+        style={!done ? { animation: "spin 1.1s linear infinite" } : undefined}
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={done ? "#0080FF" : "rgba(120,120,120,0.24)"}
+          strokeWidth={stroke}
+        />
+        {!done && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#0080FF"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${circumference * 0.28} ${circumference * 0.72}`}
+          />
+        )}
+      </svg>
+      <span className="relative">{index}</span>
+    </span>
+  );
+}
+
+function StreamingReply({ text, onDone }: { text: string; onDone: () => void }) {
+  const tokens = text.split(/(\s+)/).filter(Boolean);
+  const [count, setCount] = useState(0);
+  const done = count >= tokens.length;
+
+  useEffect(() => {
+    if (done) {
+      const doneTimer = setTimeout(onDone, 180);
+      return () => clearTimeout(doneTimer);
+    }
+
+    const current = tokens[count] ?? "";
+    const delay = current.trim() ? 42 + Math.min(current.length * 3, 38) : 12;
+    const timer = setTimeout(() => setCount((value) => value + 1), delay);
+    return () => clearTimeout(timer);
+  }, [count, done, onDone, tokens]);
+
+  return (
+    <p className="text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap">
+      {tokens.slice(0, count).map((token, index) => (
+        token.trim() ? (
+          <span
+            key={`${token}-${index}`}
+            className="inline-block"
+            style={{ animation: "blu-stream-in 360ms cubic-bezier(0.22,0.61,0.25,1) both" }}
+          >
+            {token}
+          </span>
+        ) : token
+      ))}
+      {!done && (
+        <span
+          className="ml-0.5 inline-block h-3 w-0.5 translate-y-0.5 rounded-full"
+          style={{ background: "#0080FF", animation: "fade-up 150ms ease-out both" }}
+        />
+      )}
+    </p>
+  );
+}
+
 function getMentionIcon(key: string, size = 13): React.ReactNode {
   switch (key) {
     case "journeys": return <Route size={size} />;
@@ -324,6 +526,7 @@ type ReferenceAttachment = {
 };
 
 type RecipeChip = { key: string; label: string };
+type RunTask = { id: string; label: string; detail: string; icon: "avatar" | "pose" | "scene" };
 
 type ChatMessage = {
   id: string;
@@ -335,11 +538,13 @@ type ChatMessage = {
   recipes?: RecipeChip[];
   feedbackForm?: boolean;
   isTyping?: boolean;
+  isStreaming?: boolean;
   isError?: boolean;
   isPlan?: boolean;
   planContent?: string;
   journeyChip?: { name: string };
   execChecklist?: { steps: string[] };
+  runTasks?: RunTask[];
 };
 
 
@@ -502,6 +707,7 @@ export default function BluChat({
   const [sessionTime, setSessionTime] = useState<string | null>(null);
   const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
+  const [reactionMenuId, setReactionMenuId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
   const [imagePreviews, setImagePreviews] = useState<{ id: string; url: string; uploading: boolean }[]>([]);
@@ -515,6 +721,9 @@ export default function BluChat({
   }
   const [planMode, setPlanMode] = useState(false);
   const [webMode, setWebMode] = useState(false);
+  const [contextScope, setContextScope] = useState<"Project" | "Org" | "Thread">("Project");
+  const [modeOpen, setModeOpen] = useState(false);
+  const modeRef = useRef<HTMLDivElement>(null);
   const [imageSettings, setImageSettings] = useState({
     aspect: "1:1",
     background: "Auto",
@@ -581,6 +790,26 @@ export default function BluChat({
         setMentionCategory(null);
         setSlashOpen(false);
         setPlusPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (modeRef.current && !modeRef.current.contains(e.target as Node)) {
+        setModeOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (!(e.target as HTMLElement).closest("[data-reaction-menu]")) {
+        setReactionMenuId(null);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -923,6 +1152,30 @@ export default function BluChat({
     setEditingMsgId(null);
   }
 
+  function regenerateBluReply(msg: ChatMessage) {
+    setReactionMenuId(null);
+    setReactions((current) => {
+      const next = { ...current };
+      delete next[msg.id];
+      return next;
+    });
+    setMessages((current) => current.map((item) => (
+      item.id === msg.id
+        ? { ...item, isStreaming: true }
+        : item
+    )));
+  }
+
+  const latestCompletedBluId = [...messages].reverse().find((msg) =>
+    msg.role === "blu" &&
+    !msg.feedbackForm &&
+    !msg.isTyping &&
+    !msg.isStreaming &&
+    !msg.isError &&
+    !msg.isPlan &&
+    !msg.runTasks
+  )?.id;
+
   function sendMessage(overrideText?: string) {
     if (inputLocked) return;
     const text = overrideText ?? getEditorText();
@@ -945,6 +1198,8 @@ export default function BluChat({
     const isFailed = !overrideText && text.toLowerCase() === "failed";
     const isError = !overrideText && text.toLowerCase() === "error";
     const isPlan = !overrideText && text.toLowerCase() === "plan";
+    const runMatch = !overrideText ? text.toLowerCase().match(/^run(?:-(2|3))?$/) : null;
+    const runCount = runMatch ? Number(runMatch[1] ?? 1) : 0;
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
@@ -971,6 +1226,13 @@ export default function BluChat({
           planContent: PLAN_SAMPLE,
         });
         setTimeout(() => setPendingPlan({ content: PLAN_SAMPLE }), 50);
+      } else if (runMatch) {
+        next.push({
+          id: `blu-run-${ts}`,
+          role: "blu",
+          text: "",
+          runTasks: RUN_TASKS.slice(0, runCount),
+        });
       } else if (isFailed || isError) {
         next.push({
           id: `blu-error-${ts}`,
@@ -1009,12 +1271,13 @@ export default function BluChat({
             id: `blu-journey-${ts}`,
             role: "blu",
             text: `Created journey "${journeyName}". It starts with a signup trigger, sends a welcome email, waits 2 days, then branches based on whether the email was opened.`,
+            isStreaming: true,
             journeyChip: { name: journeyName },
           };
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !isFailed && !isError && !isFeedback && !isCreateRecipe) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1025,6 +1288,7 @@ export default function BluChat({
             id: `blu-${ts}`,
             role: "blu",
             text: BLU_REPLIES[generalReplyIndex % BLU_REPLIES.length],
+            isStreaming: true,
           };
           return next;
         });
@@ -1267,7 +1531,7 @@ export default function BluChat({
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgBottomFade ? 1 : 0, background: "linear-gradient(to top, var(--content-bg) 0%, transparent 100%)" }}
         />
-        <div ref={messagesRef} onScroll={checkMsgFades} className="h-full overflow-y-auto px-4 py-4 space-y-5 chat-scroll">
+        <div ref={messagesRef} onScroll={checkMsgFades} className="h-full overflow-y-auto px-4 py-4 space-y-4 chat-scroll">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-1 pb-8 select-none text-center">
             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Ask Blu anything</p>
@@ -1281,19 +1545,25 @@ export default function BluChat({
         )}
         {messages.map((msg) => (
           <div key={msg.id} className={`flex animate-fade-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-          <div className={`group flex max-w-[85%] flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
-            <div className="flex items-center gap-1.5 mb-1">
+          <div className={`group flex max-w-[85%] flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+            <div className="flex items-center gap-1.5">
               {/* Avatar */}
               {msg.role === "user" ? (
-                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
-                  <img src="/dp.png" alt="You" width={20} height={20} className="w-full h-full object-cover" />
+                <div className="h-6 w-6 rounded-full overflow-hidden shrink-0">
+                  <img src="/dp.png" alt="You" width={24} height={24} className="w-full h-full object-cover" />
                 </div>
               ) : (
                 <span
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
                   style={{ background: "rgba(0,128,255,0.12)" }}
                 >
-                  <img src="/mascot.png" alt="Blu" width={14} height={14} className="object-contain" />
+                  <img
+                    src="/mascot.png"
+                    alt="Blu"
+                    width={24}
+                    height={24}
+                    className="h-6 w-6 object-contain"
+                  />
                 </span>
               )}
               <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
@@ -1314,10 +1584,19 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {msg.execChecklist ? (
+              {msg.runTasks ? (
+                <CreationRunStatus tasks={msg.runTasks} />
+              ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.isTyping ? (
                 <LoadingState label="Thinking" variant="Ripple" />
+              ) : msg.isStreaming && msg.role === "blu" ? (
+                <StreamingReply
+                  text={msg.text}
+                  onDone={() => {
+                    setMessages((current) => current.map((item) => item.id === msg.id ? { ...item, isStreaming: false } : item));
+                  }}
+                />
               ) : msg.isError ? (
                 <div
                   className="inline-flex flex-col gap-2.5 rounded-xl px-4 py-3"
@@ -1372,11 +1651,11 @@ export default function BluChat({
                   </div>
                 </div>
               ) : (
-                <p className={`text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "text-right" : ""}`}>
+                <p className={`text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap ${msg.role === "user" ? "text-right" : ""}`}>
                   {msg.text}
                 </p>
               )}
-              {msg.journeyChip && (
+              {msg.journeyChip && !msg.isStreaming && (
                 <div className="mt-2.5">
                   <button
                     onClick={() => setJourneyPreviewName(msg.journeyChip!.name)}
@@ -1441,8 +1720,12 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {!msg.feedbackForm && !msg.isTyping && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
-                <div className="mt-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              {!msg.feedbackForm && !msg.runTasks && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
+                <div className={`mt-1 flex w-full items-center gap-1 transition-opacity ${msg.role === "user" ? "justify-end" : "justify-start"} ${
+                  msg.role === "blu" && msg.id === latestCompletedBluId
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                }`}>
                   {/* Copy */}
                   <div className="group/tip relative">
                     <button
@@ -1478,38 +1761,80 @@ export default function BluChat({
                   )}
                   {msg.role === "blu" && (
                     <>
-                      {/* Upvote */}
+                    <div className="relative" data-reaction-menu>
                       <div className="group/tip relative">
                         <button
-                          onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "up" ? undefined as never : "up" }))}
+                          onClick={() => setReactionMenuId((id) => id === msg.id ? null : msg.id)}
                           className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-                            reactions[msg.id] === "up"
+                            reactions[msg.id]
                               ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
                               : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
                           }`}
                         >
-                          <ThumbsUp size={13} fill={reactions[msg.id] === "up" ? "currentColor" : "none"} />
+                          {reactions[msg.id] === "down" ? (
+                            <ThumbsDown size={13} fill="currentColor" />
+                          ) : reactions[msg.id] === "up" ? (
+                            <ThumbsUp size={13} fill="currentColor" />
+                          ) : (
+                            <span className="relative flex h-4 w-4 items-center justify-center">
+                              <ThumbsUp size={12} className="absolute -left-0.5 -top-0.5" />
+                              <ThumbsDown size={12} className="absolute -bottom-0.5 -right-0.5" />
+                            </span>
+                          )}
                         </button>
-                        <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
-                          Upvote
+                        <span className={`pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white transition-opacity dark:bg-stone-700 ${reactionMenuId === msg.id ? "opacity-0" : "opacity-0 group-hover/tip:opacity-100"}`}>
+                          {reactions[msg.id] === "down" ? "Bad response" : reactions[msg.id] === "up" ? "Good response" : "Rate response"}
                         </span>
                       </div>
-                      {/* Downvote */}
-                      <div className="group/tip relative">
-                        <button
-                          onClick={() => setReactions((r) => ({ ...r, [msg.id]: r[msg.id] === "down" ? undefined as never : "down" }))}
-                          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-                            reactions[msg.id] === "down"
-                              ? "bg-stone-100 text-stone-700 dark:bg-white/10 dark:text-stone-200"
-                              : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
-                          }`}
+
+                      {reactionMenuId === msg.id && (
+                        <div
+                          className="absolute bottom-[calc(100%+8px)] left-0 z-40 w-44 rounded-2xl p-2 animate-card-in"
+                          style={{
+                            background: "var(--content-bg)",
+                            border: "1px solid var(--border)",
+                            boxShadow: "0 12px 32px rgba(0,0,0,0.14), 0 3px 10px rgba(0,0,0,0.08)",
+                          }}
                         >
-                          <ThumbsDown size={13} fill={reactions[msg.id] === "down" ? "currentColor" : "none"} />
-                        </button>
-                        <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
-                          Downvote
-                        </span>
-                      </div>
+                          {[
+                            { value: "up" as const, label: "Good response", icon: ThumbsUp },
+                            { value: "down" as const, label: "Bad response", icon: ThumbsDown },
+                          ].map((item) => {
+                            const Icon = item.icon;
+                            const active = reactions[msg.id] === item.value;
+
+                            return (
+                              <button
+                                key={item.value}
+                                onClick={() => {
+                                  setReactions((current) => ({ ...current, [msg.id]: item.value }));
+                                  setReactionMenuId(null);
+                                }}
+                                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                                  active
+                                    ? "bg-stone-100 text-stone-900 dark:bg-white/10 dark:text-stone-100"
+                                    : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/8"
+                                }`}
+                              >
+                                <Icon size={18} fill={active ? "currentColor" : "none"} />
+                                <span className="text-sm font-medium">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div className="group/tip relative">
+                      <button
+                        onClick={() => regenerateBluReply(msg)}
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                      >
+                        <RotateCcw size={13} />
+                      </button>
+                      <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                        Regenerate
+                      </span>
+                    </div>
                     </>
                   )}
                 </div>
@@ -2060,6 +2385,46 @@ export default function BluChat({
               )}
             </div>
             <div className="flex items-center gap-2">
+              <div ref={modeRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setModeOpen((open) => !open)}
+                  className={`inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors ${
+                    modeOpen
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                      : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10"
+                  }`}
+                >
+                  <BookOpen size={12} />
+                  {contextScope}
+                  <ChevronDown size={12} />
+                </button>
+
+                {modeOpen && (
+                  <div
+                    className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-36 overflow-hidden rounded-xl py-1 animate-card-in"
+                    style={{
+                      background: "var(--content-bg)",
+                      border: "1px solid var(--border)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    {(["Project", "Org", "Thread"] as const).map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => { setContextScope(option); setModeOpen(false); }}
+                        className={`flex w-full items-center px-3.5 py-2 text-sm transition-colors ${
+                          option === contextScope
+                            ? "font-medium text-blue-600 dark:text-blue-400"
+                            : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/6"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setPlanMode((mode) => !mode)}

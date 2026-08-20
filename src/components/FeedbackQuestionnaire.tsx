@@ -1,202 +1,179 @@
-
-
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 const QUESTIONS = [
   {
     id: "type",
     question: "What type of feedback is this?",
+    type: "radio" as const,
     options: ["Bug report", "Feature request", "Improvement"],
   },
   {
     id: "area",
     question: "Which area does this relate to?",
+    type: "radio" as const,
     options: ["Design & UI", "Data & Analytics", "Integrations"],
   },
   {
     id: "urgency",
     question: "How urgent is this for you?",
+    type: "radio" as const,
     options: ["Critical", "Nice to have", "Low priority"],
   },
 ];
 
-type Phase = "idle" | "exit" | "enter";
-
 export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [customText, setCustomText] = useState("");
-  const [done, setDone] = useState(false);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const answersRef = useRef(answers);
-  answersRef.current = answers;
+  const [custom, setCustom] = useState<Record<string, string>>({});
+  const [sent, setSent] = useState(false);
 
-  const q = QUESTIONS[step];
-  const selectedOption = answers[q.id];
-  const isCustomActive = selectedOption !== undefined && !q.options.includes(selectedOption);
-  const hasAnswer = !!selectedOption && selectedOption.trim().length > 0;
+  const question = QUESTIONS[step];
+  const selected = answers[question.id];
+  const customValue = custom[question.id] ?? "";
+  const customSelected = Boolean(selected) && !question.options.includes(selected);
+  const hasAnswer = Boolean(selected?.trim());
   const isLast = step === QUESTIONS.length - 1;
 
-  function selectOption(opt: string) {
-    setAnswers((a) => ({ ...a, [q.id]: opt }));
-    setCustomText("");
+  function selectOption(option: string) {
+    setAnswers((current) => ({ ...current, [question.id]: option }));
+    setCustom((current) => ({ ...current, [question.id]: "" }));
   }
 
-  function handleCustomChange(val: string) {
-    setCustomText(val);
-    if (val.trim()) {
-      setAnswers((a) => ({ ...a, [q.id]: val.trim() }));
-    } else {
-      setAnswers((a) => {
-        const n = { ...a };
-        delete n[q.id];
-        return n;
-      });
-    }
-  }
-
-  function advance() {
-    if (!hasAnswer || phase !== "idle") return;
-
-    setPhase("exit");
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    timerRef.current = setTimeout(() => {
-      if (isLast) {
-        setDone(true);
-        const lines = QUESTIONS.map(
-          (qs) => `• ${qs.question.replace("?", "")}: ${answersRef.current[qs.id]}`
-        );
-        onSubmit(`Feedback:\n${lines.join("\n")}`);
-      } else {
-        setStep((s) => s + 1);
-        setCustomText("");
-        setPhase("enter");
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => setPhase("idle"))
-        );
+  function updateCustom(value: string) {
+    setCustom((current) => ({ ...current, [question.id]: value }));
+    setAnswers((current) => {
+      if (!value.trim()) {
+        const next = { ...current };
+        delete next[question.id];
+        return next;
       }
-    }, 160);
+      return { ...current, [question.id]: value.trim() };
+    });
   }
 
-  if (done) return null;
+  function next() {
+    if (!hasAnswer) return;
 
-  const slideStyle: React.CSSProperties =
-    phase === "idle"
-      ? { transform: "translateX(0)", opacity: 1, transition: "transform 180ms ease, opacity 180ms ease" }
-      : phase === "exit"
-      ? { transform: "translateX(-18px)", opacity: 0, transition: "transform 160ms ease, opacity 160ms ease" }
-      : { transform: "translateX(18px)", opacity: 0, transition: "none" };
+    if (!isLast) {
+      setStep((current) => current + 1);
+      return;
+    }
+
+    const lines = QUESTIONS.map((item) => `• ${item.question.replace("?", "")}: ${answers[item.id]}`);
+    setSent(true);
+    onSubmit(`Feedback:\n${lines.join("\n")}`);
+  }
+
+  if (sent) {
+    return (
+      <div
+        className="mt-2 flex min-h-[132px] w-full max-w-80 flex-col items-center justify-center rounded-xl px-4 py-5"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-full text-white" style={{ background: "#0080FF" }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <p className="mt-2 text-sm font-semibold text-stone-800 dark:text-stone-100">Feedback sent</p>
+      </div>
+    );
+  }
 
   return (
     <div
-      className="mt-2 overflow-hidden rounded-xl border border-stone-200 dark:border-(--border)"
-      style={{ background: "var(--content-bg)" }}
+      className="mt-2 w-full max-w-80 overflow-hidden rounded-xl"
+      style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
     >
-      {/* Progress bar */}
-      <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3 dark:border-(--border)">
-        <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-400 dark:text-stone-500">
-          {step + 1} / {QUESTIONS.length}
-        </span>
-        <div className="flex flex-1 gap-1">
-          {QUESTIONS.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-                i <= step ? "bg-blue-500" : "bg-stone-200 dark:bg-white/12"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Animated question body */}
-      <div className="px-4 pt-4 pb-3" style={slideStyle}>
-        <p className="mb-3.5 text-sm font-semibold text-stone-800 dark:text-stone-100">
-          {q.question}
+      <div key={question.id} className="px-4 pb-3 pt-4 animate-fade-up">
+        <p className="text-sm font-semibold leading-snug text-stone-800 dark:text-stone-100">
+          {question.question}
         </p>
 
-        {/* Options list */}
-        <div className="flex flex-col gap-0.5">
-          {q.options.map((opt) => {
-            const selected = selectedOption === opt;
+        <div className="mt-3 flex flex-col gap-1">
+          {question.options.map((option) => {
+            const active = selected === option;
+
             return (
               <button
-                key={opt}
+                key={option}
                 type="button"
-                onClick={() => selectOption(opt)}
-                className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition-colors duration-100 ${
-                  selected
-                    ? "bg-blue-50 dark:bg-blue-500/10"
-                    : "hover:bg-stone-100/70 dark:hover:bg-white/4"
-                }`}
+                aria-pressed={active}
+                onClick={() => selectOption(option)}
+                className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
               >
-                {/* Radio circle */}
                 <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
-                    selected
-                      ? "border-blue-500 bg-blue-500"
-                      : "border-stone-300 dark:border-(--border)"
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
+                    active
+                      ? "text-white"
+                      : "border border-stone-300 text-transparent dark:border-white/18"
                   }`}
+                  style={active ? { background: "#0080FF" } : undefined}
                 >
-                  {selected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${active ? "scale-100" : "scale-0"}`} />
                 </span>
-                <span
-                  className={`text-sm font-medium ${
-                    selected
-                      ? "text-blue-700 dark:text-blue-300"
-                      : "text-stone-700 dark:text-stone-300"
-                  }`}
-                >
-                  {opt}
+                <span className={`text-sm ${active ? "font-semibold text-blue-600 dark:text-blue-400" : "font-medium text-stone-600 dark:text-stone-400"}`}>
+                  {option}
                 </span>
               </button>
             );
           })}
 
-          {/* 4th: text input option */}
-          <div
-            className={`flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors duration-100 ${
-              isCustomActive ? "bg-blue-50 dark:bg-blue-500/10" : ""
-            }`}
-          >
+          <label className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-stone-100 focus-within:bg-stone-100 dark:hover:bg-white/6 dark:focus-within:bg-white/6 ${customSelected ? "bg-stone-100 dark:bg-white/6" : ""}`}>
             <span
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
-                isCustomActive ? "border-blue-500 bg-blue-500" : "border-stone-300 dark:border-(--border)"
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
+                customSelected
+                  ? "text-white"
+                  : "border border-stone-300 text-transparent dark:border-white/18"
               }`}
+              style={customSelected ? { background: "#0080FF" } : undefined}
             >
-              {isCustomActive && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+              <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${customSelected ? "scale-100" : "scale-0"}`} />
             </span>
             <input
-              type="text"
-              value={customText}
-              onChange={(e) => handleCustomChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") advance(); }}
-              placeholder="Something else..."
-              className={`flex-1 bg-transparent text-sm outline-none placeholder:text-stone-400 dark:placeholder:text-stone-600 ${
-                isCustomActive
-                  ? "font-medium text-blue-700 dark:text-blue-300"
-                  : "text-stone-700 dark:text-stone-300"
-              }`}
+              value={customValue}
+              onChange={(event) => updateCustom(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  next();
+                }
+              }}
+              placeholder="Type something..."
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-stone-700 outline-none placeholder:text-stone-400 dark:text-stone-300 dark:placeholder:text-stone-600"
             />
-          </div>
+          </label>
         </div>
       </div>
 
-      {/* Footer / action */}
-      <div className="border-t border-stone-100 px-4 py-3 dark:border-(--border)">
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="flex items-center gap-1.5">
+          {QUESTIONS.map((item, index) => (
+            <span
+              key={item.id}
+              className="rounded-full transition-all"
+              style={
+                index === step
+                  ? { width: 10, height: 10, border: "2px solid #0080FF" }
+                  : index < step
+                    ? { width: 7, height: 7, background: "#0080FF", opacity: 0.7 }
+                    : { width: 7, height: 7, border: "1px solid var(--border)" }
+              }
+            />
+          ))}
+        </span>
+
         <button
           type="button"
-          onClick={advance}
-          disabled={!hasAnswer || phase !== "idle"}
-          className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
-            hasAnswer && phase === "idle"
-              ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
+          onClick={next}
+          disabled={!hasAnswer}
+          className={`h-8 rounded-lg px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+            hasAnswer
+              ? "bg-blue-600 text-white hover:bg-blue-700"
               : "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"
           }`}
         >
-          {isLast ? "Submit feedback" : "Next"}
+          {isLast ? "Submit" : "Next"}
         </button>
       </div>
     </div>

@@ -272,6 +272,6 @@ export function AvatarDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const avatar = AVATARS.find((a) => a.id === id);
-  if (!avatar) return <Navigate to="/avatars" replace />;
-  return <AvatarDetailView avatar={avatar} onBack={() => navigate("/avatars")} />;
+  if (!avatar) return <Navigate to="/studio?tab=avatars" replace />;
+  return <AvatarDetailView avatar={avatar} onBack={() => navigate("/studio?tab=avatars")} />;
 }

@@ -2,12 +2,10 @@
 
 import AccountsView from "./AccountsView";
 import AssetLibraryView from "./AssetLibraryView";
-import AvatarsView from "./AvatarsView";
-import DesignSystemView from "./DesignSystemView";
+import StudioView from "./StudioView";
 import SubscriptionView from "./SubscriptionView";
 import DealsView from "./DealsView";
-import PosesView from "./PosesView";
-import ScenesView from "./ScenesView";
+import TasksView from "./TasksView";
 import BoardsView from "./BoardsView";
 import BrandView from "./BrandView";
 import EventsView from "./EventsView";
@@ -55,6 +53,7 @@ export default function DashboardView({ view = "home" }: { view?: string }) {
   if (view === "accounts") return <AccountsView />;
   if (view === "asset-library") return <AssetLibraryView />;
   if (view === "deals") return <DealsView />;
+  if (view === "tasks") return <TasksView />;
   if (view === "brand")        return <Suspense><BrandView /></Suspense>;
   if (view === "catalog")      return <Suspense><CatalogView /></Suspense>;
   if (view === "feeds")        return <FeedsView />;
@@ -70,10 +69,7 @@ export default function DashboardView({ view = "home" }: { view?: string }) {
   if (view === "events")       return <Suspense><EventsView /></Suspense>;
   if (view === "subscribers")  return <Suspense><SubscribersView /></Suspense>;
   if (view === "attributes")   return <AttributesView />;
-  if (view === "avatars")      return <AvatarsView />;
-  if (view === "poses")        return <PosesView />;
-  if (view === "scenes")       return <ScenesView />;
-  if (view === "design-system") return <DesignSystemView />;
+  if (view === "studio")       return <StudioView />;
   if (view === "subscription") return <Suspense><SubscriptionView /></Suspense>;
 
   if (generic) {

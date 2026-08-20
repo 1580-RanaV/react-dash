@@ -47,7 +47,7 @@ function PaletteCard({ palette, isNew = false, onClick }: { palette: Palette; is
     >
       <HeartButton
         hoverOnly
-        widget={{ id: `design-system-${palette.id}`, type: "design", label: name, size: "sm", href: `/design-system?theme=${palette.id}`, meta: { colors } }}
+        widget={{ id: `design-system-${palette.id}`, type: "design", label: name, size: "sm", href: `/studio?tab=design-system&theme=${palette.id}`, meta: { colors } }}
         className="absolute right-2 top-2 z-10"
       />
       <div className="flex h-28">
@@ -115,7 +115,7 @@ export default function DesignSystemView() {
     return result;
   }, [palettes, search, sortKey, presetIds]);
 
-  if (selected) return <DesignThemeDetailView palette={selected} onBack={() => navigate("/design-system")} />;
+  if (selected) return <DesignThemeDetailView palette={selected} onBack={() => navigate("/studio?tab=design-system")} />;
 
   function handleBluAI() {
     setShelfOpen(false);
@@ -204,7 +204,7 @@ export default function DesignSystemView() {
       <div className="px-6 pb-6">
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
           {filtered.map((palette) => (
-            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} onClick={() => navigate(`/design-system?theme=${palette.id}`)} />
+            <PaletteCard key={palette.id} palette={palette} isNew={palette.id === newId} onClick={() => navigate(`/studio?tab=design-system&theme=${palette.id}`)} />
           ))}
         </div>
       </div>

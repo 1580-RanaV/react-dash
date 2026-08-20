@@ -169,6 +169,6 @@ export function SceneDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const scene = SCENES.find((s) => s.id === id);
-  if (!scene) return <Navigate to="/scenes" replace />;
-  return <SceneDetailView scene={scene} onBack={() => navigate("/scenes")} />;
+  if (!scene) return <Navigate to="/studio?tab=scenes" replace />;
+  return <SceneDetailView scene={scene} onBack={() => navigate("/studio?tab=scenes")} />;
 }
