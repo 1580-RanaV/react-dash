@@ -1,9 +1,10 @@
 
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { ArrowUpDown, ChevronDown, ChevronRight, Info, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronRight, LayoutGrid, ListFilter, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThreeDotsMenu, { ThreeDotsMenuItem } from "./ThreeDotsMenu";
+import InfoTooltip from "./InfoTooltip";
 
 export type TableCell = {
   value: React.ReactNode;
@@ -43,24 +44,22 @@ function isStatus(value: React.ReactNode | TableCell | TableStatus): value is Ta
   return Boolean(value && typeof value === "object" && "tone" in value && "label" in value);
 }
 
-function StatusPill({ status }: { status: TableStatus }) {
-  const tone = {
-    green: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300",
-    gray:  "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300",
-    blue:  "bg-blue-50 text-blue-700 dark:bg-blue-500/12 dark:text-blue-300",
-    red:   "bg-red-50 text-red-600 dark:bg-red-500/12 dark:text-red-400",
-  }[status.tone];
+const STATUS_TONE_VARS: Record<TableStatus["tone"], { bg: string; fg: string; dot: string }> = {
+  green: { bg: "var(--success-background)",     fg: "var(--success)",     dot: "var(--success)" },
+  gray:  { bg: "var(--muted)",                  fg: "var(--muted-foreground)", dot: "var(--icon)" },
+  blue:  { bg: "var(--info-background)",        fg: "var(--info)",        dot: "var(--info)" },
+  red:   { bg: "var(--destructive-background)", fg: "var(--destructive)", dot: "var(--destructive)" },
+};
 
-  const dot = {
-    green: "bg-emerald-500",
-    gray:  "bg-slate-400",
-    blue:  "bg-blue-500",
-    red:   "bg-red-500",
-  }[status.tone];
+function StatusPill({ status }: { status: TableStatus }) {
+  const tone = STATUS_TONE_VARS[status.tone];
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${tone}`}>
-      <span className={`h-2 w-2 rounded-full ${dot}`} />
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+      style={{ background: tone.bg, color: tone.fg }}
+    >
+      <span className="h-2 w-2 rounded-full" style={{ background: tone.dot }} />
       {status.label}
     </span>
   );
@@ -72,11 +71,11 @@ function CellContent({ value }: { value: React.ReactNode | TableCell | TableStat
   if (isCell(value)) {
     return (
       <div className="min-w-0">
-        <div className="text-stone-900 dark:text-stone-100">
+        <div className="text-foreground">
           {value.value}
         </div>
         {value.subValue ? (
-          <div className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-xs font-medium text-(--muted-foreground)">
             {value.subValue}
           </div>
         ) : null}
@@ -97,33 +96,6 @@ export type FilterConfig = {
   sortFields?: string[];
   groups?: FilterGroup[];
 };
-
-function ColInfoBtn({ text }: { text: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <span
-      className="relative inline-flex shrink-0"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      <span className="flex h-3.5 w-3.5 cursor-default select-none items-center justify-center rounded-full bg-stone-200/80 text-stone-400 transition-colors hover:bg-stone-300/60 dark:bg-white/10 dark:text-stone-500 dark:hover:bg-white/18">
-        <Info size={9} />
-      </span>
-      {show && (
-        <span
-          className="animate-tooltip-in pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-52 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
-          style={{ background: "rgba(24,24,27,0.93)", backdropFilter: "blur(4px)" }}
-        >
-          <span
-            className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent"
-            style={{ borderBottomColor: "rgba(24,24,27,0.93)" }}
-          />
-          {text}
-        </span>
-      )}
-    </span>
-  );
-}
 
 export default function DashboardTable({
   columns,
@@ -188,6 +160,40 @@ export default function DashboardTable({
   const activeCount = [...activeFilters].filter((k) => !singleGroupKeys.has(k)).length;
   const visibleColumns = columns.filter((c) => !hiddenCols.has(c.key));
 
+  const [colWidths, setColWidths] = useState<Record<string, number>>({});
+  const [resizingKey, setResizingKey] = useState<string | null>(null);
+  const resizeRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      const active = resizeRef.current;
+      if (!active) return;
+      const next = Math.max(50, active.startWidth + (e.clientX - active.startX));
+      setColWidths((prev) => ({ ...prev, [active.key]: next }));
+    }
+    function onUp() {
+      resizeRef.current = null;
+      setResizingKey(null);
+      document.body.style.userSelect = "";
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  function startColumnResize(e: React.MouseEvent<HTMLDivElement>, key: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const th = (e.currentTarget as HTMLElement).closest("th");
+    const startWidth = th?.getBoundingClientRect().width ?? 150;
+    resizeRef.current = { key, startX: e.clientX, startWidth };
+    setResizingKey(key);
+    document.body.style.userSelect = "none";
+  }
+
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
@@ -232,7 +238,7 @@ export default function DashboardTable({
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
-      {!hideToolbar && <div className={`flex shrink-0 flex-wrap items-center gap-2 ${filterPanelOpen ? "mb-2" : "mb-3"}`}>
+      {!hideToolbar && <div className={`flex shrink-0 flex-wrap items-center gap-2 ${filterPanelOpen ? "mb-3" : "mb-4"}`}>
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
@@ -516,18 +522,18 @@ export default function DashboardTable({
         );
       })()}
       <div
-        className="flex-1 min-h-0 overflow-hidden rounded-xl flex flex-col"
+        className="flex-1 min-h-0 overflow-hidden rounded-xl flex flex-col shadow-sm"
         style={{
           border: "1px solid var(--border)",
-          background: "var(--content-bg)",
+          background: "var(--card)",
         }}
       >
         <div className="flex-1 min-h-0 overflow-auto">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
+          <table className="w-full min-w-[980px] table-fixed border-separate border-spacing-0 text-left">
           <thead className="sticky top-0 z-10">
             <tr style={{ background: "var(--muted)" }}>
               {selectable && (
-                <th className="border-b border-r px-3 py-3" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
+                <th className="border-b px-3 py-3" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
                   <div className="flex items-center justify-center">
                     <input
                       ref={selectAllRef}
@@ -539,19 +545,38 @@ export default function DashboardTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`border-b border-r px-4 py-3 text-xs font-semibold text-slate-500 last:border-r-0 dark:text-slate-400 ${column.align === "center" ? "text-center" : ""}`}
-                  style={{ width: column.width, borderColor: "var(--border)" }}
-                >
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                    {column.label}
-                    <ColInfoBtn text={column.tooltip ?? column.label} />
-                  </span>
-                </th>
-              ))}
-              <th className="border-b px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
+              {visibleColumns.map((column, index) => {
+                const isLast = index === visibleColumns.length - 1;
+                const isResizing = resizingKey === column.key;
+                return (
+                  <th
+                    key={column.key}
+                    className={`relative border-b px-4 py-3 text-xs font-semibold text-(--muted-foreground) ${column.align === "center" ? "text-center" : ""}`}
+                    style={{ width: colWidths[column.key] ?? column.width, borderColor: "var(--border)" }}
+                  >
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      {column.label}
+                      <InfoTooltip content={column.tooltip ?? column.label} />
+                    </span>
+                    {!isLast && (
+                      <>
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute right-0 top-1/2 h-5 w-px -translate-y-1/2 opacity-40"
+                          style={{ background: "var(--muted-foreground)" }}
+                        />
+                        <div
+                          title="Drag to resize column"
+                          onMouseDown={(e) => startColumnResize(e, column.key)}
+                          className={`absolute right-0 top-0 bottom-0 z-20 w-1 cursor-col-resize transition-all hover:w-1.5 hover:bg-blue-500 ${isResizing ? "w-1.5 bg-blue-500" : ""}`}
+                          style={{ marginRight: "-2px" }}
+                        />
+                      </>
+                    )}
+                  </th>
+                );
+              })}
+              <th className="border-b px-3 py-3 text-xs font-semibold text-(--muted-foreground)" style={{ width: 44, minWidth: 44, borderColor: "var(--border)" }}>
                 {actionsLabel ?? ""}
               </th>
             </tr>
@@ -561,7 +586,7 @@ export default function DashboardTable({
               <tr>
                 <td
                   colSpan={visibleColumns.length + 1 + (selectable ? 1 : 0)}
-                  className="h-36 border-b border-(--border) px-4 py-8 text-center text-sm font-medium text-slate-500 dark:text-slate-400"
+                  className="h-36 border-b border-(--border) px-4 py-8 text-center text-sm font-medium text-(--muted-foreground)"
                 >
                   {emptyState ?? "No items yet."}
                 </td>
@@ -570,17 +595,20 @@ export default function DashboardTable({
               const isGroup = row.type === "group" && Boolean(row.children?.length);
               const isExpanded = Boolean(expanded[row.id]);
               const isSelected = selectable && selected.has(row.id);
+              const rowMenuItems = row.menuItems ?? menuItems;
+              const isNavigable = !isGroup && Boolean(row.href || onRowClick);
+              const showChevron = isNavigable && !row.rowActions && !(rowMenuItems && rowMenuItems.length);
 
               return (
                 <Fragment key={row.id}>
                   <tr
                     key={row.id}
                     onClick={() => handleRowClick(row)}
-                    className={`group ${isSelected ? "bg-blue-50/60 dark:bg-blue-500/8" : "hover:bg-stone-50/70 dark:hover:bg-white/3"} ${isGroup || row.href || onRowClick ? "cursor-pointer" : ""}`}
+                    className={`group/row transition-colors ${isSelected ? "bg-(--state-selected)" : "hover:bg-(--state-hover)"} ${isGroup || row.href || onRowClick ? "cursor-pointer" : ""}`}
                   >
                     {selectable && (
                       <td
-                        className="border-b border-r border-(--border) px-3 py-3"
+                        className="border-b border-(--border) px-3 py-3"
                         style={{ width: 44, minWidth: 44 }}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -601,11 +629,11 @@ export default function DashboardTable({
                     {visibleColumns.map((column, index) => (
                       <td
                         key={column.key}
-                        className={`border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100 ${column.align === "center" ? "text-center" : ""}`}
+                        className={`border-b border-(--border) px-4 py-3 text-sm font-medium text-foreground ${column.align === "center" ? "text-center" : ""}`}
                       >
                         <div className={`${column.align === "center" ? "flex justify-center" : index === 0 ? "flex items-center gap-2" : ""}`}>
                           {index === 0 && isGroup ? (
-                            <ChevronRight size={14} className={`shrink-0 text-stone-500 transition-transform dark:text-stone-400 ${isExpanded ? "rotate-90" : ""}`} />
+                            <ChevronRight size={14} className={`shrink-0 text-(--muted-foreground) transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                           ) : null}
                           <CellContent value={row.cells[column.key] ?? "--"} />
                         </div>
@@ -614,17 +642,24 @@ export default function DashboardTable({
                     <td className="border-b border-(--border) px-3 py-3" style={{ width: row.rowActions ? 80 : 44, minWidth: row.rowActions ? 80 : 44 }}>
                       <div className="flex items-center justify-center gap-1">
                         {row.rowActions}
-                        <ThreeDotsMenu items={row.menuItems ?? menuItems} />
+                        {showChevron ? (
+                          <ChevronRight
+                            size={15}
+                            className="shrink-0 text-(--muted-foreground) opacity-0 transition-opacity group-hover/row:opacity-100"
+                          />
+                        ) : (
+                          <ThreeDotsMenu items={rowMenuItems} />
+                        )}
                       </div>
                     </td>
                   </tr>
                   {isGroup && isExpanded
                     ? row.children!.map((child) => (
-                        <tr key={child.id} className="bg-stone-50/50 hover:bg-stone-50 dark:bg-(--muted) dark:hover:bg-white/6">
+                        <tr key={child.id} className="bg-(--muted)/40 transition-colors hover:bg-(--state-hover)">
                           {visibleColumns.map((column, index) => (
                             <td
                               key={column.key}
-                              className="border-b border-r border-(--border) px-4 py-3 text-sm font-medium text-stone-900 last:border-r-0 dark:text-stone-100"
+                              className="border-b border-(--border) px-4 py-3 text-sm font-medium text-foreground"
                             >
                               <div className={index === 0 ? "pl-6" : ""}>
                                 <CellContent value={child.cells[column.key] ?? ""} />

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  ChevronDown, ChevronRight, ChevronLeft, Mail, Phone, Puzzle, Check, Info,
+  ChevronDown, ChevronRight, ChevronLeft, Mail, Phone, Puzzle, Check,
   ArrowDown, ArrowRight, ArrowUp, Building2, Handshake, Users, Calendar,
   Type, Bold, Italic, Underline, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
 import DueDateField from "./DueDateField";
+import InfoTooltip from "./InfoTooltip";
 
 // ── static data ───────────────────────────────────────────────────────────────
 
@@ -106,38 +107,11 @@ const TIME_OPTIONS = [
 
 // ── small building blocks ─────────────────────────────────────────────────────
 
-function InfoTooltip({ text }: { text: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <span
-      className="relative inline-flex shrink-0"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      <span className="flex h-3.5 w-3.5 cursor-default select-none items-center justify-center rounded-full bg-stone-200/80 text-stone-400 transition-colors hover:bg-stone-300/60 dark:bg-white/10 dark:text-stone-500 dark:hover:bg-white/18">
-        <Info size={9} />
-      </span>
-      {show && (
-        <span
-          className="animate-tooltip-in pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-64 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
-          style={{ background: "rgba(24,24,27,0.93)", backdropFilter: "blur(4px)" }}
-        >
-          <span
-            className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent"
-            style={{ borderBottomColor: "rgba(24,24,27,0.93)" }}
-          />
-          {text}
-        </span>
-      )}
-    </span>
-  );
-}
-
 function FieldLabel({ children, tooltip }: { children: React.ReactNode; tooltip?: string }) {
   return (
     <p className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
       {children}
-      {tooltip && <InfoTooltip text={tooltip} />}
+      {tooltip && <InfoTooltip content={tooltip} maxWidth="max-w-64" />}
     </p>
   );
 }

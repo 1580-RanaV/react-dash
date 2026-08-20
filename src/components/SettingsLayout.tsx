@@ -1780,7 +1780,7 @@ function MobileNav({ selected, onBack, onNav }: { selected: string; onBack: () =
         <nav className="flex-1 overflow-y-auto px-2 pb-4 space-y-4">
           {settingsNav.map((section) => (
             <div key={section.heading}>
-              <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
+              <p className="px-3 mb-2 text-sm font-semibold text-stone-900 dark:text-stone-100">
                 {section.heading}
               </p>
               <div className="space-y-px">
@@ -4837,7 +4837,7 @@ export default function SettingsLayout({ onBack, children }: { onBack: () => voi
         <nav className="flex-1 overflow-y-auto px-2 pb-4 space-y-4">
           {settingsNav.map((section) => (
             <div key={section.heading}>
-              <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
+              <p className="px-3 mb-2 text-sm font-semibold text-stone-900 dark:text-stone-100">
                 {section.heading}
               </p>
               <div className="space-y-px">

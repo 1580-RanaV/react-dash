@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Greeting from "./Greeting";
 import ViewTabs from "./ViewTabs";
+import InfoTooltip from "./InfoTooltip";
 import HeroVideo from "./HeroVideo";
 import RecentDesigns from "./RecentDesigns";
 import RevenueMetricCard from "./MetricCard";
@@ -358,37 +359,6 @@ const USER_METRICS = [
 
 function InfoBadge() {
   return <Info size={12} className="text-stone-400 shrink-0" />;
-}
-
-function HeadingTooltip({ text }: { text: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <span
-      className="relative inline-flex shrink-0"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      <span
-        className="flex h-3.5 w-3.5 cursor-default select-none items-center justify-center rounded-full bg-stone-200/80 text-stone-400 transition-colors hover:bg-stone-300/60 dark:bg-white/10 dark:text-stone-500 dark:hover:bg-white/18"
-        tabIndex={0}
-        aria-label={text}
-      >
-        <Info size={9} />
-      </span>
-      {show && (
-        <span
-          className="animate-tooltip-in pointer-events-none absolute left-1/2 top-[calc(100%+6px)] z-200 w-max max-w-52 -translate-x-1/2 rounded-lg px-2.5 py-1.5 text-xs font-normal leading-relaxed whitespace-normal text-white shadow-lg"
-          style={{ background: "rgba(24,24,27,0.93)", backdropFilter: "blur(4px)" }}
-        >
-          <span
-            className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent"
-            style={{ borderBottomColor: "rgba(24,24,27,0.93)" }}
-          />
-          {text}
-        </span>
-      )}
-    </span>
-  );
 }
 
 function ChartTooltip({ active, payload, label }: any) {
@@ -966,7 +936,7 @@ function SectionCard({
         <div className="mb-2">
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">{title}</p>
-            {tooltip && <HeadingTooltip text={tooltip} />}
+            {tooltip && <InfoTooltip content={tooltip} />}
           </div>
           {description && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{description}</p>}
         </div>
@@ -1661,7 +1631,7 @@ function DistributionDonutCard({
       <div className="mb-4">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</p>
-          {tooltip && <HeadingTooltip text={tooltip} />}
+          {tooltip && <InfoTooltip content={tooltip} />}
         </div>
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{body}</p>
       </div>
@@ -1764,7 +1734,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
             <div>
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Activity</p>
-                <HeadingTooltip text="Used to see overall usage direction from page views, sessions, and active users in the last 30 days." />
+                <InfoTooltip content="Used to see overall usage direction from page views, sessions, and active users in the last 30 days." />
               </div>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Page views, sessions, and active users over the last 30 days.</p>
             </div>
@@ -1844,7 +1814,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
                         <p className="text-xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{item.value}</p>
                         <span className="mt-1.5 flex items-center justify-center gap-1">
                           <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-stone-400">{item.label}</span>
-                          <HeadingTooltip text={item.tooltip} />
+                          <InfoTooltip content={item.tooltip} />
                         </span>
                       </div>
                     </div>
@@ -1863,7 +1833,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-1">
                         <p className="truncate text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</p>
-                        <HeadingTooltip text={item.tooltip} />
+                        <InfoTooltip content={item.tooltip} />
                       </div>
                       <p className="mt-2 text-base font-semibold leading-none text-stone-900 dark:text-stone-100">{item.value}</p>
                     </div>
@@ -1919,7 +1889,7 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
                 <div key={item.label} className="min-h-[90px] rounded-lg px-4 py-3.5" style={{ background: "var(--muted)" }}>
                   <div className="flex min-w-0 items-center gap-1.5">
                     <p className="truncate text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</p>
-                    <HeadingTooltip text={item.tooltip} />
+                    <InfoTooltip content={item.tooltip} />
                   </div>
                   <p className={`mt-2 text-base font-semibold leading-none ${item.tone === "negative" ? "text-red-500 dark:text-red-300" : "text-stone-900 dark:text-stone-100"}`}>{item.value}</p>
                   <p className="mt-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">{item.note}</p>
@@ -3911,7 +3881,7 @@ function MarketingAnomalyCard({ noData = false }: { noData?: boolean }) {
       <div>
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Journey anomaly detection</p>
-          <HeadingTooltip text="Used to catch journey send volume or open rate moving outside its normal range, before it turns into a bigger problem." />
+          <InfoTooltip content="Used to catch journey send volume or open rate moving outside its normal range, before it turns into a bigger problem." />
         </div>
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Send volume and open rate across your active journeys, compared to their typical range.</p>
       </div>
@@ -4011,7 +3981,7 @@ function DesignReachCard({ noData = false }: { noData?: boolean }) {
             <p className="text-3xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">{item.value}</p>
             <span className="mt-2 flex items-center justify-center gap-1">
               <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{item.label}</span>
-              <HeadingTooltip text={item.tooltip} />
+              <InfoTooltip content={item.tooltip} />
             </span>
           </div>
         ))}
@@ -4081,7 +4051,7 @@ function DesignAssetUsageCard({ noData = false }: { noData?: boolean }) {
             </p>
             <span className="mt-2.5 flex items-center justify-center gap-1">
               <span className="text-[10px] font-medium uppercase leading-tight text-stone-400">Used</span>
-              <HeadingTooltip text="Share of generated assets attached to at least one journey step." />
+              <InfoTooltip content="Share of generated assets attached to at least one journey step." />
             </span>
           </div>
         </div>
@@ -4123,7 +4093,7 @@ function DesignAdoptionMixCard({ noData = false }: { noData?: boolean }) {
           <p className="text-4xl font-semibold leading-none tracking-tight text-stone-900 dark:text-stone-100">
             {generatedPct}%
           </p>
-          <HeadingTooltip text="Share of your asset library created with Blu rather than uploaded manually." />
+          <InfoTooltip content="Share of your asset library created with Blu rather than uploaded manually." />
         </div>
         <p className="-mt-2 text-xs font-medium uppercase tracking-[0.08em] text-stone-400">Generated by Blu</p>
 
@@ -4601,7 +4571,7 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
                   </p>
                   <span className="mt-2.5 flex items-center justify-center gap-1">
                     <span className="text-[10px] font-medium uppercase leading-tight text-stone-400">Pipeline health</span>
-                    <HeadingTooltip text="A 0 to 100 score summarizing deal velocity, win rate, and forecast coverage." />
+                    <InfoTooltip content="A 0 to 100 score summarizing deal velocity, win rate, and forecast coverage." />
                   </span>
                 </div>
               </div>
