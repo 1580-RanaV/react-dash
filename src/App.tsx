@@ -130,9 +130,6 @@ export default function App() {
           {/* Settings — no DashboardShell */}
           <Route path="/settings/*" element={<SettingsPage />} />
 
-          {/* Blu fullscreen — opens in new tab, no shell */}
-          <Route path="/blu" element={<BluFullscreenView />} />
-
           {/* Public recipe preview — opens in new tab, no shell */}
           <Route path="/public-recipe" element={<PublicRecipeView />} />
 
@@ -153,6 +150,7 @@ export default function App() {
                 <Routes>
                   <Route path="/home" element={<HomeView />} />
                   <Route path="/home/pinboard" element={<Navigate to="/home" replace />} />
+                  <Route path="/blu" element={<BluFullscreenView />} />
                   <Route path="/users/:id/*" element={<UserDetailView />} />
                   <Route path="/accounts/:id/*" element={<AccountDetailView />} />
                   <Route path="/deals/:id/*" element={<DealDetailView />} />

@@ -1,4 +1,4 @@
-export type BoardType = "retention" | "dashboard" | "insights" | "funnel" | "traffic" | "revenue" | "engagement";
+export type BoardType = "retention" | "dashboard" | "insights" | "funnel" | "traffic" | "revenue" | "engagement" | "blu-report";
 
 export type BoardEntry = {
   id: string;
@@ -25,4 +25,8 @@ export const BOARDS_DATA: BoardEntry[] = [
   { id: "rv2", title: "Monthly Revenue Report",      type: "revenue",    lastUpdated: "Jun 5, 2026 10:00 AM",  createdBy: { initials: "SN", color: "#0D9488", name: "Somya Nayak" },  href: "/out-of-the-box?tab=revenue"    },
   { id: "e1",  title: "Page Views & Sessions",       type: "engagement", lastUpdated: "Jun 11, 2026 08:20 AM", createdBy: { initials: "HS", color: "#22C55E", name: "Hardik Sharma" }, href: "/out-of-the-box?tab=engagement" },
   { id: "e2",  title: "User Retention Rate",         type: "engagement", lastUpdated: "Jun 7, 2026 05:15 PM",  createdBy: { initials: "I",  color: "#EF4444", name: "Intempt" },       href: "/out-of-the-box?tab=engagement" },
+  { id: "b1",  title: "test-custom-34",              type: "blu-report", lastUpdated: "Jun 12, 2026 09:14 AM", createdBy: { initials: "R",  color: "#0080FF", name: "Rana V" } },
+  { id: "b2",  title: "blu-report-hahaha",           type: "blu-report", lastUpdated: "Jun 11, 2026 06:40 PM", createdBy: { initials: "R",  color: "#0080FF", name: "Rana V" } },
+  { id: "b3",  title: "blu-report-test",             type: "blu-report", lastUpdated: "Jun 10, 2026 02:05 PM", createdBy: { initials: "R",  color: "#0080FF", name: "Rana V" } },
+  { id: "b4",  title: "blu-report-v1",               type: "blu-report", lastUpdated: "Jun 9, 2026 11:52 AM",  createdBy: { initials: "R",  color: "#0080FF", name: "Rana V" } },
 ];

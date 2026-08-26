@@ -11,7 +11,8 @@ import ViewTabs from "./ViewTabs";
 import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./DashboardTable";
 import { ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import SlidingSidebar from "./SlidingSidebar";
-import { BOARDS_DATA, BoardEntry, BoardType } from "./boards/boardsData";
+import { BoardEntry, BoardType } from "./boards/boardsData";
+import { useBoards } from "./boards/boardsStore";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import { SubscriptionContent } from "./SubscriptionView";
 import HeartButton from "./HeartButton";
@@ -471,6 +472,10 @@ function EngagementCharts() {
   );
 }
 
+function BluMascotIcon({ size = 14 }: { size?: number }) {
+  return <img src="/mascot.png" alt="Blu" className="shrink-0 object-contain" style={{ width: size, height: size }} />;
+}
+
 function TypeBadge({ type }: { type: BoardType }) {
   const config: Record<BoardType, { icon: React.ReactNode; label: string }> = {
     retention:  { icon: <RotateCcw size={12} />,     label: "Retention"  },
@@ -480,6 +485,7 @@ function TypeBadge({ type }: { type: BoardType }) {
     traffic:    { icon: <Globe size={12} />,          label: "Traffic"    },
     revenue:    { icon: <HandCoins size={12} />,      label: "Revenue"    },
     engagement: { icon: <Activity size={12} />,       label: "Engagement" },
+    "blu-report": { icon: <BluMascotIcon size={12} />, label: "Blu report" },
   };
   const { icon, label } = config[type];
   return (
@@ -543,9 +549,7 @@ const BOARD_TYPES = [
   { key: "funnel",     Icon: Filter,         label: "Funnel"     },
   { key: "retention",  Icon: RotateCcw,      label: "Retention"  },
   { key: "dashboard",  Icon: LayoutDashboard, label: "Dashboard" },
-  { key: "traffic",    Icon: Globe,          label: "Traffic"    },
-  { key: "revenue",    Icon: HandCoins,      label: "Revenue"    },
-  { key: "engagement", Icon: Activity,       label: "Engagement" },
+  { key: "blu-report", Icon: BluMascotIcon,  label: "Blu report" },
 ] as const;
 
 const VIEW_TABS = [
@@ -558,10 +562,21 @@ const VIEW_TABS = [
   { key: "engagement", label: "Engagement", icon: <Activity size={14} /> },
   { key: "dashboard",    label: "Dashboards",   icon: <LayoutDashboard size={14} /> },
   { key: "subscription", label: "Subscription", icon: <CreditCard size={14} /> },
+  { key: "blu-report",   label: "Blu report",   icon: <BluMascotIcon size={14} /> },
 ];
 
 function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<string>("insights");
+  const navigate = useNavigate();
+
+  function handleCreate(close: () => void) {
+    if (selected === "blu-report") {
+      navigate("/blu");
+      close();
+      return;
+    }
+    close();
+  }
 
   return (
     <SlidingSidebar
@@ -577,6 +592,7 @@ function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button
+            onClick={() => handleCreate(close)}
             className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: "#0080FF" }}
           >
@@ -592,13 +608,13 @@ function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
             <button
               key={key}
               onClick={() => setSelected(key)}
-              className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-all duration-100"
-              style={{
-                border: isSelected ? "1.5px solid #0080FF" : "1.5px solid var(--border)",
-                background: isSelected ? "rgba(0,128,255,0.04)" : "var(--content-bg)",
-              }}
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-colors duration-100 ${
+                isSelected
+                  ? "bg-blue-50 dark:bg-blue-500/10"
+                  : "hover:bg-stone-100 dark:hover:bg-white/6"
+              }`}
             >
-              <span className={isSelected ? "text-blue-500" : "text-stone-400 dark:text-stone-500"}>
+              <span className={isSelected ? "text-blue-600 dark:text-blue-400" : "text-stone-400 dark:text-stone-500"}>
                 <Icon size={17} />
               </span>
               <span className={`text-sm font-medium ${isSelected ? "text-blue-600 dark:text-blue-400" : "text-stone-700 dark:text-stone-300"}`}>
@@ -637,7 +653,7 @@ export default function BoardsView() {
     : "all";
   function setTab(key: string) { navigate(`/boards?tab=${key}`, { replace: true }); }
 
-  const [entries, setEntries] = useState<BoardEntry[]>(BOARDS_DATA);
+  const { entries, setEntries } = useBoards();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);

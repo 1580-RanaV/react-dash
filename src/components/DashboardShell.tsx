@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Menu, Workflow, Waypoints } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
+import { BluMessagesProvider } from "./BluMessagesContext";
+import { BoardsProvider } from "./boards/boardsStore";
 import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
 import Sidebar from "./Sidebar";
@@ -245,13 +247,15 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   function closeBlu() { setBluOpen(false); setBluMode("panel"); }
   function floatBlu() { setBluMode("float"); }
-  function fullscreenBlu() { window.open("/blu", "_blank"); }
+  function fullscreenBlu() { setBluMode("fullscreen"); navigate("/blu"); }
   function panelBlu() { setBluMode("panel"); }
 
   useEffect(() => {
     const open              = () => setBluOpen(true);
     const toggle            = () => setBluOpen((o) => !o);
     const openRecipeCanvas  = () => navigate("/recipe-canvas");
+    const openPanel         = () => { setBluOpen(true); setBluMode("panel"); };
+    const forceClose        = () => { setBluOpen(false); setBluMode("panel"); };
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
@@ -261,11 +265,15 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     window.addEventListener("open-blu-chat",       open);
     window.addEventListener("toggle-blu-chat",     toggle);
     window.addEventListener("open-recipe-canvas",  openRecipeCanvas);
+    window.addEventListener("blu-open-panel",      openPanel);
+    window.addEventListener("blu-force-close",     forceClose);
     window.addEventListener("keydown",             onKeyDown);
     return () => {
       window.removeEventListener("open-blu-chat",       open);
       window.removeEventListener("toggle-blu-chat",     toggle);
       window.removeEventListener("open-recipe-canvas",  openRecipeCanvas);
+      window.removeEventListener("blu-open-panel",      openPanel);
+      window.removeEventListener("blu-force-close",     forceClose);
       window.removeEventListener("keydown",             onKeyDown);
     };
   }, [navigate]);
@@ -284,7 +292,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const panelOpen = bluOpen && bluMode === "panel";
 
   return (
-    <>
+    <BoardsProvider>
+    <BluMessagesProvider>
       {/* Floating window portal */}
       {bluOpen && bluMode === "float" && createPortal(
         <FloatingBluWindow onClose={closeBlu} onFullscreen={fullscreenBlu} onBackToPanel={panelBlu} />,
@@ -383,6 +392,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </main>
       </div>
     </div>
-    </>
+    </BluMessagesProvider>
+    </BoardsProvider>
   );
 }

@@ -46,6 +46,7 @@ import {
   Mail,
   Bell,
   MessageSquare,
+  MessagesSquare,
   Type,
   Zap,
   Eye,
@@ -58,6 +59,9 @@ import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
 import LoadingState from "./LoadingState";
+import { useBluMessages } from "./BluMessagesContext";
+import QueryStages from "./QueryStages";
+import CustomReportResult from "./CustomReportResult";
 import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
 
 type MentionChip = {
@@ -127,6 +131,16 @@ const RUN_TASKS: RunTask[] = [
   { id: "create-pose", label: "Create Pose", detail: "Creating pose", icon: "pose" },
   { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
 ];
+
+function CustomReportBlock() {
+  const [showChart, setShowChart] = useState(false);
+  return (
+    <div className="flex flex-col gap-4">
+      <QueryStages onSettled={() => setTimeout(() => setShowChart(true), 400)} />
+      {showChart && <CustomReportResult />}
+    </div>
+  );
+}
 
 function ExecChecklist({ steps }: { steps: string[] }) {
   const [current, setCurrent] = useState(0);
@@ -528,7 +542,7 @@ type ReferenceAttachment = {
 type RecipeChip = { key: string; label: string };
 type RunTask = { id: string; label: string; detail: string; icon: "avatar" | "pose" | "scene" };
 
-type ChatMessage = {
+export type ChatMessage = {
   id: string;
   role: "user" | "blu";
   text: string;
@@ -545,6 +559,7 @@ type ChatMessage = {
   journeyChip?: { name: string };
   execChecklist?: { steps: string[] };
   runTasks?: RunTask[];
+  queryTrace?: boolean;
 };
 
 
@@ -622,13 +637,21 @@ const BLU_REPLIES = [
   "All good — working on it.",
 ];
 
-type Placeholder = { text: string; shortcut?: string };
+type Placeholder = { text: string };
 const PLACEHOLDERS: Placeholder[] = [
   { text: "Ask Blu to create anything..." },
-  { text: " for recipes and prompt templates", shortcut: "/" },
-  { text: " to reference journeys, events, assets", shortcut: "@" },
-  { text: " to attach files, feeds, or brand kit", shortcut: "+" },
+  { text: "Type / for recipes and prompt templates" },
+  { text: "Type @ to reference journeys, events, assets" },
+  { text: "Type + to attach files, feeds, or brand kit" },
   { text: "Generate a banner, email, or product shot..." },
+];
+
+const LANDING_PROMPTS = [
+  "What do you want to create today?",
+  "Ready when you are.",
+  "What are we building today?",
+  "What's on your mind?",
+  "Let's create something great.",
 ];
 
 const CONTEXT_RECIPE_KEYS: { match: RegExp; keys: string[] }[] = [
@@ -703,14 +726,18 @@ export default function BluChat({
   const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
   const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sessionTime, setSessionTime] = useState<string | null>(null);
+  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, renameActiveThread } = useBluMessages();
+  const activeThread = threads.find((t) => t.id === activeThreadId);
+  const activeThreadTitle = activeThread?.title ?? "New chat";
+  const [threadSwitcherOpen, setThreadSwitcherOpen] = useState(false);
+  const threadSwitcherRef = useRef<HTMLDivElement>(null);
   const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [reactionMenuId, setReactionMenuId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
   const [imagePreviews, setImagePreviews] = useState<{ id: string; url: string; uploading: boolean }[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   function removeImagePreview(id: string) {
     setImagePreviews((prev) => {
@@ -755,6 +782,9 @@ export default function BluChat({
   const [editingMsgText, setEditingMsgText] = useState("");
   const plusRef = useRef<HTMLDivElement>(null);
   const mentionRef = useRef<HTMLDivElement>(null);
+  const landingHeadingRef = useRef<HTMLParagraphElement>(null);
+  const [composerHeight, setComposerHeight] = useState(88);
+  const [headingHeight, setHeadingHeight] = useState(40);
   const mentionSearchRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -800,6 +830,16 @@ export default function BluChat({
     function handle(e: MouseEvent) {
       if (modeRef.current && !modeRef.current.contains(e.target as Node)) {
         setModeOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (threadSwitcherRef.current && !threadSwitcherRef.current.contains(e.target as Node)) {
+        setThreadSwitcherOpen(false);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -1148,8 +1188,14 @@ export default function BluChat({
 
   function saveMsgEdit(id: string) {
     const trimmed = editingMsgText.trim();
-    if (trimmed) setMessages((current) => current.map((m) => m.id === id ? { ...m, text: trimmed } : m));
     setEditingMsgId(null);
+    if (!trimmed) return;
+    // Drop the old message and everything after it — its Blu reply no longer matches the edit — then resend as a fresh message.
+    setMessages((current) => {
+      const idx = current.findIndex((m) => m.id === id);
+      return idx === -1 ? current : current.slice(0, idx);
+    });
+    sendMessage(trimmed);
   }
 
   function regenerateBluReply(msg: ChatMessage) {
@@ -1194,6 +1240,9 @@ export default function BluChat({
       const now = new Date();
       setSessionTime(now.toLocaleDateString("en-US", { weekday: "long" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
     }
+    if (messages.length === 0 && text.trim()) {
+      renameActiveThread(text.trim().slice(0, 60));
+    }
     const isFeedback = !overrideText && text.toLowerCase() === "feedback";
     const isFailed = !overrideText && text.toLowerCase() === "failed";
     const isError = !overrideText && text.toLowerCase() === "error";
@@ -1201,6 +1250,7 @@ export default function BluChat({
     const runMatch = !overrideText ? text.toLowerCase().match(/^run(?:-(2|3))?$/) : null;
     const runCount = runMatch ? Number(runMatch[1] ?? 1) : 0;
     const isCreateRecipe  = !overrideText && text === "create-recipe";
+    const isCustomReport  = !overrideText && text.toLowerCase() === "custom-report";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -1251,6 +1301,8 @@ export default function BluChat({
         });
       } else if (isCreateRecipe) {
         next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
+      } else if (isCustomReport) {
+        next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else {
@@ -1260,7 +1312,17 @@ export default function BluChat({
       return next;
     });
 
-    if (isCreateJourney && journeyName) {
+    if (isCustomReport) {
+      setTimeout(() => {
+        setMessages((current) => {
+          const typingIdx = current.findIndex((m) => m.isTyping);
+          if (typingIdx === -1) return current;
+          const next = [...current];
+          next[typingIdx] = { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true };
+          return next;
+        });
+      }, 1200);
+    } else if (isCreateJourney && journeyName) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1277,7 +1339,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1343,28 +1405,119 @@ export default function BluChat({
     };
   });
 
+  const isLanding = mode === "fullscreen" && messages.length === 0;
+  const [landingPrompt] = useState(() => LANDING_PROMPTS[Math.floor(Math.random() * LANDING_PROMPTS.length)]);
+
+  useEffect(() => {
+    if (mode !== "fullscreen") return;
+    const composerEl = mentionRef.current;
+    const headingEl = landingHeadingRef.current;
+    if (!composerEl) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === composerEl) setComposerHeight(entry.contentRect.height);
+        if (entry.target === headingEl) setHeadingHeight(entry.contentRect.height);
+      }
+    });
+    ro.observe(composerEl);
+    if (headingEl) ro.observe(headingEl);
+    return () => ro.disconnect();
+  }, [mode]);
+
   return (
     <div
-      className="flex flex-col h-full rounded-xl overflow-hidden"
-      style={{
-        background: "var(--content-bg)",
-        border: "1px solid var(--border)",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04)",
-      }}
+      className={`flex flex-col h-full ${mode === "fullscreen" ? "" : "rounded-xl overflow-hidden"}`}
+      style={
+        mode === "fullscreen"
+          ? { background: "var(--content-bg)" }
+          : {
+              background: "var(--content-bg)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04)",
+            }
+      }
     >
       {/* Header */}
       <div
-        className={`flex items-center gap-2.5 px-4 py-2.75 shrink-0 ${onHeaderMouseDown ? "cursor-move select-none" : ""}`}
+        className={`flex items-center gap-2.5 pl-4 pr-2.5 py-2.75 shrink-0 ${onHeaderMouseDown ? "cursor-move select-none" : ""}`}
         onMouseDown={onHeaderMouseDown}
       >
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full pointer-events-none"
-          style={{ background: "rgba(0,128,255,0.12)" }}
-        >
-          <img src="/mascot.png" alt="Blu" width={20} height={20} className="object-contain" />
-        </span>
-        <div className="flex-1 min-w-0 pointer-events-none">
-          <p className="text-base font-semibold text-stone-800 dark:text-stone-100 leading-none">Blu</p>
+        {mode === "float" && (
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full pointer-events-none"
+            style={{ background: "rgba(0,128,255,0.12)" }}
+          >
+            <img src="/mascot.png" alt="Blu" width={20} height={20} className="object-contain" />
+          </span>
+        )}
+        <div className={`flex-1 min-w-0 ${mode === "panel" || mode === "fullscreen" ? "" : "pointer-events-none"}`}>
+          {mode === "panel" || mode === "fullscreen" ? (
+            <div ref={threadSwitcherRef} className={`relative w-fit max-w-full ${mode === "panel" ? "-ml-2.5" : ""}`}>
+              <button
+                type="button"
+                onClick={() => setThreadSwitcherOpen((o) => !o)}
+                className="flex max-w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
+              >
+                <MessagesSquare size={15} className="shrink-0 text-stone-400" />
+                <span className="max-w-[20ch] truncate text-sm font-medium leading-none text-stone-800 dark:text-stone-100">
+                  {activeThreadTitle}
+                </span>
+                <ChevronDown
+                  size={14}
+                  className="shrink-0 text-stone-400 transition-transform duration-200"
+                  style={{ transform: threadSwitcherOpen ? "rotate(180deg)" : "rotate(0)" }}
+                />
+              </button>
+
+              <div
+                className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 overflow-hidden rounded-xl"
+                style={{
+                  background: "var(--content-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                  opacity: threadSwitcherOpen ? 1 : 0,
+                  transform: threadSwitcherOpen ? "translateY(0)" : "translateY(-6px)",
+                  pointerEvents: threadSwitcherOpen ? "auto" : "none",
+                  transition: "opacity 180ms cubic-bezier(0.23,1,0.32,1), transform 180ms cubic-bezier(0.23,1,0.32,1)",
+                }}
+              >
+                <div className="p-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { createThread(); setThreadSwitcherOpen(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/6"
+                  >
+                    <Plus size={14} className="shrink-0 text-stone-400" />
+                    New chat
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto px-1.5 pb-1.5">
+                  {threads.map((t) => {
+                      const isActive = t.id === activeThreadId;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => { switchThread(t.id); setThreadSwitcherOpen(false); }}
+                          className={`flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                            isActive ? "bg-stone-100 dark:bg-white/8" : "hover:bg-stone-100 dark:hover:bg-white/6"
+                          }`}
+                        >
+                          <span className={`truncate text-sm ${isActive ? "font-semibold text-stone-900 dark:text-stone-100" : "font-medium text-stone-700 dark:text-stone-200"}`}>
+                            {t.title ?? "New chat"}
+                          </span>
+                          <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500">
+                            {isActive ? "Current" : t.time}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-base font-semibold text-stone-800 dark:text-stone-100 leading-none">Blu</p>
+          )}
         </div>
 
         {/* Mode action buttons — stop propagation so they don't trigger drag */}
@@ -1375,7 +1528,7 @@ export default function BluChat({
                 <button
                   onClick={onFloat}
                   title="Float window"
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                  className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
                 >
                   <AppWindow size={13} />
                 </button>
@@ -1384,7 +1537,7 @@ export default function BluChat({
                 <button
                   onClick={onFullscreen}
                   title="Fullscreen"
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                  className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
                 >
                   <Maximize2 size={13} />
                 </button>
@@ -1397,7 +1550,7 @@ export default function BluChat({
                 <button
                   onClick={onFullscreen}
                   title="Fullscreen"
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                  className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
                 >
                   <Maximize2 size={13} />
                 </button>
@@ -1406,7 +1559,7 @@ export default function BluChat({
                 <button
                   onClick={onBackToPanel}
                   title="Back to panel"
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+                  className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
                 >
                   <AppWindow size={13} />
                 </button>
@@ -1417,7 +1570,7 @@ export default function BluChat({
             <button
               onClick={onBackToPanel}
               title="Exit fullscreen"
-              className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
+              className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-stone-100 dark:hover:bg-white/8 transition-colors text-stone-400"
             >
               <Minimize2 size={13} />
             </button>
@@ -1425,7 +1578,7 @@ export default function BluChat({
 
           <button
             onClick={() => { setHistoryOpen((o) => !o); setHistorySearch(""); }}
-            className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors ${
+            className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${
               historyOpen
                 ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
                 : "hover:bg-stone-100 dark:hover:bg-white/8 text-stone-400"
@@ -1447,7 +1600,7 @@ export default function BluChat({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Search */}
           <div className="px-3 pt-3 pb-2 shrink-0">
-            <div className="relative">
+            <div className={`relative ${mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}`}>
               <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 autoFocus
@@ -1460,12 +1613,13 @@ export default function BluChat({
           </div>
 
           <div className="flex-1 overflow-y-auto chat-scroll pb-3">
+          <div className={mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}>
             {/* Pinned */}
             {PINNED_HISTORY.filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase())).length > 0 && (
               <>
                 <div className="flex items-center gap-1.5 px-4 pb-1 pt-3">
-                  <Pin size={11} className="text-stone-400 dark:text-stone-500" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Pinned</p>
+                  <Pin size={13} className="text-stone-400 dark:text-stone-500" />
+                  <p className="text-sm font-semibold text-stone-400 dark:text-stone-500">Pinned</p>
                 </div>
                 {PINNED_HISTORY
                   .filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase()))
@@ -1489,8 +1643,8 @@ export default function BluChat({
             {RECENT_HISTORY.filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase())).length > 0 && (
               <>
                 <div className="flex items-center gap-1.5 px-4 pb-1 pt-4">
-                  <History size={11} className="text-stone-400 dark:text-stone-500" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">Recent</p>
+                  <History size={13} className="text-stone-400 dark:text-stone-500" />
+                  <p className="text-sm font-semibold text-stone-400 dark:text-stone-500">Recent</p>
                 </div>
                 {RECENT_HISTORY
                   .filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase()))
@@ -1518,11 +1672,31 @@ export default function BluChat({
               </div>
             )}
           </div>
+          </div>
         </div>
       )}
 
+      {/* Content area below header — hosts Messages, Pending plan card, and Input; relative so the
+          fullscreen landing composer can be absolutely centered, then FLIP down to the dock position. */}
+      {!historyOpen && <div className="relative flex-1 flex flex-col min-h-0">
+
+      {/* Fullscreen landing heading — fades out the moment typing starts, well before send */}
+      {mode === "fullscreen" && (
+        <p
+          ref={landingHeadingRef}
+          className="pointer-events-none absolute left-0 right-0 mx-auto w-full max-w-2xl text-center text-2xl font-medium text-stone-800 dark:text-stone-100 transition-[transform,opacity] duration-300 ease-out"
+          style={{
+            top: "50%",
+            transform: `translateY(-50%) translateY(-${composerHeight / 2 + 24 + headingHeight / 2}px)`,
+            opacity: isLanding && editorEmpty ? 1 : 0,
+          }}
+        >
+          {landingPrompt}
+        </p>
+      )}
+
       {/* Messages */}
-      {!historyOpen && <div className="relative flex-1 min-h-0" style={{ filter: pendingPlan ? "blur(2px)" : "none", transition: "filter 0.2s", pointerEvents: pendingPlan ? "none" : undefined }}>
+      <div className="relative flex-1 min-h-0" style={{ filter: pendingPlan ? "blur(2px)" : "none", transition: "filter 0.2s", pointerEvents: pendingPlan ? "none" : undefined }}>
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgTopFade ? 1 : 0, background: "linear-gradient(to bottom, var(--content-bg) 0%, transparent 100%)" }}
@@ -1531,9 +1705,15 @@ export default function BluChat({
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgBottomFade ? 1 : 0, background: "linear-gradient(to top, var(--content-bg) 0%, transparent 100%)" }}
         />
-        <div ref={messagesRef} onScroll={checkMsgFades} className="h-full overflow-y-auto px-4 py-4 space-y-4 chat-scroll">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-1 pb-8 select-none text-center">
+        <div
+          ref={messagesRef}
+          onScroll={checkMsgFades}
+          className="h-full overflow-y-auto px-4 py-4 chat-scroll"
+          style={{ paddingBottom: mode === "fullscreen" ? composerHeight + 48 : undefined }}
+        >
+        <div className={`space-y-4 ${mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}`}>
+        {messages.length === 0 && mode !== "fullscreen" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pb-8 select-none text-center">
             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Ask Blu anything</p>
             <p className="text-xs text-stone-400 dark:text-stone-500">What are you working on today?</p>
           </div>
@@ -1543,9 +1723,12 @@ export default function BluChat({
             <span className="text-xs text-stone-400 dark:text-stone-500">{sessionTime}</span>
           </div>
         )}
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex animate-fade-up ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-          <div className={`group flex max-w-[85%] flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+        {messages.map((msg) => {
+          const isEditingThis = msg.role === "user" && editingMsgId === msg.id;
+          const isFullWidthBlock = isEditingThis || !!msg.queryTrace;
+          return (
+          <div key={msg.id} className="relative flex animate-fade-up justify-start hover:z-20 focus-within:z-20">
+          <div className={`group flex flex-col gap-1.5 items-start ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
             <div className="flex items-center gap-1.5">
               {/* Avatar */}
               {msg.role === "user" ? (
@@ -1570,17 +1753,19 @@ export default function BluChat({
                 {msg.role === "user" ? "Rana" : "Blu"}
               </span>
             </div>
-            <div className="min-w-0">
+            <div className={`min-w-0 ${isEditingThis ? "w-full" : ""}`}>
               {msg.images?.length ? (
-                <div className="mb-2 flex flex-wrap justify-end gap-1.5">
+                <div className="mb-2 flex flex-wrap justify-start gap-1.5">
                   {msg.images.map((img) => (
-                    <div
+                    <button
                       key={img.id}
-                      className="h-16 w-16 shrink-0 overflow-hidden rounded-lg"
+                      type="button"
+                      onClick={() => setLightboxUrl(img.url)}
+                      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl transition-opacity hover:opacity-90"
                       style={{ border: "1px solid var(--border)" }}
                     >
                       <img src={img.url} alt="" className="h-full w-full object-cover" />
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : null}
@@ -1588,8 +1773,10 @@ export default function BluChat({
                 <CreationRunStatus tasks={msg.runTasks} />
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
+              ) : msg.queryTrace ? (
+                <CustomReportBlock />
               ) : msg.isTyping ? (
-                <LoadingState label="Thinking" variant="Ripple" />
+                <LoadingState label="Thinking" variant="Beam" />
               ) : msg.isStreaming && msg.role === "blu" ? (
                 <StreamingReply
                   text={msg.text}
@@ -1621,37 +1808,48 @@ export default function BluChat({
                   </button>
                 </div>
               ) : msg.role === "user" && editingMsgId === msg.id ? (
-                <div className="flex flex-col items-end gap-1.5">
+                <div className="flex w-full flex-col gap-3 rounded-xl px-4 pt-5 pb-4" style={{ background: "var(--muted)" }}>
                   <textarea
                     autoFocus
                     value={editingMsgText}
-                    onChange={(e) => setEditingMsgText(e.target.value)}
+                    onChange={(e) => {
+                      setEditingMsgText(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveMsgEdit(msg.id); }
                       if (e.key === "Escape") setEditingMsgId(null);
                     }}
-                    className="w-full min-w-52 resize-none rounded-lg px-3 py-2 text-sm text-stone-700 outline-none dark:text-stone-200"
-                    style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
-                    rows={Math.min(6, Math.max(1, editingMsgText.split("\n").length))}
+                    ref={(el) => {
+                      if (el) {
+                        el.style.height = "auto";
+                        el.style.height = `${el.scrollHeight}px`;
+                      }
+                    }}
+                    className="w-full resize-none bg-transparent text-sm text-stone-700 outline-none dark:text-stone-200"
+                    style={{ minHeight: "1.4em", maxHeight: 240, overflowY: "auto" }}
+                    rows={1}
                   />
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => setEditingMsgId(null)}
-                      className="rounded-md px-2.5 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/8"
+                      className="rounded-full px-4 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/8"
+                      style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveMsgEdit(msg.id)}
-                      className="rounded-md px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:opacity-90"
+                      className="rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                       style={{ background: "#0080FF" }}
                     >
-                      Save
+                      Send
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className={`text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap ${msg.role === "user" ? "text-right" : ""}`}>
+                <p className="text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap">
                   {msg.text}
                 </p>
               )}
@@ -1683,7 +1881,7 @@ export default function BluChat({
                 <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} />
               )}
               {msg.mentions?.length ? (
-                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
                   {msg.mentions.map((m) => (
                     <span
                       key={m.id}
@@ -1696,7 +1894,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.recipes?.length ? (
-                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
                   {msg.recipes.map((r) => (
                     <span
                       key={r.key}
@@ -1709,7 +1907,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.attachments?.length ? (
-                <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
                   {msg.attachments.map((item) => (
                     <span
                       key={`${msg.id}-${item.category}`}
@@ -1721,7 +1919,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {!msg.feedbackForm && !msg.runTasks && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
-                <div className={`mt-1 flex w-full items-center gap-1 transition-opacity ${msg.role === "user" ? "justify-end" : "justify-start"} ${
+                <div className={`mt-1 flex w-full items-center gap-1 transition-opacity justify-start ${
                   msg.role === "blu" && msg.id === latestCompletedBluId
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
@@ -1742,7 +1940,7 @@ export default function BluChat({
                     >
                       {copiedId === msg.id ? <Check size={13} /> : <Copy size={13} />}
                     </button>
-                    <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                    <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
                       {copiedId === msg.id ? "Copied!" : "Copy"}
                     </span>
                   </div>
@@ -1754,7 +1952,7 @@ export default function BluChat({
                       >
                         <Pencil size={13} />
                       </button>
-                      <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                      <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
                         Edit
                       </span>
                     </div>
@@ -1782,18 +1980,18 @@ export default function BluChat({
                             </span>
                           )}
                         </button>
-                        <span className={`pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white transition-opacity dark:bg-stone-700 ${reactionMenuId === msg.id ? "opacity-0" : "opacity-0 group-hover/tip:opacity-100"}`}>
+                        <span className={`pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white transition-opacity dark:bg-stone-700 ${reactionMenuId === msg.id ? "opacity-0" : "opacity-0 group-hover/tip:opacity-100"}`}>
                           {reactions[msg.id] === "down" ? "Bad response" : reactions[msg.id] === "up" ? "Good response" : "Rate response"}
                         </span>
                       </div>
 
                       {reactionMenuId === msg.id && (
                         <div
-                          className="absolute bottom-[calc(100%+8px)] left-0 z-40 w-44 rounded-2xl p-2 animate-card-in"
+                          className="absolute bottom-[calc(100%+8px)] left-0 z-40 w-40 rounded-xl p-1.5 animate-card-in"
                           style={{
                             background: "var(--content-bg)",
                             border: "1px solid var(--border)",
-                            boxShadow: "0 12px 32px rgba(0,0,0,0.14), 0 3px 10px rgba(0,0,0,0.08)",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
                           }}
                         >
                           {[
@@ -1810,13 +2008,13 @@ export default function BluChat({
                                   setReactions((current) => ({ ...current, [msg.id]: item.value }));
                                   setReactionMenuId(null);
                                 }}
-                                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                                   active
                                     ? "bg-stone-100 text-stone-900 dark:bg-white/10 dark:text-stone-100"
-                                    : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/8"
+                                    : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/6"
                                 }`}
                               >
-                                <Icon size={18} fill={active ? "currentColor" : "none"} />
+                                <Icon size={14} fill={active ? "currentColor" : "none"} className="shrink-0" />
                                 <span className="text-sm font-medium">{item.label}</span>
                               </button>
                             );
@@ -1831,7 +2029,7 @@ export default function BluChat({
                       >
                         <RotateCcw size={13} />
                       </button>
-                      <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                      <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
                         Regenerate
                       </span>
                     </div>
@@ -1842,9 +2040,11 @@ export default function BluChat({
             </div>
           </div>
           </div>
-        ))}
+          );
+        })}
         </div>
-      </div>}
+        </div>
+      </div>
 
       {/* Pending plan card */}
       {!historyOpen && pendingPlan && (
@@ -1864,7 +2064,24 @@ export default function BluChat({
       )}
 
       {/* Input */}
-      {!historyOpen && <div ref={mentionRef} className="relative px-3 pb-3 shrink-0" style={{ opacity: pendingPlan ? 0.4 : 1, pointerEvents: pendingPlan ? "none" : undefined }}>
+      <div
+        ref={mentionRef}
+        className={mode === "fullscreen" ? "absolute inset-x-0 px-3 z-30" : "relative px-3 pb-3 shrink-0"}
+        style={{
+          ...(mode === "fullscreen"
+            ? {
+                margin: "0 auto",
+                width: "100%",
+                maxWidth: isLanding ? "56rem" : "48rem",
+                top: isLanding ? "50%" : "100%",
+                transform: isLanding ? "translateY(-50%)" : "translateY(calc(-100% - 12px))",
+                transition: "top 500ms cubic-bezier(0.23,1,0.32,1), transform 500ms cubic-bezier(0.23,1,0.32,1), max-width 500ms cubic-bezier(0.23,1,0.32,1)",
+              }
+            : {}),
+          opacity: pendingPlan ? 0.4 : 1,
+          pointerEvents: pendingPlan ? "none" : undefined,
+        }}
+      >
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -2076,7 +2293,9 @@ export default function BluChat({
         <div
           className="rounded-xl px-4 pt-4 pb-3"
           style={{
-            border: `1px solid ${inputLocked ? "var(--border)" : "var(--border)"}`,
+            border: "2px solid var(--border)",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+            background: mode === "fullscreen" ? "var(--content-bg)" : undefined,
             opacity: inputLocked ? 0.45 : 1,
             pointerEvents: inputLocked ? "none" : undefined,
             transition: "opacity 0.25s ease",
@@ -2125,20 +2344,31 @@ export default function BluChat({
               {imagePreviews.map((img) => (
                 <div
                   key={img.id}
-                  className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg"
+                  className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl"
                   style={{ border: "1px solid var(--border)" }}
                 >
-                  <img src={img.url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxUrl(img.url)}
+                    className="block h-full w-full"
+                  >
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="h-full w-full object-cover transition-[filter] duration-500 ease-out"
+                      style={{ filter: img.uploading ? "blur(6px)" : "blur(0px)" }}
+                    />
+                  </button>
                   {img.uploading && (
-                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     </div>
                   )}
                   <button
-                    onClick={() => removeImagePreview(img.id)}
-                    className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); removeImagePreview(img.id); }}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
-                    <X size={9} />
+                    <X size={10} />
                   </button>
                 </div>
               ))}
@@ -2150,31 +2380,8 @@ export default function BluChat({
               return (
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute top-0 left-0 select-none text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 flex items-center gap-1 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
+                  className={`pointer-events-none absolute top-0 left-0 select-none text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
                 >
-                  {ph.shortcut && (
-                    <kbd
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minWidth: 18,
-                        height: 18,
-                        borderRadius: 4,
-                        padding: "0 5px",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        fontFamily: "monospace",
-                        background: "var(--muted)",
-                        color: "var(--icon)",
-                        border: "1px solid var(--border)",
-                        lineHeight: 1,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {ph.shortcut}
-                    </kbd>
-                  )}
                   {ph.text}
                 </span>
               );
@@ -2389,41 +2596,49 @@ export default function BluChat({
                 <button
                   type="button"
                   onClick={() => setModeOpen((open) => !open)}
-                  className={`inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors ${
+                  className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[filter] hover:brightness-95"
+                  style={
                     modeOpen
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                      : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10"
-                  }`}
+                      ? { background: "var(--state-selected)", color: "var(--state-selected-foreground)" }
+                      : { background: "var(--raised)", color: "var(--muted-foreground)" }
+                  }
                 >
                   <BookOpen size={12} />
                   {contextScope}
-                  <ChevronDown size={12} />
+                  <ChevronDown
+                    size={12}
+                    className="transition-transform duration-200 ease-out"
+                    style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0)" }}
+                  />
                 </button>
 
-                {modeOpen && (
-                  <div
-                    className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-36 overflow-hidden rounded-xl py-1 animate-card-in"
-                    style={{
-                      background: "var(--content-bg)",
-                      border: "1px solid var(--border)",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    {(["Project", "Org", "Thread"] as const).map((option) => (
+                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 flex w-full flex-col gap-1.5">
+                  {(["Project", "Org", "Thread"] as const).map((option, i) => {
+                    const isSelected = option === contextScope;
+                    const delay = modeOpen ? (2 - i) * 40 : 0;
+                    return (
                       <button
                         key={option}
+                        type="button"
                         onClick={() => { setContextScope(option); setModeOpen(false); }}
-                        className={`flex w-full items-center px-3.5 py-2 text-sm transition-colors ${
-                          option === contextScope
-                            ? "font-medium text-blue-600 dark:text-blue-400"
-                            : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/6"
-                        }`}
+                        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[filter] hover:brightness-95"
+                        style={{
+                          background: isSelected ? "var(--state-selected)" : "var(--raised)",
+                          color: isSelected ? "var(--state-selected-foreground)" : "var(--muted-foreground)",
+                          opacity: modeOpen ? 1 : 0,
+                          transform: modeOpen ? "translateY(0) scale(1)" : "translateY(10px) scale(0.92)",
+                          transitionProperty: "opacity, transform, filter",
+                          transitionDuration: "220ms",
+                          transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)",
+                          transitionDelay: `${delay}ms`,
+                          pointerEvents: modeOpen ? "auto" : "none",
+                        }}
                       >
                         {option}
                       </button>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
               <button
                 type="button"
@@ -2458,6 +2673,8 @@ export default function BluChat({
             </div>
           </div>
         </div>
+      </div>
+
       </div>}
 
       {/* Journey preview overlay */}
@@ -2466,6 +2683,23 @@ export default function BluChat({
           name={journeyPreviewName}
           onClose={() => setJourneyPreviewName(null)}
         />
+      )}
+
+      {/* Image lightbox */}
+      {lightboxUrl && (
+        <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/85 p-6 backdrop-blur-sm" onClick={() => setLightboxUrl(null)}>
+          <button
+            type="button"
+            aria-label="Close image"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute right-6 top-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur transition hover:scale-105 hover:bg-white/20"
+          >
+            <X size={22} />
+          </button>
+          <div className="relative h-full max-h-[86vh] w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <img src={lightboxUrl} alt="" className="h-full w-full object-contain" />
+          </div>
+        </div>
       )}
     </div>
   );

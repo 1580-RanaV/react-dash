@@ -12,6 +12,9 @@ import { useEffect, useState } from "react";
  *   Ripple — a drop hitting water: the center cell fires,
  *            then two concentric rings of cells fire outward
  *            after it, echoing Blu's whale/ocean mark
+ *   Beam   — a capital "I": the top flange fires, then the
+ *            middle stem, then the bottom flange, drawing the
+ *            letter stroke by stroke each cycle
  *
  * Each cell pulses opacity *and* scale together, eased with
  * the same soft-overshoot curve used for pop-ins elsewhere in
@@ -38,13 +41,20 @@ const ripple = Array.from({ length: 9 }, (_, i) => {
   return Math.round(dist * 140);
 });
 
-type Variant = "Drive" | "Dots" | "Orbit" | "Ripple";
+const beam = Array.from({ length: 9 }, (_, i) => {
+  const r = Math.floor(i / 3), c = i % 3;
+  if (r === 1 && c !== 1) return null; // sides of the middle row stay dark — only the stem lights there
+  return r * 300; // top flange, then the stem, then the bottom flange
+});
+
+type Variant = "Drive" | "Dots" | "Orbit" | "Ripple" | "Beam";
 
 const PATTERNS: Record<Variant, { delays: (number | null)[]; dur: number; round: boolean }> = {
   Drive: { delays: chevron, dur: 650, round: false },
   Dots: { delays: chevron, dur: 650, round: true },
   Orbit: { delays: orbit, dur: 950, round: false },
   Ripple: { delays: ripple, dur: 900, round: true },
+  Beam: { delays: beam, dur: 900, round: false },
 };
 
 function useElapsed() {
