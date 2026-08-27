@@ -60,7 +60,7 @@ import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
 import LoadingState from "./LoadingState";
 import { useBluMessages } from "./BluMessagesContext";
 import QueryStages from "./QueryStages";
-import CustomReportResult from "./CustomReportResult";
+import CustomReportResult, { DeclinedResult } from "./CustomReportResult";
 import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
 
 type MentionChip = {
@@ -121,12 +121,12 @@ const RUN_TASKS: RunTask[] = [
   { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
 ];
 
-function CustomReportBlock({ onSettled }: { onSettled?: () => void }) {
+function CustomReportBlock({ declined, onSettled }: { declined?: boolean; onSettled?: () => void }) {
   const [showChart, setShowChart] = useState(false);
   return (
     <div className="flex flex-col gap-4">
       <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
-      {showChart && <CustomReportResult />}
+      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult />)}
     </div>
   );
 }
@@ -549,6 +549,7 @@ export type ChatMessage = {
   execChecklist?: { steps: string[] };
   runTasks?: RunTask[];
   queryTrace?: boolean;
+  declined?: boolean;
   followUps?: string[];
 };
 
@@ -1267,6 +1268,7 @@ export default function BluChat({
     const runCount = runMatch ? Number(runMatch[1] ?? 1) : 0;
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCustomReport  = !overrideText && text.toLowerCase() === "custom-report";
+    const isCustomReportDeclined = !overrideText && text.toLowerCase() === "custom-report-declined";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -1317,7 +1319,7 @@ export default function BluChat({
         });
       } else if (isCreateRecipe) {
         next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
-      } else if (isCustomReport) {
+      } else if (isCustomReport || isCustomReportDeclined) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
@@ -1328,13 +1330,15 @@ export default function BluChat({
       return next;
     });
 
-    if (isCustomReport) {
+    if (isCustomReport || isCustomReportDeclined) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
           if (typingIdx === -1) return current;
           const next = [...current];
-          next[typingIdx] = { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, followUps: CUSTOM_REPORT_FOLLOW_UPS };
+          next[typingIdx] = isCustomReportDeclined
+            ? { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, declined: true }
+            : { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, followUps: CUSTOM_REPORT_FOLLOW_UPS };
           return next;
         });
       }, 1200);
@@ -1355,7 +1359,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1778,7 +1782,7 @@ export default function BluChat({
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.queryTrace ? (
-                <CustomReportBlock onSettled={() => setSettledReportIds((s) => new Set(s).add(msg.id))} />
+                <CustomReportBlock declined={msg.declined} onSettled={() => setSettledReportIds((s) => new Set(s).add(msg.id))} />
               ) : msg.isTyping ? (
                 <LoadingState label="Thinking" variant="Beam" />
               ) : msg.isStreaming && msg.role === "blu" ? (

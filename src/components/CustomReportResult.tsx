@@ -108,7 +108,7 @@ function AssumptionsPopover({ content }: { content: string }) {
       </button>
       {show && (
         <div
-          className="animate-tooltip-in absolute right-0 top-[calc(100%+8px)] z-200 w-95 max-w-[80vw] rounded-2xl p-4 text-[13px] leading-relaxed text-stone-700 dark:text-stone-200"
+          className="animate-tooltip-in absolute left-0 top-[calc(100%+8px)] z-200 w-95 max-w-[80vw] rounded-2xl p-4 text-[13px] leading-relaxed text-stone-700 dark:text-stone-200"
           style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)" }}
         >
           {content}
@@ -118,10 +118,44 @@ function AssumptionsPopover({ content }: { content: string }) {
   );
 }
 
+const DECLINED_REASON =
+  "I can't produce a reliable breakdown of page views and cart events by device type — this workspace doesn't track a device dimension on either event, so a per-device split would be a guess dressed up as a chart.";
+
+export function DeclinedResult() {
+  const tone = RESULT_STATE_TONE.declined;
+  return (
+    <div className="flex w-full flex-col gap-3">
+      <div className="flex items-center justify-start">
+        <span
+          className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+          style={{ background: tone.bg, color: tone.color }}
+        >
+          {tone.label}
+        </span>
+      </div>
+      <p className="text-sm leading-relaxed text-stone-700 dark:text-stone-200">{DECLINED_REASON}</p>
+      <div>
+        <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Suggested next step</p>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt: "custom-report" } }))}
+          className="-mx-1.5 mt-0.5 flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left text-sm text-stone-700 dark:text-stone-200 transition-colors duration-100 hover:bg-stone-100 dark:hover:bg-white/6"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-stone-400 dark:text-stone-500">
+            <path d="M9 10l-5 5 5 5" />
+            <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+          </svg>
+          Plot page views and cart events per day without the device breakdown
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ResultStateRow() {
   const tone = RESULT_STATE_TONE[RESULT_STATE];
   return (
-    <div className="mt-2 flex items-center justify-end gap-2">
+    <div className="mt-2 flex items-center justify-start gap-2">
       <span
         className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
         style={{ background: tone.bg, color: tone.color }}
