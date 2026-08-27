@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Download, Save, Table2, X } from "lucide-react";
+import { Check, Code2, Copy, Download, Info, Save, Table2, X } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import InfoTooltip from "./InfoTooltip";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { useBoards } from "./boards/boardsStore";
 
@@ -74,6 +73,65 @@ function fmtShare(value: number, total: number) {
 }
 
 const EXPORT_FORMATS = ["CSV", "PDF", "PNG"];
+const EMBED_EXPIRY_OPTIONS = ["7 days", "30 days", "90 days", "Never"] as const;
+
+/* ─────────────────────────────────────────────────────────
+ * RESULT STATE — one coherent confident / qualified / declined
+ * system (ANLYT-ADHOC-059), not three separate badge designs.
+ * Assumptions are what distinguish confident from qualified;
+ * a declined result has no assumptions to show, just the label.
+ * ───────────────────────────────────────────────────────── */
+type ResultState = "confident" | "qualified" | "declined";
+
+const RESULT_STATE: ResultState = "qualified";
+
+const ASSUMPTIONS_TEXT =
+  "Using the page-view event (id 12) and the cart-add event (id 47), both bucketed by their client-side timestamp converted to UTC — not server receipt time, so a session right at midnight can land in the adjacent day if the device clock is off. Internal team traffic (matched by workspace domain) and bot-filtered sessions are excluded before aggregation. Aug 25's bucket is still open — it closes at 23:59 UTC — so its totals will keep climbing until the day rolls over, and today's figures shouldn't be read as final.";
+
+const RESULT_STATE_TONE: Record<ResultState, { color: string; bg: string; label: string }> = {
+  confident: { color: "#16a34a", bg: "rgba(22,163,74,0.1)", label: "Confident" },
+  qualified: { color: "#ca8a04", bg: "rgba(202,138,4,0.1)", label: "Qualified" },
+  declined: { color: "#dc2626", bg: "rgba(220,38,38,0.1)", label: "Declined" },
+};
+
+function AssumptionsPopover({ content }: { content: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-flex" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+        style={{ background: "var(--raised)", border: "1px solid var(--border)" }}
+      >
+        Assumptions
+        <Info size={12} className="shrink-0" />
+      </button>
+      {show && (
+        <div
+          className="animate-tooltip-in absolute right-0 top-[calc(100%+8px)] z-200 w-95 max-w-[80vw] rounded-2xl p-4 text-[13px] leading-relaxed text-stone-700 dark:text-stone-200"
+          style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)" }}
+        >
+          {content}
+        </div>
+      )}
+    </span>
+  );
+}
+
+function ResultStateRow() {
+  const tone = RESULT_STATE_TONE[RESULT_STATE];
+  return (
+    <div className="mt-2 flex items-center justify-end gap-2">
+      <span
+        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+        style={{ background: tone.bg, color: tone.color }}
+      >
+        {tone.label}
+      </span>
+      {RESULT_STATE !== "declined" && <AssumptionsPopover content={ASSUMPTIONS_TEXT} />}
+    </div>
+  );
+}
 
 const TABLE_COLUMNS: TableColumn[] = [
   { key: "date", label: "Date", width: "110px" },
@@ -108,8 +166,32 @@ export default function CustomReportResult() {
   const [saved, setSaved] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState("Page views and cart events — last 30 days");
+  const [embedModalOpen, setEmbedModalOpen] = useState(false);
+  const [embedExpiry, setEmbedExpiry] = useState<(typeof EMBED_EXPIRY_OPTIONS)[number]>("30 days");
+  const [embedToken, setEmbedToken] = useState<string | null>(null);
+  const [embedCopied, setEmbedCopied] = useState<"url" | "snippet" | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const { addEntry } = useBoards();
+
+  const embedUrl = embedToken ? `https://embed.intempt.com/r/${embedToken}` : null;
+  const embedSnippet = embedUrl
+    ? `<iframe src="${embedUrl}" width="100%" height="480" frameborder="0"></iframe>`
+    : null;
+
+  function createEmbedLink() {
+    setEmbedToken(Date.now().toString(36));
+  }
+
+  function revokeEmbedLink() {
+    setEmbedToken(null);
+    setEmbedCopied(null);
+  }
+
+  function copyEmbed(kind: "url" | "snippet", text: string) {
+    navigator.clipboard.writeText(text);
+    setEmbedCopied(kind);
+    setTimeout(() => setEmbedCopied((c) => (c === kind ? null : c)), 2000);
+  }
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -145,21 +227,15 @@ export default function CustomReportResult() {
         <p className="mt-2 text-[13px] italic text-stone-400 dark:text-stone-500">
           Aug 25 shows 0 for both series and is likely still in progress, so today's figures are incomplete.
         </p>
+        <ResultStateRow />
       </div>
 
       <div className="rounded-xl px-5 py-4" style={{ border: "1px solid var(--border)", background: "var(--card)" }}>
         <p className="text-[15px] font-bold text-stone-900 dark:text-stone-100">
           plot page views and cart events per day over the last 30 days
         </p>
-        <p className="mt-1 flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500">
-          {REPORT_DATA[0].date} to {REPORT_DATA[REPORT_DATA.length - 1].date} · daily buckets · bucketed in UTC ·
-          <span className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2">
-            assumptions
-            <InfoTooltip
-              variant="plain"
-              content="Excludes internal team traffic and bot-filtered sessions. Days are bucketed by UTC midnight-to-midnight."
-            />
-          </span>
+        <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+          {REPORT_DATA[0].date} to {REPORT_DATA[REPORT_DATA.length - 1].date} · daily buckets · bucketed in UTC
         </p>
 
         <div className="mt-3 flex gap-3">
@@ -210,7 +286,6 @@ export default function CustomReportResult() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -265,6 +340,16 @@ export default function CustomReportResult() {
         >
           <Save size={13} className="shrink-0" />
           {saved ? "Saved" : "Save"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setEmbedModalOpen(true)}
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "#0080FF" }}
+        >
+          <Code2 size={13} className="shrink-0" />
+          Embed
         </button>
       </div>
 
@@ -353,6 +438,135 @@ export default function CustomReportResult() {
                 Save
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {embedModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm"
+          onClick={() => setEmbedModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl p-5 animate-card-in"
+            style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setEmbedModalOpen(false)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
+            >
+              <X size={14} />
+            </button>
+            <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">Embed report</p>
+            <p className="mt-1 pr-8 text-xs text-stone-400 dark:text-stone-500">
+              Generate a public link so this report can be embedded on another page.
+            </p>
+
+            {!embedUrl ? (
+              <>
+                <div className="mt-4">
+                  <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Link expires</label>
+                  <select
+                    value={embedExpiry}
+                    onChange={(e) => setEmbedExpiry(e.target.value as (typeof EMBED_EXPIRY_OPTIONS)[number])}
+                    className="mt-1.5 h-10 w-full rounded-lg border px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:text-stone-100"
+                    style={{ borderColor: "var(--border)", background: "var(--input)" }}
+                  >
+                    {EMBED_EXPIRY_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-5 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEmbedModalOpen(false)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={createEmbedLink}
+                    className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#0080FF" }}
+                  >
+                    Create embed link
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-4">
+                  <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Public URL</label>
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <input
+                      readOnly
+                      value={embedUrl}
+                      onFocus={(e) => e.target.select()}
+                      className="h-9 w-full min-w-0 rounded-lg border px-3 text-xs font-medium text-stone-700 outline-none dark:text-stone-200"
+                      style={{ borderColor: "var(--border)", background: "var(--input)" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyEmbed("url", embedUrl)}
+                      title="Copy link"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-stone-50 dark:hover:bg-white/6"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      {embedCopied === "url" ? <Check size={13} className="text-green-600" /> : <Copy size={13} className="text-stone-500 dark:text-stone-400" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Embed code</label>
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <pre
+                      className="h-9 w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-lg border px-3 text-[11px] leading-9 whitespace-nowrap text-stone-700 dark:text-stone-200"
+                      style={{ borderColor: "var(--border)", background: "var(--input)" }}
+                    >
+                      <code>{embedSnippet}</code>
+                    </pre>
+                    <button
+                      type="button"
+                      onClick={() => embedSnippet && copyEmbed("snippet", embedSnippet)}
+                      title="Copy code"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-stone-50 dark:hover:bg-white/6"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      {embedCopied === "snippet" ? <Check size={13} className="text-green-600" /> : <Copy size={13} className="text-stone-500 dark:text-stone-400" />}
+                    </button>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-[11px] italic text-stone-400 dark:text-stone-500">
+                  Expires in {embedExpiry.toLowerCase()}. Token refresh and granular sharing permissions are coming soon.
+                </p>
+
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={revokeEmbedLink}
+                    className="rounded-lg px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                  >
+                    Revoke access
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmbedModalOpen(false)}
+                    className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#0080FF" }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>,
         document.body

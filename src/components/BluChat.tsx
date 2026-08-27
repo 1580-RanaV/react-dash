@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  History,
   Search,
   BookOpen,
   UserRound,
@@ -28,7 +27,7 @@ import {
   PenTool,
   Package,
   Activity,
-  Pin,
+  Archive,
   Globe,
   Library,
   Database,
@@ -99,19 +98,9 @@ const MENTION_ITEMS: Record<string, string[]> = {
 
 type HistoryItem = { id: string; title: string; preview: string; time: string };
 
-const PINNED_HISTORY: HistoryItem[] = [
+const ARCHIVED_HISTORY: HistoryItem[] = [
   { id: "h1", title: "FieldsUSA Summer Campaign", preview: "Abandoned cart email — dark header, Anton headline, three cart rows with feed tags, red CTA", time: "2 days ago" },
   { id: "h2", title: "Q3 Email Templates", preview: "Four-part series: welcome, nurture, win-back, and re-engage — all using your brand kit", time: "Last week" },
-];
-
-const RECENT_HISTORY: HistoryItem[] = [
-  { id: "h3", title: "Product launch announcement", preview: "Launch copy for the new catalog integration — punchy, benefit-led, mobile-first layout", time: "2h ago" },
-  { id: "h4", title: "Welcome email series", preview: "Three-part onboarding sequence with progressive disclosure and personalised subject lines", time: "Yesterday" },
-  { id: "h5", title: "Post-purchase nurture flow", preview: "Five-email journey starting 24h after first order, pulling live order data from feed", time: "Yesterday" },
-  { id: "h6", title: "Win-back campaign copy", preview: "Re-engagement sequence targeting customers inactive for 90+ days with a discount hook", time: "2 days ago" },
-  { id: "h7", title: "Summer sale banner text", preview: "Headline variants for the hero banner — bold, punchy, benefit-led across three tones", time: "3 days ago" },
-  { id: "h8", title: "Onboarding email #1", preview: "First email in the welcome series focusing on product discovery and key features", time: "Last week" },
-  { id: "h9", title: "Abandoned cart — footwear", preview: "Recovery email for the footwear category with size-specific urgency copy and CTA", time: "Last week" },
 ];
 
 const PLAN_SAMPLE = `Create a new brand avatar: a distinguished South Asian male healthcare spokesperson in his 50s+ with a sharp, commanding personality, traditional-modern wardrobe blend, and authoritative yet approachable tone.
@@ -132,11 +121,11 @@ const RUN_TASKS: RunTask[] = [
   { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
 ];
 
-function CustomReportBlock() {
+function CustomReportBlock({ onSettled }: { onSettled?: () => void }) {
   const [showChart, setShowChart] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      <QueryStages onSettled={() => setTimeout(() => setShowChart(true), 400)} />
+      <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
       {showChart && <CustomReportResult />}
     </div>
   );
@@ -560,6 +549,7 @@ export type ChatMessage = {
   execChecklist?: { steps: string[] };
   runTasks?: RunTask[];
   queryTrace?: boolean;
+  followUps?: string[];
 };
 
 
@@ -636,6 +626,27 @@ const BLU_REPLIES = [
   "I can do that! Give me just a sec.",
   "All good — working on it.",
 ];
+
+const GENERAL_FOLLOW_UPS = [
+  "Make it more concise",
+  "Try a bolder headline",
+  "Show me another variation",
+];
+
+const CUSTOM_REPORT_FOLLOW_UPS = [
+  "Which day had the strongest cart-to-view ratio",
+  "How does this compare to the previous 30 days",
+  "Break this down by traffic source",
+];
+
+function FollowUpArrow() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-stone-400 dark:text-stone-500">
+      <path d="M9 10l-5 5 5 5" />
+      <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+    </svg>
+  );
+}
 
 type Placeholder = { text: string };
 const PLACEHOLDERS: Placeholder[] = [
@@ -731,6 +742,11 @@ export default function BluChat({
   const activeThreadTitle = activeThread?.title ?? "New chat";
   const [threadSwitcherOpen, setThreadSwitcherOpen] = useState(false);
   const threadSwitcherRef = useRef<HTMLDivElement>(null);
+  const [threadSwitcherSearch, setThreadSwitcherSearch] = useState("");
+  const [settledReportIds, setSettledReportIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!threadSwitcherOpen) setThreadSwitcherSearch("");
+  }, [threadSwitcherOpen]);
   const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [reactionMenuId, setReactionMenuId] = useState<string | null>(null);
@@ -1318,7 +1334,7 @@ export default function BluChat({
           const typingIdx = current.findIndex((m) => m.isTyping);
           if (typingIdx === -1) return current;
           const next = [...current];
-          next[typingIdx] = { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true };
+          next[typingIdx] = { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, followUps: CUSTOM_REPORT_FOLLOW_UPS };
           return next;
         });
       }, 1200);
@@ -1351,6 +1367,7 @@ export default function BluChat({
             role: "blu",
             text: BLU_REPLIES[generalReplyIndex % BLU_REPLIES.length],
             isStreaming: true,
+            followUps: GENERAL_FOLLOW_UPS,
           };
           return next;
         });
@@ -1481,7 +1498,17 @@ export default function BluChat({
                   transition: "opacity 180ms cubic-bezier(0.23,1,0.32,1), transform 180ms cubic-bezier(0.23,1,0.32,1)",
                 }}
               >
-                <div className="p-1.5">
+                <div className="flex flex-col gap-1.5 p-1.5">
+                  <div className="relative">
+                    <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="text"
+                      value={threadSwitcherSearch}
+                      onChange={(e) => setThreadSwitcherSearch(e.target.value)}
+                      placeholder="Search chats..."
+                      className="h-8 w-full rounded-lg border border-stone-200 bg-stone-50 pl-8 pr-3 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-blue-400 dark:border-(--border) dark:bg-white/4 dark:text-stone-100 dark:placeholder:text-stone-500"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => { createThread(); setThreadSwitcherOpen(false); }}
@@ -1491,8 +1518,10 @@ export default function BluChat({
                     New chat
                   </button>
                 </div>
-                <div className="max-h-64 overflow-y-auto px-1.5 pb-1.5">
-                  {threads.map((t) => {
+                <div className="max-h-64 overflow-y-auto chat-scroll px-1.5 pb-1.5">
+                  {threads
+                    .filter((t) => (t.title ?? "New chat").toLowerCase().includes(threadSwitcherSearch.toLowerCase()))
+                    .map((t) => {
                       const isActive = t.id === activeThreadId;
                       return (
                         <button
@@ -1584,7 +1613,7 @@ export default function BluChat({
                 : "hover:bg-stone-100 dark:hover:bg-white/8 text-stone-400"
             }`}
           >
-            <History size={13} />
+            <Archive size={13} />
           </button>
           <button
             onClick={onClose}
@@ -1614,14 +1643,14 @@ export default function BluChat({
 
           <div className="flex-1 overflow-y-auto chat-scroll pb-3">
           <div className={mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}>
-            {/* Pinned */}
-            {PINNED_HISTORY.filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase())).length > 0 && (
+            {/* Archived */}
+            {ARCHIVED_HISTORY.filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase())).length > 0 && (
               <>
                 <div className="flex items-center gap-1.5 px-4 pb-1 pt-3">
-                  <Pin size={13} className="text-stone-400 dark:text-stone-500" />
-                  <p className="text-sm font-semibold text-stone-400 dark:text-stone-500">Pinned</p>
+                  <Archive size={13} className="text-stone-400 dark:text-stone-500" />
+                  <p className="text-sm font-semibold text-stone-400 dark:text-stone-500">Archived</p>
                 </div>
-                {PINNED_HISTORY
+                {ARCHIVED_HISTORY
                   .filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase()))
                   .map((item) => (
                     <button
@@ -1639,35 +1668,10 @@ export default function BluChat({
               </>
             )}
 
-            {/* Recent */}
-            {RECENT_HISTORY.filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase())).length > 0 && (
-              <>
-                <div className="flex items-center gap-1.5 px-4 pb-1 pt-4">
-                  <History size={13} className="text-stone-400 dark:text-stone-500" />
-                  <p className="text-sm font-semibold text-stone-400 dark:text-stone-500">Recent</p>
-                </div>
-                {RECENT_HISTORY
-                  .filter((h) => !historySearch || h.title.toLowerCase().includes(historySearch.toLowerCase()))
-                  .map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setHistoryOpen(false)}
-                      className="group w-full text-left px-4 py-2.5 transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="truncate text-sm font-medium text-stone-700 dark:text-stone-200">{item.title}</p>
-                        <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500 pt-px">{item.time}</span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-stone-400 dark:text-stone-500">{item.preview}</p>
-                    </button>
-                  ))}
-              </>
-            )}
-
             {/* Empty state */}
-            {!PINNED_HISTORY.concat(RECENT_HISTORY).some((h) => h.title.toLowerCase().includes(historySearch.toLowerCase())) && (
+            {!ARCHIVED_HISTORY.some((h) => h.title.toLowerCase().includes(historySearch.toLowerCase())) && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <History size={24} className="mb-3 text-stone-300 dark:text-stone-600" />
+                <Archive size={24} className="mb-3 text-stone-300 dark:text-stone-600" />
                 <p className="text-sm font-medium text-stone-500 dark:text-stone-400">No results for "{historySearch}"</p>
               </div>
             )}
@@ -1774,7 +1778,7 @@ export default function BluChat({
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.queryTrace ? (
-                <CustomReportBlock />
+                <CustomReportBlock onSettled={() => setSettledReportIds((s) => new Set(s).add(msg.id))} />
               ) : msg.isTyping ? (
                 <LoadingState label="Thinking" variant="Beam" />
               ) : msg.isStreaming && msg.role === "blu" ? (
@@ -1919,7 +1923,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {!msg.feedbackForm && !msg.runTasks && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
-                <div className={`mt-1 flex w-full items-center gap-1 transition-opacity justify-start ${
+                <div className={`mt-2.5 flex w-full items-center gap-1 transition-opacity justify-start ${
                   msg.role === "blu" && msg.id === latestCompletedBluId
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
@@ -2035,6 +2039,26 @@ export default function BluChat({
                     </div>
                     </>
                   )}
+                </div>
+              )}
+              {msg.role === "blu" && !msg.isTyping && !msg.isStreaming && (!msg.queryTrace || settledReportIds.has(msg.id)) &&
+                msg.followUps && msg.followUps.length > 0 && (
+                <div className="mt-2.5">
+                  <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Follow-ups</p>
+                  <div className="mt-0.5 flex flex-col">
+                    {msg.followUps.slice(0, 3).map((q, i) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => sendMessage(q)}
+                        className="-mx-1.5 flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left text-sm text-stone-700 dark:text-stone-200 transition-colors duration-100 hover:bg-stone-100 dark:hover:bg-white/6"
+                        style={{ animation: `fade-up 350ms cubic-bezier(0.23,1,0.32,1) ${i * 90}ms both` }}
+                      >
+                        <FollowUpArrow />
+                        {q}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -2599,8 +2623,8 @@ export default function BluChat({
                   className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[filter] hover:brightness-95"
                   style={
                     modeOpen
-                      ? { background: "var(--state-selected)", color: "var(--state-selected-foreground)" }
-                      : { background: "var(--raised)", color: "var(--muted-foreground)" }
+                      ? { background: "var(--state-selected)", color: "var(--state-selected-foreground)", border: "1px solid var(--state-selected)", boxShadow: "0 2px 6px rgba(0,0,0,0.08)" }
+                      : { background: "var(--raised)", color: "var(--muted-foreground)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
                   }
                 >
                   <BookOpen size={12} />
@@ -2625,6 +2649,8 @@ export default function BluChat({
                         style={{
                           background: isSelected ? "var(--state-selected)" : "var(--raised)",
                           color: isSelected ? "var(--state-selected-foreground)" : "var(--muted-foreground)",
+                          border: isSelected ? "1px solid var(--state-selected)" : "1px solid var(--border)",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
                           opacity: modeOpen ? 1 : 0,
                           transform: modeOpen ? "translateY(0) scale(1)" : "translateY(10px) scale(0.92)",
                           transitionProperty: "opacity, transform, filter",

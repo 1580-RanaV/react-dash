@@ -62,6 +62,56 @@ const SEED_THREADS: BluThread[] = [
       { id: "h4-b", role: "blu", text: "Put together the three-part series — each email reveals one new feature, and subject lines pull in first name and signup source." },
     ],
   },
+  {
+    id: "h5",
+    title: "Post-purchase nurture flow",
+    time: "1d",
+    sessionTime: "Yesterday 9:52 AM",
+    messages: [
+      { id: "h5-u", role: "user", text: "Build a five-email post-purchase flow starting 24h after the order, pulling in live order data from the feed." },
+      { id: "h5-b", role: "blu", text: "Built the five-email flow — order confirmation recap, shipping update, usage tips, review request, and a cross-sell send pulling from the order's category." },
+    ],
+  },
+  {
+    id: "h6",
+    title: "Win-back campaign copy",
+    time: "2d",
+    sessionTime: "2 days ago 3:08 PM",
+    messages: [
+      { id: "h6-u", role: "user", text: "Write win-back copy targeting customers inactive for 90+ days, with a discount hook." },
+      { id: "h6-b", role: "blu", text: "Drafted the win-back sequence — nostalgia-led opener, a time-boxed discount code, and a low-friction one-click reactivation CTA." },
+    ],
+  },
+  {
+    id: "h7",
+    title: "Summer sale banner text",
+    time: "3d",
+    sessionTime: "3 days ago 1:15 PM",
+    messages: [
+      { id: "h7-u", role: "user", text: "Give me three headline variants for the summer sale hero banner — bold, punchy, benefit-led." },
+      { id: "h7-b", role: "blu", text: "Here are three variants ranging from urgency-led to benefit-led, all sized for the hero banner's character limit." },
+    ],
+  },
+  {
+    id: "h8",
+    title: "Onboarding email #1",
+    time: "1w",
+    sessionTime: "Last week 11:30 AM",
+    messages: [
+      { id: "h8-u", role: "user", text: "Draft the first onboarding email — focus on product discovery and key features." },
+      { id: "h8-b", role: "blu", text: "Drafted it — leads with the single most-used feature, then a lightweight tour of two more, closing with a getting-started CTA." },
+    ],
+  },
+  {
+    id: "h9",
+    title: "Abandoned cart — footwear",
+    time: "1w",
+    sessionTime: "Last week 8:44 AM",
+    messages: [
+      { id: "h9-u", role: "user", text: "Recovery email for the footwear category, with size-specific urgency copy." },
+      { id: "h9-b", role: "blu", text: "Built it — cart rows pull live size and stock data from the feed, with a low-stock nudge only shown when the saved size is running out." },
+    ],
+  },
 ];
 
 type BluMessagesContextValue = {
