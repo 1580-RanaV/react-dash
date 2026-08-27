@@ -27,6 +27,7 @@ import RecipeCanvasView from "./components/RecipeCanvasView";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
 import HomeView from "./components/HomeView";
 import HomeOnboardingView from "./components/HomeOnboardingView";
+import InviteView from "./components/InviteView";
 import LogoLoaderView from "./components/LogoLoaderView";
 
 function RecipeCanvasPage() {
@@ -138,6 +139,9 @@ export default function App() {
 
           {/* Home onboarding — full page, no DashboardShell */}
           <Route path="/home/onb" element={<HomeOnboardingView />} />
+
+          {/* Invite acceptance — full page, no DashboardShell */}
+          <Route path="/invite" element={<InviteView />} />
 
           {/* Logo loader experiment — full page, no DashboardShell */}
           <Route path="/loader" element={<LogoLoaderView />} />

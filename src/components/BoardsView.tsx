@@ -1,8 +1,9 @@
 
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, ChevronDown, CreditCard, Filter, Globe, HandCoins, HistoryIcon, Info, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingDown, TrendingUp, UserPlus, Users } from "lucide-react";
+import { Activity, Check, ChevronDown, Code2, Copy, CreditCard, Filter, Globe, HandCoins, HistoryIcon, Info, LayoutDashboard, Pencil, Plus, RotateCcw, Trash2, TrendingDown, TrendingUp, UserPlus, Users, X } from "lucide-react";
 import {
   AreaChart, Area, ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid,
@@ -645,6 +646,249 @@ function defaultHref(entry: BoardEntry) {
   return `/boards/${entry.id}`;
 }
 
+const TODAY_ISO = "2026-08-20";
+const EMBED_EXPIRY_OPTIONS: { label: string; days: number | null }[] = [
+  { label: "7 days", days: 7 },
+  { label: "30 days", days: 30 },
+  { label: "90 days", days: 90 },
+  { label: "Never", days: null },
+];
+const EMBED_EXTEND_CHOICES = [
+  { label: "+ 7 days", days: 7 },
+  { label: "+ 30 days", days: 30 },
+  { label: "+ 90 days", days: 90 },
+];
+
+function addDaysIso(iso: string, days: number) {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function fmtIsoDate(iso: string) {
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function ManageEmbedModal({
+  entry,
+  onClose,
+  onUpdate,
+}: {
+  entry: BoardEntry;
+  onClose: () => void;
+  onUpdate: (embed: BoardEntry["embed"]) => void;
+}) {
+  const [newExpiryDays, setNewExpiryDays] = useState<number | null>(30);
+  const [copied, setCopied] = useState<"url" | "snippet" | null>(null);
+  const [selectedExtend, setSelectedExtend] = useState<number | null>(null);
+  const [justExtended, setJustExtended] = useState(false);
+
+  function copy(kind: "url" | "snippet", text: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(kind);
+    setTimeout(() => setCopied((c) => (c === kind ? null : c)), 2000);
+  }
+
+  function create() {
+    onUpdate({
+      url: `https://embed.intempt.com/r/${Date.now().toString(36)}`,
+      expiresOn: newExpiryDays === null ? null : addDaysIso(TODAY_ISO, newExpiryDays),
+    });
+  }
+
+  function applyExtend() {
+    if (selectedExtend === null || !entry.embed) return;
+    onUpdate({
+      url: `https://embed.intempt.com/r/${Date.now().toString(36)}`,
+      expiresOn: addDaysIso(entry.embed.expiresOn ?? TODAY_ISO, selectedExtend),
+    });
+    setSelectedExtend(null);
+    setJustExtended(true);
+  }
+
+  const snippet = entry.embed ? `<iframe src="${entry.embed.url}" width="100%" height="480" frameborder="0"></iframe>` : null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative w-full max-w-md rounded-2xl p-6 animate-card-in"
+        style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
+        >
+          <X size={14} />
+        </button>
+        <div className="flex items-center gap-2 pr-8">
+          <p className="text-base font-semibold text-stone-900 dark:text-stone-100">Manage embed</p>
+          {entry.embed && (
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              style={{ background: "rgba(22,163,74,0.1)", color: "#16a34a" }}
+            >
+              Active
+            </span>
+          )}
+        </div>
+        <p className="mt-1 truncate pr-8 text-xs text-stone-400 dark:text-stone-500">{entry.title}</p>
+
+        {!entry.embed ? (
+          <>
+            <p className="mt-5 text-xs text-stone-500 dark:text-stone-400">No active embed for this report yet.</p>
+            <div className="mt-5">
+              <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Link expires</label>
+              <select
+                value={String(newExpiryDays)}
+                onChange={(e) => setNewExpiryDays(e.target.value === "null" ? null : Number(e.target.value))}
+                className="mt-1.5 h-10 w-full rounded-lg border px-3 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:text-stone-100"
+                style={{ borderColor: "var(--border)", background: "var(--input)" }}
+              >
+                {EMBED_EXPIRY_OPTIONS.map((opt) => (
+                  <option key={opt.label} value={String(opt.days)}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={create}
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                Create embed link
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mt-5">
+              <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Public URL</label>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <input
+                  readOnly
+                  value={entry.embed.url}
+                  onFocus={(e) => e.target.select()}
+                  className="h-9 w-full min-w-0 rounded-lg border px-3 text-xs font-medium text-stone-700 outline-none dark:text-stone-200"
+                  style={{ borderColor: "var(--border)", background: "var(--input)" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => copy("url", entry.embed!.url)}
+                  title="Copy link"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-stone-50 dark:hover:bg-white/6"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  {copied === "url" ? <Check size={13} className="text-green-600" /> : <Copy size={13} className="text-stone-500 dark:text-stone-400" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Embed code</label>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <pre
+                  className="h-9 w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-lg border px-3 text-[11px] leading-9 whitespace-nowrap text-stone-700 dark:text-stone-200"
+                  style={{ borderColor: "var(--border)", background: "var(--input)" }}
+                >
+                  <code>{snippet}</code>
+                </pre>
+                <button
+                  type="button"
+                  onClick={() => snippet && copy("snippet", snippet)}
+                  title="Copy code"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-stone-50 dark:hover:bg-white/6"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  {copied === "snippet" ? <Check size={13} className="text-green-600" /> : <Copy size={13} className="text-stone-500 dark:text-stone-400" />}
+                </button>
+              </div>
+            </div>
+
+            {justExtended && (
+              <div
+                className="mt-4 rounded-lg px-3 py-2.5 text-xs leading-relaxed"
+                style={{ background: "rgba(0,128,255,0.06)", color: "#0080FF" }}
+              >
+                The embed URL has been updated. Replace it with the new URL above to keep using the embed.
+              </div>
+            )}
+
+            <div className="mt-5">
+              <p className="text-sm font-medium text-stone-800 dark:text-stone-100">
+                {entry.embed.expiresOn ? `Expires on: ${fmtIsoDate(entry.embed.expiresOn)}` : "Never expires"}
+              </p>
+              {entry.embed.expiresOn && (
+                <div className="mt-2.5 flex flex-col gap-1">
+                  {EMBED_EXTEND_CHOICES.map((choice) => {
+                    const isSelected = selectedExtend === choice.days;
+                    return (
+                      <button
+                        key={choice.label}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => { setSelectedExtend(choice.days); setJustExtended(false); }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
+                        style={{ background: isSelected ? "rgba(0,128,255,0.08)" : "transparent" }}
+                      >
+                        <span
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                          style={{
+                            borderColor: isSelected ? "#0080FF" : "var(--border)",
+                            background: isSelected ? "#0080FF" : "transparent",
+                          }}
+                        >
+                          {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </span>
+                        <span className={`flex-1 text-sm font-semibold ${isSelected ? "text-blue-600 dark:text-blue-400" : "text-stone-800 dark:text-stone-100"}`}>
+                          {choice.label}
+                        </span>
+                        <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500">
+                          {fmtIsoDate(addDaysIso(entry.embed!.expiresOn ?? TODAY_ISO, choice.days))}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => onUpdate(null)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#dc2626" }}
+              >
+                Revoke access
+              </button>
+              <button
+                type="button"
+                onClick={selectedExtend !== null ? applyExtend : onClose}
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                {selectedExtend !== null ? "Extend" : "Done"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function BoardsView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -657,6 +901,7 @@ export default function BoardsView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [embedTargetId, setEmbedTargetId] = useState<string | null>(null);
 
   function startEditing(id: string) { setEditingId(id); }
   function saveEdit(id: string, newTitle: string) {
@@ -669,9 +914,12 @@ export default function BoardsView() {
   function menuItemsFor(entry: BoardEntry): ThreeDotsMenuItem[] {
     return [
       { label: "Rename", icon: Pencil, onClick: () => startEditing(entry.id) },
+      ...(entry.type === "blu-report" ? [{ label: "Manage embed", icon: Code2, onClick: () => setEmbedTargetId(entry.id) }] : []),
       { label: "Delete", icon: Trash2, tone: "danger", onClick: () => setDeleteTarget({ id: entry.id, title: entry.title }) },
     ];
   }
+
+  const embedTarget = embedTargetId ? entries.find((e) => e.id === embedTargetId) ?? null : null;
 
   const filtered = activeTab === "all" ? entries : entries.filter((e) => e.type === activeTab);
 
@@ -691,7 +939,20 @@ export default function BoardsView() {
     cells: {
       title: editingId === entry.id
         ? <InlineEditor value={entry.title} onSave={(val) => saveEdit(entry.id, val)} onCancel={cancelEdit} />
-        : entry.title,
+        : (
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{entry.title}</span>
+            {entry.embed && (
+              <span
+                title="Embed active"
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "var(--raised)", border: "1px solid var(--border)" }}
+              >
+                <Code2 size={11} className="text-stone-400 dark:text-stone-500" />
+              </span>
+            )}
+          </span>
+        ),
       type: <TypeBadge type={entry.type} />,
       lastUpdated: entry.lastUpdated,
       createdBy: <UserAvatar {...entry.createdBy} />,
@@ -742,6 +1003,13 @@ export default function BoardsView() {
             setDeleteTarget(null);
           }}
           onClose={() => setDeleteTarget(null)}
+        />
+      )}
+      {embedTarget && (
+        <ManageEmbedModal
+          entry={embedTarget}
+          onClose={() => setEmbedTargetId(null)}
+          onUpdate={(embed) => setEntries((prev) => prev.map((e) => (e.id === embedTarget.id ? { ...e, embed } : e)))}
         />
       )}
     </div>
