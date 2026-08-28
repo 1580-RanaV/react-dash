@@ -6,6 +6,7 @@ import { Menu, Workflow, Waypoints } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
 import { BluMessagesProvider } from "./BluMessagesContext";
 import { BoardsProvider } from "./boards/boardsStore";
+import { HomeWidgetsProvider } from "./homeWidgets/homeWidgetsStore";
 import NotificationsMenu from "./NotificationsMenu";
 import ProfileMenu from "./ProfileMenu";
 import Sidebar from "./Sidebar";
@@ -293,6 +294,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   return (
     <BoardsProvider>
+    <HomeWidgetsProvider>
     <BluMessagesProvider>
       {/* Floating window portal */}
       {bluOpen && bluMode === "float" && createPortal(
@@ -393,6 +395,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </div>
     </div>
     </BluMessagesProvider>
+    </HomeWidgetsProvider>
     </BoardsProvider>
   );
 }

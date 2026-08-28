@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Code2, Copy, Download, Info, Save, Table2, X } from "lucide-react";
+import { Check, Code2, Copy, Download, Info, LayoutDashboard, Save, Table2, X } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { useBoards } from "./boards/boardsStore";
+import { useHomeWidgets, type HomeWidgetTab, type HomeWidgetWidth } from "./homeWidgets/homeWidgetsStore";
 
 /* ─────────────────────────────────────────────────────────
  * CUSTOM REPORT RESULT — the narrative + chart artifact
@@ -77,6 +78,18 @@ function fmtShare(value: number, total: number) {
 
 const EXPORT_FORMATS = ["CSV", "PDF", "PNG"];
 const EMBED_EXPIRY_OPTIONS = ["7 days", "30 days", "90 days", "Never"] as const;
+
+const DASHBOARD_TAB_CHOICES: { key: HomeWidgetTab; label: string }[] = [
+  { key: "design", label: "Design" },
+  { key: "sales", label: "Sales" },
+  { key: "analytics", label: "Analytics" },
+  { key: "marketing", label: "Marketing" },
+];
+
+const DASHBOARD_WIDTH_CHOICES: { key: HomeWidgetWidth; label: string; hint: string }[] = [
+  { key: "full", label: "Full width", hint: "Spans the entire row" },
+  { key: "half", label: "Half width", hint: "Sits side-by-side with another card" },
+];
 
 /* ─────────────────────────────────────────────────────────
  * RESULT STATE — one coherent confident / qualified / declined
@@ -196,6 +209,22 @@ const TABLE_ROWS: TableRow[] = REPORT_DATA.map((row, i) => {
   };
 });
 
+export function ReportChartPreview() {
+  return (
+    <div className="h-36 w-full pointer-events-none">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={REPORT_DATA} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+          <XAxis dataKey="date" tickFormatter={fmtShort} tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={5} />
+          <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+          <Line type="monotone" dataKey="view" stroke="var(--chart-1)" strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="cart" stroke="var(--chart-2)" strokeWidth={2} dot={false} isAnimationActive={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export default function CustomReportResult({ extraEvent = false }: { extraEvent?: boolean }) {
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -207,8 +236,13 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
   const [embedExpiry, setEmbedExpiry] = useState<(typeof EMBED_EXPIRY_OPTIONS)[number]>("30 days");
   const [embedToken, setEmbedToken] = useState<string | null>(null);
   const [embedCopied, setEmbedCopied] = useState<"url" | "snippet" | null>(null);
+  const [addToDashboardOpen, setAddToDashboardOpen] = useState(false);
+  const [dashboardStep, setDashboardStep] = useState<"board" | "width">("board");
+  const [dashboardTab, setDashboardTab] = useState<HomeWidgetTab | null>(null);
+  const [addedToDashboard, setAddedToDashboard] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const { addEntry } = useBoards();
+  const { addEntry: addHomeWidget } = useHomeWidgets();
 
   const embedUrl = embedToken ? `https://embed.intempt.com/r/${embedToken}` : null;
   const embedSnippet = embedUrl
@@ -248,6 +282,30 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
     });
     setSaved(true);
     setSaveModalOpen(false);
+  }
+
+  function openAddToDashboard() {
+    setDashboardStep("board");
+    setDashboardTab(null);
+    setAddToDashboardOpen(true);
+  }
+
+  function chooseDashboardTab(tab: HomeWidgetTab) {
+    setDashboardTab(tab);
+    setTimeout(() => setDashboardStep("width"), 250);
+  }
+
+  function chooseDashboardWidth(width: HomeWidgetWidth) {
+    if (!dashboardTab) return;
+    addHomeWidget({
+      id: `home-widget-${Date.now()}`,
+      title: saveName.trim() || "Untitled Blu report",
+      tab: dashboardTab,
+      width,
+    });
+    setAddToDashboardOpen(false);
+    setAddedToDashboard(true);
+    setTimeout(() => setAddedToDashboard(false), 2000);
   }
 
   return (
@@ -405,6 +463,16 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
         >
           <Code2 size={13} className="shrink-0" />
           Embed
+        </button>
+
+        <button
+          type="button"
+          onClick={openAddToDashboard}
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "#0080FF" }}
+        >
+          {addedToDashboard ? <Check size={13} className="shrink-0" /> : <LayoutDashboard size={13} className="shrink-0" />}
+          {addedToDashboard ? "Added" : "Add to dashboard"}
         </button>
       </div>
 
@@ -621,6 +689,72 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
                   </button>
                 </div>
               </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {addToDashboardOpen && createPortal(
+        <div
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm"
+          onClick={() => setAddToDashboardOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-sm overflow-hidden rounded-2xl p-5 animate-card-in"
+            style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setAddToDashboardOpen(false)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
+            >
+              <X size={14} />
+            </button>
+
+            {dashboardStep === "board" ? (
+              <div key="board" className="animate-fade-up">
+                <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">Add to dashboard</p>
+                <p className="mt-1 pr-8 text-xs text-stone-400 dark:text-stone-500">Choose which Home tab to add this report to.</p>
+                <div className="mt-4 flex flex-col gap-1">
+                  {DASHBOARD_TAB_CHOICES.map((choice) => (
+                    <button
+                      key={choice.key}
+                      type="button"
+                      onClick={() => chooseDashboardTab(choice.key)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: "var(--border)" }} />
+                      <span className="flex-1 text-sm font-semibold text-stone-800 dark:text-stone-100">{choice.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div key="width" className="animate-fade-up">
+                <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">Choose a size</p>
+                <p className="mt-1 pr-8 text-xs text-stone-400 dark:text-stone-500">
+                  How much room should this take on the {DASHBOARD_TAB_CHOICES.find((c) => c.key === dashboardTab)?.label} tab?
+                </p>
+                <div className="mt-4 flex flex-col gap-1">
+                  {DASHBOARD_WIDTH_CHOICES.map((choice) => (
+                    <button
+                      key={choice.key}
+                      type="button"
+                      onClick={() => chooseDashboardWidth(choice.key)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/4"
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2" style={{ borderColor: "var(--border)" }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{choice.label}</p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500">{choice.hint}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>,

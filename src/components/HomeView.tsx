@@ -10,6 +10,8 @@ import InfoTooltip from "./InfoTooltip";
 import HeroVideo from "./HeroVideo";
 import RecentDesigns from "./RecentDesigns";
 import RevenueMetricCard from "./MetricCard";
+import { useHomeWidgets } from "./homeWidgets/homeWidgetsStore";
+import HomeWidgetCard from "./homeWidgets/HomeWidgetCard";
 import {
   ComposedChart, Bar, Line, AreaChart, Area, LabelList, PieChart, Pie, Cell,
   XAxis, YAxis, ZAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
@@ -1686,6 +1688,8 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.analytics;
+  const homeWidgets = useHomeWidgets();
+  const analyticsWidgets = homeWidgets.entries.filter((w) => w.tab === "analytics");
 
   return (
     <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
@@ -1948,6 +1952,14 @@ function AnalyticsFullDashboard({ noData = false }: { noData?: boolean }) {
           )}
         </SectionCard>
       </div>
+
+      {analyticsWidgets.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {analyticsWidgets.map((w) => (
+            <HomeWidgetCard key={w.id} entry={w} onRemove={() => homeWidgets.removeEntry(w.id)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -4130,6 +4142,8 @@ function DesignHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.design;
+  const homeWidgets = useHomeWidgets();
+  const designWidgets = homeWidgets.entries.filter((w) => w.tab === "design");
 
   return (
     <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
@@ -4178,6 +4192,14 @@ function DesignHomeDashboard({ noData = false }: { noData?: boolean }) {
         <DesignLatestGenerationsCard noData={noData} />
         <DesignAdoptionMixCard noData={noData} />
       </div>
+
+      {designWidgets.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {designWidgets.map((w) => (
+            <HomeWidgetCard key={w.id} entry={w} onRemove={() => homeWidgets.removeEntry(w.id)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -4186,6 +4208,8 @@ function MarketingHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.marketing;
+  const homeWidgets = useHomeWidgets();
+  const marketingWidgets = homeWidgets.entries.filter((w) => w.tab === "marketing");
 
   return (
     <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
@@ -4241,6 +4265,14 @@ function MarketingHomeDashboard({ noData = false }: { noData?: boolean }) {
       </div>
 
       {/* <MarketingSegmentMapCard /> */}
+
+      {marketingWidgets.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {marketingWidgets.map((w) => (
+            <HomeWidgetCard key={w.id} entry={w} onRemove={() => homeWidgets.removeEntry(w.id)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -4394,6 +4426,8 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
   const [videoOpen, setVideoOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const videoSrc = TAB_VIDEOS.sales;
+  const homeWidgets = useHomeWidgets();
+  const salesWidgets = homeWidgets.entries.filter((w) => w.tab === "sales");
 
   return (
     <div className="max-w-full overflow-x-hidden px-4 pb-4 pt-4 space-y-3 animate-fade-up">
@@ -4621,6 +4655,14 @@ function SalesHomeDashboard({ noData = false }: { noData?: boolean }) {
           )}
         </SectionCard>
       </div>
+
+      {salesWidgets.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {salesWidgets.map((w) => (
+            <HomeWidgetCard key={w.id} entry={w} onRemove={() => homeWidgets.removeEntry(w.id)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
