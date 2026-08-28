@@ -12,49 +12,52 @@ import { useBoards } from "./boards/boardsStore";
  * rendered after QueryStages settles for a "custom-report".
  * ───────────────────────────────────────────────────────── */
 
-type DayPoint = { date: string; view: number; cart: number };
+type DayPoint = { date: string; view: number; cart: number; signup: number };
 
 const REPORT_DATA: DayPoint[] = [
-  { date: "2026-07-26", view: 26, cart: 5 },
-  { date: "2026-07-27", view: 21, cart: 4 },
-  { date: "2026-07-28", view: 25, cart: 5 },
-  { date: "2026-07-29", view: 15, cart: 4 },
-  { date: "2026-07-30", view: 11, cart: 1 },
-  { date: "2026-07-31", view: 39, cart: 4 },
-  { date: "2026-08-01", view: 24, cart: 4 },
-  { date: "2026-08-02", view: 36, cart: 0 },
-  { date: "2026-08-03", view: 54, cart: 5 },
-  { date: "2026-08-04", view: 26, cart: 4 },
-  { date: "2026-08-05", view: 21, cart: 3 },
-  { date: "2026-08-06", view: 24, cart: 3 },
-  { date: "2026-08-07", view: 23, cart: 3 },
-  { date: "2026-08-08", view: 30, cart: 5 },
-  { date: "2026-08-09", view: 44, cart: 5 },
-  { date: "2026-08-10", view: 30, cart: 4 },
-  { date: "2026-08-11", view: 46, cart: 6 },
-  { date: "2026-08-12", view: 20, cart: 3 },
-  { date: "2026-08-13", view: 47, cart: 4 },
-  { date: "2026-08-14", view: 17, cart: 2 },
-  { date: "2026-08-15", view: 34, cart: 5 },
-  { date: "2026-08-16", view: 44, cart: 5 },
-  { date: "2026-08-17", view: 59, cart: 6 },
-  { date: "2026-08-18", view: 40, cart: 4 },
-  { date: "2026-08-19", view: 25, cart: 3 },
-  { date: "2026-08-20", view: 42, cart: 11 },
-  { date: "2026-08-21", view: 40, cart: 4 },
-  { date: "2026-08-22", view: 34, cart: 5 },
-  { date: "2026-08-23", view: 51, cart: 6 },
-  { date: "2026-08-24", view: 17, cart: 2 },
-  { date: "2026-08-25", view: 0, cart: 0 },
+  { date: "2026-07-26", view: 26, cart: 5, signup: 4 },
+  { date: "2026-07-27", view: 21, cart: 4, signup: 3 },
+  { date: "2026-07-28", view: 25, cart: 5, signup: 4 },
+  { date: "2026-07-29", view: 15, cart: 4, signup: 2 },
+  { date: "2026-07-30", view: 11, cart: 1, signup: 1 },
+  { date: "2026-07-31", view: 39, cart: 4, signup: 6 },
+  { date: "2026-08-01", view: 24, cart: 4, signup: 3 },
+  { date: "2026-08-02", view: 36, cart: 0, signup: 5 },
+  { date: "2026-08-03", view: 54, cart: 5, signup: 7 },
+  { date: "2026-08-04", view: 26, cart: 4, signup: 4 },
+  { date: "2026-08-05", view: 21, cart: 3, signup: 3 },
+  { date: "2026-08-06", view: 24, cart: 3, signup: 4 },
+  { date: "2026-08-07", view: 23, cart: 3, signup: 3 },
+  { date: "2026-08-08", view: 30, cart: 5, signup: 5 },
+  { date: "2026-08-09", view: 44, cart: 5, signup: 6 },
+  { date: "2026-08-10", view: 30, cart: 4, signup: 4 },
+  { date: "2026-08-11", view: 46, cart: 6, signup: 7 },
+  { date: "2026-08-12", view: 20, cart: 3, signup: 3 },
+  { date: "2026-08-13", view: 47, cart: 4, signup: 6 },
+  { date: "2026-08-14", view: 17, cart: 2, signup: 2 },
+  { date: "2026-08-15", view: 34, cart: 5, signup: 5 },
+  { date: "2026-08-16", view: 44, cart: 5, signup: 6 },
+  { date: "2026-08-17", view: 59, cart: 6, signup: 8 },
+  { date: "2026-08-18", view: 40, cart: 4, signup: 5 },
+  { date: "2026-08-19", view: 25, cart: 3, signup: 3 },
+  { date: "2026-08-20", view: 42, cart: 11, signup: 6 },
+  { date: "2026-08-21", view: 40, cart: 4, signup: 5 },
+  { date: "2026-08-22", view: 34, cart: 5, signup: 4 },
+  { date: "2026-08-23", view: 51, cart: 6, signup: 7 },
+  { date: "2026-08-24", view: 17, cart: 2, signup: 2 },
+  { date: "2026-08-25", view: 0, cart: 0, signup: 0 },
 ];
 
 const VIEW_TOTAL = REPORT_DATA.reduce((sum, d) => sum + d.view, 0);
 const CART_TOTAL = REPORT_DATA.reduce((sum, d) => sum + d.cart, 0);
+const SIGNUP_TOTAL = REPORT_DATA.reduce((sum, d) => sum + d.signup, 0);
 const VIEW_AVG = Math.round(VIEW_TOTAL / REPORT_DATA.length);
 const CART_AVG = Math.round(CART_TOTAL / REPORT_DATA.length);
+const SIGNUP_AVG = Math.round(SIGNUP_TOTAL / REPORT_DATA.length);
 
 const busiestView = REPORT_DATA.reduce((a, b) => (b.view > a.view ? b : a));
 const busiestCart = REPORT_DATA.reduce((a, b) => (b.cart > a.cart ? b : a));
+const busiestSignup = REPORT_DATA.reduce((a, b) => (b.signup > a.signup ? b : a));
 const completeDays = REPORT_DATA.filter((d) => d.date !== "2026-08-25");
 const quietest = completeDays.reduce((a, b) => (b.view + b.cart < a.view + a.cart ? b : a));
 
@@ -193,7 +196,7 @@ const TABLE_ROWS: TableRow[] = REPORT_DATA.map((row, i) => {
   };
 });
 
-export default function CustomReportResult() {
+export default function CustomReportResult({ extraEvent = false }: { extraEvent?: boolean }) {
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exported, setExported] = useState(false);
@@ -257,6 +260,9 @@ export default function CustomReportResult() {
           <li>• Busiest day for page views: {fmtShort(busiestView.date)} with {busiestView.view} events; busiest for cart events: {fmtShort(busiestCart.date)} with {busiestCart.cart}</li>
           <li>• Quietest day for both: {fmtShort(quietest.date)} with {quietest.view} page views and {quietest.cart} cart event{quietest.cart === 1 ? "" : "s"}</li>
           <li>• The two series broadly move together — days with higher page views tend to see more cart activity, with the cart-to-pageview ratio spiking on {fmtShort(busiestCart.date)}</li>
+          {extraEvent && (
+            <li>• Added the Signup event: {SIGNUP_TOTAL} total, averaging {SIGNUP_AVG} per day, busiest on {fmtShort(busiestSignup.date)} with {busiestSignup.signup}</li>
+          )}
         </ul>
         <p className="mt-2 text-[13px] italic text-stone-400 dark:text-stone-500">
           Aug 25 shows 0 for both series and is likely still in progress, so today's figures are incomplete.
@@ -266,7 +272,7 @@ export default function CustomReportResult() {
 
       <div className="rounded-xl px-5 py-4" style={{ border: "1px solid var(--border)", background: "var(--card)" }}>
         <p className="text-[15px] font-bold text-stone-900 dark:text-stone-100">
-          plot page views and cart events per day over the last 30 days
+          plot page views{extraEvent ? ", cart events and signups" : " and cart events"} per day over the last 30 days
         </p>
         <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
           {REPORT_DATA[0].date} to {REPORT_DATA[REPORT_DATA.length - 1].date} · daily buckets · bucketed in UTC
@@ -287,11 +293,23 @@ export default function CustomReportResult() {
             </span>
             <p className="mt-1 text-xl font-bold text-stone-900 dark:text-stone-100">{CART_TOTAL}</p>
           </div>
+          {extraEvent && (
+            <div className="flex-1 rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--border)" }}>
+              <span className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+                <span className="h-2 w-2 rounded-full" style={{ background: "var(--chart-3)" }} />
+                Signup
+              </span>
+              <p className="mt-1 text-xl font-bold text-stone-900 dark:text-stone-100">{SIGNUP_TOTAL}</p>
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-4 text-xs text-stone-500 dark:text-stone-400">
           <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm" style={{ background: "var(--chart-1)" }} /> View page · Value</span>
           <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm" style={{ background: "var(--chart-2)" }} /> Cart Event · Value</span>
+          {extraEvent && (
+            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm" style={{ background: "var(--chart-3)" }} /> Signup · Value</span>
+          )}
         </div>
 
         <div className="mt-2 h-56 w-full pointer-events-none">
@@ -317,6 +335,9 @@ export default function CustomReportResult() {
               />
               <Line type="monotone" dataKey="view" name="View page" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 2.5, strokeWidth: 0, fill: "var(--chart-1)" }} isAnimationActive={false} activeDot={false} />
               <Line type="monotone" dataKey="cart" name="Cart Event" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2.5, strokeWidth: 0, fill: "var(--chart-2)" }} isAnimationActive={false} activeDot={false} />
+              {extraEvent && (
+                <Line type="monotone" dataKey="signup" name="Signup" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 2.5, strokeWidth: 0, fill: "var(--chart-3)" }} isAnimationActive={false} activeDot={false} />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>

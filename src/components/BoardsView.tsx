@@ -568,10 +568,19 @@ const VIEW_TABS = [
 function CreateBoardDrawer({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<string>("insights");
   const navigate = useNavigate();
+  const { addEntry } = useBoards();
 
   function handleCreate(close: () => void) {
     if (selected === "blu-report") {
-      navigate("/blu");
+      const id = `blu-${Date.now()}`;
+      addEntry({
+        id,
+        title: "Untitled Blu report",
+        type: "blu-report",
+        lastUpdated: "Aug 20, 2026 04:32 PM",
+        createdBy: { initials: "R", color: "#0080FF", name: "Rana V" },
+      });
+      navigate(`/boards/${id}`);
       close();
       return;
     }

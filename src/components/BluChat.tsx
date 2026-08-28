@@ -53,6 +53,7 @@ import {
   Pencil,
   ChevronDown,
   RotateCcw,
+  Square,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
@@ -121,12 +122,12 @@ const RUN_TASKS: RunTask[] = [
   { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
 ];
 
-function CustomReportBlock({ declined, onSettled }: { declined?: boolean; onSettled?: () => void }) {
+function CustomReportBlock({ declined, extraEvent, onSettled }: { declined?: boolean; extraEvent?: boolean; onSettled?: () => void }) {
   const [showChart, setShowChart] = useState(false);
   return (
     <div className="flex flex-col gap-4">
       <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
-      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult />)}
+      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult extraEvent={extraEvent} />)}
     </div>
   );
 }
@@ -550,6 +551,7 @@ export type ChatMessage = {
   runTasks?: RunTask[];
   queryTrace?: boolean;
   declined?: boolean;
+  extraEvent?: boolean;
   followUps?: string[];
 };
 
@@ -745,6 +747,18 @@ export default function BluChat({
   const threadSwitcherRef = useRef<HTMLDivElement>(null);
   const [threadSwitcherSearch, setThreadSwitcherSearch] = useState("");
   const [settledReportIds, setSettledReportIds] = useState<Set<string>>(new Set());
+  const [activeReportId, setActiveReportId] = useState<string | null>(null);
+
+  function stopActiveReport() {
+    if (!activeReportId) return;
+    const stoppedId = activeReportId;
+    setMessages((current) => current.map((item) => (
+      item.id === stoppedId
+        ? { id: item.id, role: "blu", text: "Report generation was stopped. Try generating again." }
+        : item
+    )));
+    setActiveReportId(null);
+  }
   useEffect(() => {
     if (!threadSwitcherOpen) setThreadSwitcherSearch("");
   }, [threadSwitcherOpen]);
@@ -1269,6 +1283,7 @@ export default function BluChat({
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCustomReport  = !overrideText && text.toLowerCase() === "custom-report";
     const isCustomReportDeclined = !overrideText && text.toLowerCase() === "custom-report-declined";
+    const isAddEvent = !overrideText && text.toLowerCase() === "add-event";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -1319,7 +1334,7 @@ export default function BluChat({
         });
       } else if (isCreateRecipe) {
         next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
-      } else if (isCustomReport || isCustomReportDeclined) {
+      } else if (isCustomReport || isCustomReportDeclined || isAddEvent) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
@@ -1330,15 +1345,17 @@ export default function BluChat({
       return next;
     });
 
-    if (isCustomReport || isCustomReportDeclined) {
+    if (isCustomReport || isCustomReportDeclined || isAddEvent) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
           if (typingIdx === -1) return current;
           const next = [...current];
+          const reportId = `blu-report-${Date.now()}`;
           next[typingIdx] = isCustomReportDeclined
-            ? { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, declined: true }
-            : { id: `blu-report-${Date.now()}`, role: "blu", text: "", queryTrace: true, followUps: CUSTOM_REPORT_FOLLOW_UPS };
+            ? { id: reportId, role: "blu", text: "", queryTrace: true, declined: true }
+            : { id: reportId, role: "blu", text: "", queryTrace: true, extraEvent: isAddEvent, followUps: CUSTOM_REPORT_FOLLOW_UPS };
+          setActiveReportId(reportId);
           return next;
         });
       }, 1200);
@@ -1359,7 +1376,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isAddEvent) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1782,7 +1799,14 @@ export default function BluChat({
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.queryTrace ? (
-                <CustomReportBlock declined={msg.declined} onSettled={() => setSettledReportIds((s) => new Set(s).add(msg.id))} />
+                <CustomReportBlock
+                  declined={msg.declined}
+                  extraEvent={msg.extraEvent}
+                  onSettled={() => {
+                    setSettledReportIds((s) => new Set(s).add(msg.id));
+                    setActiveReportId((id) => (id === msg.id ? null : id));
+                  }}
+                />
               ) : msg.isTyping ? (
                 <LoadingState label="Thinking" variant="Beam" />
               ) : msg.isStreaming && msg.role === "blu" ? (
@@ -2694,11 +2718,15 @@ export default function BluChat({
                 Web
               </button>
               <button
-                onClick={() => sendMessage()}
+                onClick={() => (activeReportId ? stopActiveReport() : sendMessage())}
                 className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150"
-                style={{ background: !editorEmpty || attachments.length ? "#0080FF" : "var(--border)" }}
+                style={{ background: activeReportId || !editorEmpty || attachments.length ? "#0080FF" : "var(--border)" }}
               >
-                <ArrowUp size={13} className={!editorEmpty || attachments.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
+                {activeReportId ? (
+                  <Square size={11} fill="white" className="text-white" />
+                ) : (
+                  <ArrowUp size={13} className={!editorEmpty || attachments.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
+                )}
               </button>
             </div>
           </div>

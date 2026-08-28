@@ -1,14 +1,14 @@
 
 
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import BackButton from "../BackButton";
 import SubTabCorner from "../SubTabCorner";
 import {
   CalendarDays, ChevronDown, ChevronRight,
-  Clock, Copy, Filter, GripVertical, Layers, MapPin, Plus, Tag, Trash2, X,
+  Clock, Copy, Filter, GripVertical, Layers, MapPin, Plus, Sparkles, Tag, Trash2, X,
 } from "lucide-react";
-import { BOARDS_DATA } from "./boardsData";
+import { useBoards } from "./boardsStore";
 import InsightsTab from "./InsightsTab";
 import FunnelsTab from "./FunnelsTab";
 import RetentionTab from "./RetentionTab";
@@ -149,8 +149,35 @@ function FunnelStepItem({ number, event }: { number: number; event: string }) {
   );
 }
 
+function BluReportPlaceholder() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 p-8 text-center">
+      <span
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={{ background: "rgba(0,128,255,0.1)" }}
+      >
+        <Sparkles size={18} className="text-blue-500" />
+      </span>
+      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Ask Blu to build a report</p>
+      <p className="max-w-xs text-xs text-stone-400 dark:text-stone-500">
+        This board doesn't have an artifact yet. Open Blu chat and ask it to generate a report to see it here.
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate("/blu")}
+        className="mt-1 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        style={{ background: "#0080FF" }}
+      >
+        Open Blu chat
+      </button>
+    </div>
+  );
+}
+
 export default function BoardDetailView({ id }: { id: string }) {
-  const board = BOARDS_DATA.find((b) => b.id === id) ?? BOARDS_DATA[0];
+  const { entries } = useBoards();
+  const board = entries.find((b) => b.id === id) ?? entries[0];
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
     ? searchParams.get("tab") as TabKey
@@ -209,7 +236,15 @@ export default function BoardDetailView({ id }: { id: string }) {
 
         {/* Left: chart / tab content — full width on mobile, 70% on desktop */}
         <div className="flex flex-col w-full md:overflow-hidden md:basis-[70%] md:shrink-0">
-          {activeTab === "funnels" ? <FunnelsTab /> : activeTab === "retention" ? <RetentionTab /> : <InsightsTab />}
+          {board.type === "blu-report" ? (
+            <BluReportPlaceholder />
+          ) : activeTab === "funnels" ? (
+            <FunnelsTab />
+          ) : activeTab === "retention" ? (
+            <RetentionTab />
+          ) : (
+            <InsightsTab />
+          )}
         </div>
 
         {/* Right: config panel — full width on mobile (top border), 30% on desktop (left border) */}
