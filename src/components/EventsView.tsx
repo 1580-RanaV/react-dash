@@ -1,6 +1,8 @@
 
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { EventDefinition, EventUser } from "../mocks/data/eventDefinitions";
+import type { LiveRow } from "../mocks/data/liveEvents";
 import Toggle from "./Toggle";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, Hash, Plus, Search, Table2, Trash2, Users2 } from "lucide-react";
@@ -45,8 +47,6 @@ function eventChartData(id: string, total: number): { date: string; value: numbe
   return base;
 }
 
-type EventUser = { initials: string; color: string; name: string; timestamp: string };
-
 type EventMeta = {
   id: string;
   name: string;
@@ -58,33 +58,18 @@ type EventMeta = {
   chart: { date: string; value: number }[];
 };
 
-const EVENT_META: Record<string, EventMeta> = {
-  e1:  { id: "e1",  name: "free_tool_generated",             totalUsers: 0,  totalEvents: 0,  source: "JS", status: "Ingested", users: [], chart: eventChartData("e1",  0) },
-  e2:  { id: "e2",  name: "subscribed v2",                   totalUsers: 1,  totalEvents: 1,  source: "JS", status: "Ingested", users: [{ initials: "JL", color: "#7C3AED", name: "James Lambert",   timestamp: "Jun 22, 2026 09:37 PM" }], chart: eventChartData("e2",  1) },
-  e3:  { id: "e3",  name: "Team member invited to a project",totalUsers: 1,  totalEvents: 3,  source: "JS", status: "Ingested", users: [{ initials: "CB", color: "#2563EB", name: "Chad Blaes",      timestamp: "Jun 18, 2026 10:52 AM" }], chart: eventChartData("e3",  3) },
-  e4:  { id: "e4",  name: "free_tool_lead",                  totalUsers: 1,  totalEvents: 1,  source: "JS", status: "Ingested", users: [{ initials: "EK", color: "#0D9488", name: "Eric Katopodis",  timestamp: "May 18, 2026 10:23 PM" }], chart: eventChartData("e4",  1) },
-  e5:  { id: "e5",  name: "book-a-demo",                     totalUsers: 0,  totalEvents: 0,  source: "JS", status: "Pending",  users: [], chart: eventChartData("e5",  0) },
-  e6:  { id: "e6",  name: "Submit on",                       totalUsers: 6,  totalEvents: 6,  source: "JS", status: "Ingested", users: [
-    { initials: "JM", color: "#DB2777", name: "Jonathan Maxwell",  timestamp: "May 12, 2026 02:06 PM" },
-    { initials: "AL", color: "#0D9488", name: "Amara Lopes",       timestamp: "May 10, 2026 11:30 AM" },
-    { initials: "RK", color: "#7C3AED", name: "Ravi Kumar",        timestamp: "May 8,  2026 03:15 PM"  },
-    { initials: "SC", color: "#2563EB", name: "Sarah Chen",        timestamp: "May 6,  2026 08:44 AM"  },
-    { initials: "TM", color: "#D97706", name: "Tom Mueller",       timestamp: "May 5,  2026 06:22 PM"  },
-    { initials: "PB", color: "#059669", name: "Priya Bhatt",       timestamp: "May 3,  2026 01:55 PM"  },
-  ], chart: eventChartData("e6", 6) },
-  e7:  { id: "e7",  name: "Newsletter Signup",               totalUsers: 0,  totalEvents: 0,  source: "JS", status: "Ingested", users: [], chart: eventChartData("e7",  0) },
-  e8:  { id: "e8",  name: "Submit on",                       totalUsers: 6,  totalEvents: 6,  source: "JS", status: "Ingested", users: [
-    { initials: "DW", color: "#7C3AED", name: "Daniel Wright",     timestamp: "Jun 20, 2026 04:10 PM" },
-    { initials: "NP", color: "#2563EB", name: "Nina Patel",        timestamp: "Jun 18, 2026 09:05 AM" },
-  ], chart: eventChartData("e8", 6) },
-  e9:  { id: "e9",  name: "Submit on",                       totalUsers: 6,  totalEvents: 6,  source: "JS", status: "Ingested", users: [
-    { initials: "LO", color: "#0D9488", name: "Lucas Oliveira",    timestamp: "Jun 22, 2026 02:33 PM" },
-    { initials: "YT", color: "#D97706", name: "Yuki Tanaka",       timestamp: "Jun 19, 2026 11:47 AM" },
-  ], chart: eventChartData("e9", 6) },
-  e10: { id: "e10", name: "Submit on",                       totalUsers: 6,  totalEvents: 6,  source: "JS", status: "Ingested", users: [
-    { initials: "FH", color: "#DB2777", name: "Fatima Hassan",     timestamp: "Jun 21, 2026 07:15 PM" },
-  ], chart: eventChartData("e10", 6) },
-};
+function toEventMeta(d: EventDefinition): EventMeta {
+  return {
+    id: d.id,
+    name: d.name,
+    totalUsers: d.totalUsers,
+    totalEvents: d.totalEvents,
+    source: d.source,
+    status: d.status,
+    users: d.users,
+    chart: eventChartData(d.id, d.totalEvents),
+  };
+}
 
 // ── EventTableDetailDrawer ─────────────────────────────────────────────────────
 
@@ -348,67 +333,26 @@ const COLUMNS: TableColumn[] = [
   { key: "createdBy",   label: "Created by",   width: "180px",  info: true },
 ];
 
-const ROWS: TableRow[] = [
-  { id: "e1",  cells: { event: "free_tool_generated",             type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "Jun 2, 2026 08:33 AM",  createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e2",  cells: { event: "subscribed v2",                   type: TYPE_BADGE, intent: <Toggle fake on={true} />, users: 1, events: 1, lastUpdated: "May 29, 2026 09:10 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e3",  cells: { event: "Team member invited to a project", type: TYPE_BADGE, intent: <Toggle fake on={true} />, users: 1, events: 3, lastUpdated: "May 28, 2026 06:59 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e4",  cells: { event: "free_tool_lead",                  type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 1, events: 1, lastUpdated: "May 22, 2026 04:06 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e5",  cells: { event: "book-a-demo",                     type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e6",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Somya Nayak"   /> } },
-  { id: "e7",  cells: { event: "Newsletter Signup",               type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 0, events: 0, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e8",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-  { id: "e9",  cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="S" color="#0D9488" name="Sid Chaudhary" /> } },
-  { id: "e10", cells: { event: "Submit on",                       type: TYPE_BADGE, intent: <Toggle fake on={false} />, users: 6, events: 6, lastUpdated: "May 12, 2026 11:48 PM", createdBy: <UserAvatar initial="R" color="#8B5CF6" name="Removed User" /> } },
-];
-
-const EVENT_SORT_META: Record<string, { event: string; users: number; events: number; lastUpdated: string }> = {
-  e1:  { event: "free_tool_generated",              users: 0, events: 0, lastUpdated: "2026-06-02" },
-  e2:  { event: "subscribed v2",                    users: 1, events: 1, lastUpdated: "2026-05-29" },
-  e3:  { event: "Team member invited to a project", users: 1, events: 3, lastUpdated: "2026-05-28" },
-  e4:  { event: "free_tool_lead",                   users: 1, events: 1, lastUpdated: "2026-05-22" },
-  e5:  { event: "book-a-demo",                      users: 0, events: 0, lastUpdated: "2026-05-12" },
-  e6:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
-  e7:  { event: "Newsletter Signup",                users: 0, events: 0, lastUpdated: "2026-05-12" },
-  e8:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
-  e9:  { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
-  e10: { event: "Submit on",                        users: 6, events: 6, lastUpdated: "2026-05-12" },
-};
+function toEventRows(defs: EventDefinition[]): TableRow[] {
+  return defs.map((d) => ({
+    id: d.id,
+    cells: {
+      event: d.name,
+      type: TYPE_BADGE,
+      intent: <Toggle fake on={d.intentEvent} />,
+      users: d.totalUsers,
+      events: d.totalEvents,
+      lastUpdated: d.lastUpdated,
+      createdBy: <UserAvatar initial={d.createdBy.initial} color={d.createdBy.color} name={d.createdBy.name} />,
+    },
+  }));
+}
 
 const EVENTS_FILTER_CONFIG: FilterConfig = {
   sortFields: ["Event", "# of users", "# of events", "Last updated"],
 };
 
 // ── live tab ───────────────────────────────────────────────────────────────────
-
-type LiveRow = {
-  id: string;
-  name: string;
-  timestamp: string;
-  source: string;
-  identifier: string;
-  path: string | null;
-  location: string | null;
-  // sidebar detail fields
-  eventId: string;
-  sessionId: string;
-  profileId: string;
-  attributes: Record<string, string | number>;
-};
-
-const LIVE_ROWS: LiveRow[] = [
-  { id: "l1",  name: "View Page",    timestamp: "Jun 13, 2026 02:05:30 PM", source: "web", identifier: "prof_mqc3of2y_1781339723098_...", path: "/stock-price/MAAT.PA",        location: null, eventId: "evt_mqc3of2y_1781339723098_vp1", sessionId: "ses_mqc3of2y_1781339723098_s1", profileId: "prof_mqc3of2y_1781339723098_m4q5c2ntXW", attributes: { "Page Path": "/stock-price/MAAT.PA", "Page Title": "MAAT.PA - Stock Price", "Referrer": "https://google.com" } },
-  { id: "l2",  name: "Session end",  timestamp: "Jun 13, 2026 02:05:30 PM", source: "web", identifier: "prof_mqc19qqk_1781335679132_...", path: null,                          location: null, eventId: "ses_mqc2n553_1781337983943_5mc523qnyW", sessionId: "ses_mqc2n553_1781337983943_5mc523qnyW", profileId: "prof_mqc2n54t_1781337983933_m4q5c2ntXW", attributes: { "Session End Event Name": "View Page", "Session Event Count": 1, "Session Duration": 0 } },
-  { id: "l3",  name: "Session start",timestamp: "Jun 13, 2026 02:05:30 PM", source: "web", identifier: "prof_mqc3of2y_1781339723098_...", path: null,                          location: null, eventId: "ses_mqc3of2y_1781339723099_ss1", sessionId: "ses_mqc3of2y_1781339723099_ss1", profileId: "prof_mqc3of2y_1781339723098_m4q5c2ntXW", attributes: { "Referrer": "https://stockinvest.us", "Landing Page": "/stock-price/MAAT.PA" } },
-  { id: "l4",  name: "Session end",  timestamp: "Jun 13, 2026 02:05:28 PM", source: "web", identifier: "prof_mqc2lryu_1781337920214_...", path: null,                          location: null, eventId: "ses_mqc2lryu_1781337920214_end1", sessionId: "ses_mqc2lryu_1781337920214_end1", profileId: "prof_mqc2lryu_1781337920214_m4q5c2ntXW", attributes: { "Session End Event Name": "View Page", "Session Event Count": 3, "Session Duration": 142 } },
-  { id: "l5",  name: "View Page",    timestamp: "Jun 13, 2026 02:05:28 PM", source: "web", identifier: "prof_mqc3oc82_1781339719394_...", path: "/digest",                     location: null, eventId: "evt_mqc3oc82_1781339719394_vp2", sessionId: "ses_mqc3oc82_1781339719394_s2", profileId: "prof_mqc3oc82_1781339719394_m4q5c2ntXW", attributes: { "Page Path": "/digest", "Page Title": "Digest — StockInvest.us", "Referrer": "https://stockinvest.us" } },
-  { id: "l6",  name: "Session end",  timestamp: "Jun 13, 2026 02:05:28 PM", source: "web", identifier: "prof_mqc2ls7g_1781337920524_l...",path: null,                          location: null, eventId: "ses_mqc2ls7g_1781337920524_end1", sessionId: "ses_mqc2ls7g_1781337920524_end1", profileId: "prof_mqc2ls7g_1781337920524_m4q5c2ntXW", attributes: { "Session End Event Name": "View Page", "Session Event Count": 2, "Session Duration": 87 } },
-  { id: "l7",  name: "Session start",timestamp: "Jun 13, 2026 02:05:28 PM", source: "web", identifier: "prof_mqc3ob2m_1781339717902_...", path: null,                          location: null, eventId: "ses_mqc3ob2m_1781339717902_ss1", sessionId: "ses_mqc3ob2m_1781339717902_ss1", profileId: "prof_mqc3ob2m_1781339717902_m4q5c2ntXW", attributes: { "Referrer": "", "Landing Page": "/digest/category/analysis" } },
-  { id: "l8",  name: "View Page",    timestamp: "Jun 13, 2026 02:05:28 PM", source: "web", identifier: "prof_mqc3ob2m_1781339717902_...", path: "/digest/category/analysis...", location: null, eventId: "evt_mqc3ob2m_1781339717902_vp3", sessionId: "ses_mqc3ob2m_1781339717902_s3", profileId: "prof_mqc3ob2m_1781339717902_m4q5c2ntXW", attributes: { "Page Path": "/digest/category/analysis", "Page Title": "Analysis — Digest", "Referrer": "" } },
-  { id: "l9",  name: "View Page",    timestamp: "Jun 13, 2026 02:05:27 PM", source: "web", identifier: "prof_mjqw2ehl_1766996454873_...", path: "/stock/SPCX",                 location: null, eventId: "evt_mjqw2ehl_1766996454873_vp4", sessionId: "ses_mjqw2ehl_1766996454873_s4", profileId: "prof_mjqw2ehl_1766996454873_m4q5c2ntXW", attributes: { "Page Path": "/stock/SPCX", "Page Title": "SPCX - Stock", "Referrer": "https://google.com" } },
-  { id: "l10", name: "Session end",  timestamp: "Jun 13, 2026 02:05:27 PM", source: "web", identifier: "prof_mpr9mgps_1780079919904_...", path: null,                          location: null, eventId: "ses_mpr9mgps_1780079919904_end1", sessionId: "ses_mpr9mgps_1780079919904_end1", profileId: "prof_mpr9mgps_1780079919904_m4q5c2ntXW", attributes: { "Session End Event Name": "View Page", "Session Event Count": 5, "Session Duration": 310 } },
-  { id: "l11", name: "View Page",    timestamp: "Jun 13, 2026 02:05:26 PM", source: "web", identifier: "prof_mqbnvm9c_1781313185136_...",path: "/stock-price/SFUNDUSD",        location: null, eventId: "evt_mqbnvm9c_1781313185136_vp5", sessionId: "ses_mqbnvm9c_1781313185136_s5", profileId: "prof_mqbnvm9c_1781313185136_m4q5c2ntXW", attributes: { "Page Path": "/stock-price/SFUNDUSD", "Page Title": "SFUNDUSD - Stock Price", "Referrer": "" } },
-  { id: "l12", name: "Session end",  timestamp: "Jun 13, 2026 02:05:26 PM", source: "web", identifier: "prof_mqc2lqqu_1781337918630_...", path: null,                          location: null, eventId: "ses_mqc2lqqu_1781337918630_end1", sessionId: "ses_mqc2lqqu_1781337918630_end1", profileId: "prof_mqc2lqqu_1781337918630_m4q5c2ntXW", attributes: { "Session End Event Name": "View Page", "Session Event Count": 1, "Session Duration": 22 } },
-];
 
 const LIVE_COLUMNS: TableColumn[] = [
   { key: "name",      label: "Name",              width: "14%" },
@@ -420,7 +364,8 @@ const LIVE_COLUMNS: TableColumn[] = [
   { key: "action",    label: "Action",            width: "9%"  },
 ];
 
-const LIVE_TABLE_ROWS: TableRow[] = LIVE_ROWS.map((r) => ({
+function toLiveTableRows(rows: LiveRow[]): TableRow[] {
+  return rows.map((r) => ({
   id: r.id,
   cells: {
     name:       <span className="font-medium text-stone-800 dark:text-stone-100">{r.name}</span>,
@@ -438,7 +383,8 @@ const LIVE_TABLE_ROWS: TableRow[] = LIVE_ROWS.map((r) => ({
       </button>
     ),
   },
-}));
+  }));
+}
 
 function LiveIndicator({ paused }: { paused: boolean }) {
   return (
@@ -564,16 +510,23 @@ function EventDetailSidebar({ row, onClose }: { row: LiveRow; onClose: () => voi
 
 function LiveTab({ onRowSelect }: { onRowSelect: (row: LiveRow | null) => void }) {
   const [paused, setPaused] = useState(false);
+  const [liveRows, setLiveRows] = useState<LiveRow[]>([]);
+
+  useEffect(() => {
+    fetch("/api/events/live")
+      .then((r) => r.json())
+      .then(setLiveRows);
+  }, []);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <DashboardTable
         columns={LIVE_COLUMNS}
-        rows={LIVE_TABLE_ROWS}
+        rows={toLiveTableRows(liveRows)}
         searchPlaceholder="Search events..."
         menuItems={[]}
         actionsLabel=""
-        onRowClick={(row) => onRowSelect(LIVE_ROWS.find((r) => r.id === row.id) ?? null)}
+        onRowClick={(row) => onRowSelect(liveRows.find((r) => r.id === row.id) ?? null)}
         action={
           <div className="flex items-center gap-3">
             <LiveIndicator paused={paused} />
@@ -609,23 +562,33 @@ export default function EventsView() {
   const [deleteTarget, setDeleteTarget] = useState<EventMeta | null>(null);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [events, setEvents] = useState<EventDefinition[]>([]);
+
+  useEffect(() => {
+    fetch("/api/events")
+      .then((r) => r.json())
+      .then(setEvents);
+  }, []);
+
+  const eventMetaById = useMemo(
+    () => Object.fromEntries(events.map((d) => [d.id, toEventMeta(d)])),
+    [events],
+  );
 
   const displayRows = useMemo(() => {
-    let rows = ROWS.filter((r) => !deletedEventIds.has(r.id));
+    let defs = events.filter((d) => !deletedEventIds.has(d.id));
     if (sortField) {
-      rows = [...rows].sort((a, b) => {
-        const ma = EVENT_SORT_META[a.id];
-        const mb = EVENT_SORT_META[b.id];
+      defs = [...defs].sort((a, b) => {
         let cmp = 0;
-        if (sortField === "Event")             cmp = (ma?.event ?? "").localeCompare(mb?.event ?? "");
-        else if (sortField === "# of users")   cmp = (ma?.users ?? 0) - (mb?.users ?? 0);
-        else if (sortField === "# of events")  cmp = (ma?.events ?? 0) - (mb?.events ?? 0);
-        else if (sortField === "Last updated") cmp = (ma?.lastUpdated ?? "").localeCompare(mb?.lastUpdated ?? "");
+        if (sortField === "Event")             cmp = a.name.localeCompare(b.name);
+        else if (sortField === "# of users")   cmp = a.totalUsers - b.totalUsers;
+        else if (sortField === "# of events")  cmp = a.totalEvents - b.totalEvents;
+        else if (sortField === "Last updated") cmp = a.lastUpdatedSort.localeCompare(b.lastUpdatedSort);
         return sortDir === "asc" ? cmp : -cmp;
       });
     }
-    return rows;
-  }, [deletedEventIds, sortField, sortDir]);
+    return toEventRows(defs);
+  }, [events, deletedEventIds, sortField, sortDir]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
@@ -642,7 +605,7 @@ export default function EventsView() {
             filterPanel={<FilterBuilder />}
             onSortChange={(f, d) => { setSortField(f); setSortDir(d); }}
             onRowClick={(row) => {
-              const meta = EVENT_META[row.id];
+              const meta = eventMetaById[row.id];
               if (meta) setSelectedTableEvent(meta);
             }}
             action={

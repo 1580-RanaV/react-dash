@@ -4,7 +4,8 @@ import { CalendarDays, Check, Copy, Globe, Info, KeyRound, Mail, MousePointer2, 
 import CodeBlock from "./CodeBlock";
 import ViewTabs from "./ViewTabs";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { IntegrationRecord } from "../mocks/data/integrations";
 import DashboardTable, { FilterConfig, TableColumn, TableRow, TableStatus } from "./DashboardTable";
 import SlidingSidebar from "./SlidingSidebar";
 import AddIntegrationDrawer from "./AddIntegrationDrawer";
@@ -203,32 +204,19 @@ const CONNECTION_COLUMNS: TableColumn[] = [
   { key: "createdBy",   label: "Created By",   width: "15%" },
 ];
 
-const CONNECTION_ROWS: TableRow[] = [
-  { id: "js-sdk", cells: { name: "JavaScript",          integration: <IntegrationLogo name="JavaScript" />,        type: "Source",      status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 17, 2026, 10:00 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c01",  cells: { name: "Salesforce CRM",        integration: <IntegrationLogo name="Salesforce" />,        type: "Platform",    status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 15, 2026, 09:14 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c02",  cells: { name: "HubSpot Marketing",     integration: <IntegrationLogo name="HubSpot" />,           type: "Platform",    status: { label: "Syncing",  tone: "blue"  }, lastUpdated: { value: "Jun 14, 2026, 03:42 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c03",  cells: { name: "Mailchimp Campaigns",   integration: <IntegrationLogo name="Mailchimp" />,         type: "Destination", status: { label: "Disabled", tone: "gray"  }, lastUpdated: { value: "Jun 10, 2026, 11:30 AM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c04",  cells: { name: "SendGrid Transactional",integration: <IntegrationLogo name="SendGrid" />,          type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 16, 2026, 08:05 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c05",  cells: { name: "Segment Analytics",     integration: <IntegrationLogo name="Segment" />,           type: "Platform",    status: { label: "Syncing",  tone: "blue"  }, lastUpdated: { value: "Jun 16, 2026, 07:50 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c06",  cells: { name: "Mixpanel Product",      integration: <IntegrationLogo name="Mixpanel" />,          type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 13, 2026, 02:17 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c07",  cells: { name: "Google Analytics 4",    integration: <IntegrationLogo name="Google Analytics" />,  type: "Destination", status: { label: "Error",    tone: "red"   }, lastUpdated: { value: "Jun 16, 2026, 10:01 AM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c08",  cells: { name: "Stripe Payments",       integration: <IntegrationLogo name="Stripe" />,            type: "Source",      status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 15, 2026, 06:33 PM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c09",  cells: { name: "Shopify Store",         integration: <IntegrationLogo name="Shopify" />,           type: "Source",      status: { label: "Syncing",  tone: "blue"  }, lastUpdated: { value: "Jun 14, 2026, 01:22 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c10",  cells: { name: "WooCommerce Products",  integration: <IntegrationLogo name="WooCommerce" />,       type: "Source",      status: { label: "Disabled", tone: "gray"  }, lastUpdated: { value: "May 28, 2026, 04:45 PM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c11",  cells: { name: "Zendesk Support",       integration: <IntegrationLogo name="Zendesk" />,           type: "Source",      status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 12, 2026, 09:58 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c12",  cells: { name: "Intercom Messenger",    integration: <IntegrationLogo name="Intercom" />,          type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 11, 2026, 03:14 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c13",  cells: { name: "Slack Notifications",   integration: <IntegrationLogo name="Slack" />,             type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 16, 2026, 08:44 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c14",  cells: { name: "Notion Workspace",      integration: <IntegrationLogo name="Notion" />,            type: "Destination", status: { label: "Error",    tone: "red"   }, lastUpdated: { value: "Jun 01, 2026, 11:00 AM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c15",  cells: { name: "Airtable Data Sync",    integration: <IntegrationLogo name="Airtable" />,          type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 09, 2026, 05:30 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c16",  cells: { name: "Google Ads Campaigns",  integration: <IntegrationLogo name="Google Ads" />,        type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 15, 2026, 12:00 PM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c17",  cells: { name: "Meta Ads Manager",      integration: <IntegrationLogo name="Facebook Ads" />,      type: "Destination", status: { label: "Error",    tone: "red"   }, lastUpdated: { value: "Jun 16, 2026, 09:55 AM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c18",  cells: { name: "Snowflake Warehouse",   integration: <IntegrationLogo name="Snowflake" />,         type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 16, 2026, 02:30 AM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c19",  cells: { name: "BigQuery Export",       integration: <IntegrationLogo name="BigQuery" />,          type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 16, 2026, 03:00 AM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c20",  cells: { name: "Klaviyo Email Flows",   integration: <IntegrationLogo name="Klaviyo" />,           type: "Destination", status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 14, 2026, 07:20 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-  { id: "c21",  cells: { name: "Amplitude Events",      integration: <IntegrationLogo name="Amplitude" />,         type: "Destination", status: { label: "Disabled", tone: "gray"  }, lastUpdated: { value: "May 30, 2026, 10:15 AM", muted: true }, createdBy: createdByCell("Eric Gardner") } },
-  { id: "c22",  cells: { name: "Auth0 Identity",        integration: <IntegrationLogo name="Auth0" />,             type: "Source",      status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 07, 2026, 04:00 PM", muted: true }, createdBy: createdByCell("Rana V") } },
-  { id: "c23",  cells: { name: "Pipedrive Pipeline",    integration: <IntegrationLogo name="Pipedrive" />,         type: "Source",      status: { label: "Active",   tone: "green" }, lastUpdated: { value: "Jun 13, 2026, 01:45 PM", muted: true }, createdBy: createdByCell("Somya Nayak") } },
-];
+function toConnectionRows(records: IntegrationRecord[]): TableRow[] {
+  return records.map(({ id, name, integration, type, status, lastUpdated, createdBy }) => ({
+    id,
+    cells: {
+      name,
+      integration: <IntegrationLogo name={integration} />,
+      type,
+      status,
+      lastUpdated: { value: lastUpdated, muted: true },
+      createdBy: createdByCell(createdBy),
+    },
+  }));
+}
 
 const STATUS_KEYS = new Set(["Active", "Syncing", "Error", "Disabled"]);
 const TYPE_KEYS   = new Set(["Source", "Platform", "Destination"]);
@@ -312,7 +300,13 @@ export default function ConnectionsView() {
   const [selectedConnId, setSelectedConnId] = useState<string | null>(null);
 
   // Connection rows state
-  const [connRows, setConnRows] = useState<TableRow[]>(CONNECTION_ROWS);
+  const [connRows, setConnRows] = useState<TableRow[]>([]);
+
+  useEffect(() => {
+    fetch("/api/integrations")
+      .then((r) => r.json())
+      .then((data: IntegrationRecord[]) => setConnRows(toConnectionRows(data)));
+  }, []);
   const [renamingConnId, setRenamingConnId] = useState<string | null>(null);
   const [renameConnValue, setRenameConnValue] = useState("");
   const commitConnRef = useRef(false);
