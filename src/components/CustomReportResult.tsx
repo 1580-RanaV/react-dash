@@ -168,7 +168,31 @@ export function DeclinedResult() {
   );
 }
 
-function ResultStateRow() {
+function NoEmbedBadge() {
+  const [show, setShow] = useState(false);
+  const tone = RESULT_STATE_TONE.qualified;
+  return (
+    <span className="relative inline-flex" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <span
+        className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+        style={{ background: tone.bg, color: tone.color }}
+      >
+        Embed not available
+        <Info size={12} className="shrink-0" />
+      </span>
+      {show && (
+        <div
+          className="animate-tooltip-in absolute left-0 top-[calc(100%+8px)] z-200 w-56 max-w-[80vw] rounded-xl p-3 text-xs leading-relaxed text-stone-700 dark:text-stone-200"
+          style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)" }}
+        >
+          This chart does not support embeds.
+        </div>
+      )}
+    </span>
+  );
+}
+
+function ResultStateRow({ noEmbed }: { noEmbed?: boolean }) {
   const tone = RESULT_STATE_TONE[RESULT_STATE];
   return (
     <div className="mt-2 flex items-center justify-start gap-2">
@@ -179,6 +203,7 @@ function ResultStateRow() {
         {tone.label}
       </span>
       {RESULT_STATE !== "declined" && <AssumptionsPopover content={ASSUMPTIONS_TEXT} />}
+      {noEmbed && <NoEmbedBadge />}
     </div>
   );
 }
@@ -225,12 +250,13 @@ export function ReportChartPreview() {
   );
 }
 
-export default function CustomReportResult({ extraEvent = false }: { extraEvent?: boolean }) {
+export default function CustomReportResult({ extraEvent = false, noEmbed = false }: { extraEvent?: boolean; noEmbed?: boolean }) {
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exported, setExported] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveIntent, setSaveIntent] = useState<"plain" | "for-embed">("plain");
   const [saveName, setSaveName] = useState("Page views and cart events — last 30 days");
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [embedExpiry, setEmbedExpiry] = useState<(typeof EMBED_EXPIRY_OPTIONS)[number]>("30 days");
@@ -282,6 +308,24 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
     });
     setSaved(true);
     setSaveModalOpen(false);
+    if (saveIntent === "for-embed") {
+      setSaveIntent("plain");
+      setEmbedModalOpen(true);
+    }
+  }
+
+  function openSaveModal() {
+    setSaveIntent("plain");
+    setSaveModalOpen(true);
+  }
+
+  function openEmbed() {
+    if (!saved) {
+      setSaveIntent("for-embed");
+      setSaveModalOpen(true);
+      return;
+    }
+    setEmbedModalOpen(true);
   }
 
   function openAddToDashboard() {
@@ -325,7 +369,7 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
         <p className="mt-2 text-[13px] italic text-stone-400 dark:text-stone-500">
           Aug 25 shows 0 for both series and is likely still in progress, so today's figures are incomplete.
         </p>
-        <ResultStateRow />
+        <ResultStateRow noEmbed={noEmbed} />
       </div>
 
       <div className="rounded-xl px-5 py-4" style={{ border: "1px solid var(--border)", background: "var(--card)" }}>
@@ -447,7 +491,7 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
 
         <button
           type="button"
-          onClick={() => (saved ? setSaved(false) : setSaveModalOpen(true))}
+          onClick={() => (saved ? setSaved(false) : openSaveModal())}
           className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
           style={{ background: "#0080FF" }}
         >
@@ -455,15 +499,17 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
           {saved ? "Saved" : "Save"}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setEmbedModalOpen(true)}
-          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ background: "#0080FF" }}
-        >
-          <Code2 size={13} className="shrink-0" />
-          Embed
-        </button>
+        {!noEmbed && (
+          <button
+            type="button"
+            onClick={openEmbed}
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: "#0080FF" }}
+          >
+            <Code2 size={13} className="shrink-0" />
+            Embed
+          </button>
+        )}
 
         <button
           type="button"
@@ -530,7 +576,9 @@ export default function CustomReportResult({ extraEvent = false }: { extraEvent?
             >
               <X size={14} />
             </button>
-            <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">Save report</p>
+            <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">
+              {saveIntent === "for-embed" ? "Save report to get embed access" : "Save report"}
+            </p>
             <p className="mt-1 pr-8 text-xs text-stone-400 dark:text-stone-500">Give this report a name to find it later in Boards.</p>
             <input
               autoFocus

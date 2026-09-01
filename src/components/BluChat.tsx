@@ -7,13 +7,13 @@ import {
   Plus,
   ArrowUp,
   AtSign,
+  Brain,
   Paperclip,
   Terminal,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Search,
-  BookOpen,
   UserRound,
   Camera,
   PersonStanding,
@@ -51,6 +51,7 @@ import {
   Eye,
   ChefHat,
   Pencil,
+  CheckCheck,
   ChevronDown,
   RotateCcw,
   Square,
@@ -60,7 +61,7 @@ import { useLocation } from "react-router-dom";
 import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
 import LoadingState from "./LoadingState";
 import { useBluMessages } from "./BluMessagesContext";
-import QueryStages from "./QueryStages";
+import QueryStages, { STAGE_ROWS, STAGE_MS, TOTAL_MS, ASKED_FOR, fmtDuration } from "./QueryStages";
 import CustomReportResult, { DeclinedResult } from "./CustomReportResult";
 import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
 
@@ -122,12 +123,13 @@ const RUN_TASKS: RunTask[] = [
   { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
 ];
 
-function CustomReportBlock({ declined, extraEvent, onSettled }: { declined?: boolean; extraEvent?: boolean; onSettled?: () => void }) {
+function CustomReportBlock({ declined, extraEvent, noEmbed, onSettled }: { declined?: boolean; extraEvent?: boolean; noEmbed?: boolean; onSettled?: () => void }) {
   const [showChart, setShowChart] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
-      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult extraEvent={extraEvent} />)}
+      {/* <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} /> */}
+      <LiveRun onDone={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
+      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult extraEvent={extraEvent} noEmbed={noEmbed} />)}
     </div>
   );
 }
@@ -423,34 +425,36 @@ function CreationRunStatus({ tasks }: { tasks: RunTask[] }) {
   );
 }
 
-function RunNumberBadge({ index, done }: { index: number; done?: boolean }) {
+function RunNumberBadge({ index, done, state }: { index: number; done?: boolean; state?: "done" | "active" | "pending" }) {
   const size = 28;
   const stroke = 2.25;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
+  const isDone = state ? state === "done" : !!done;
+  const isSpinning = state ? state === "active" : !done;
 
   return (
     <span
       className={`relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums transition-colors ${
-        done ? "text-white" : "text-stone-600 dark:text-stone-300"
+        isDone ? "text-white" : "text-stone-600 dark:text-stone-300"
       }`}
-      style={{ background: done ? "#0080FF" : "transparent" }}
+      style={{ background: isDone ? "#0080FF" : "transparent" }}
     >
       <svg
         width={size}
         height={size}
         className="absolute inset-0"
-        style={!done ? { animation: "spin 1.1s linear infinite" } : undefined}
+        style={isSpinning ? { animation: "spin 1.1s linear infinite" } : undefined}
       >
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={done ? "#0080FF" : "rgba(120,120,120,0.24)"}
+          stroke={isDone ? "#0080FF" : "rgba(120,120,120,0.24)"}
           strokeWidth={stroke}
         />
-        {!done && (
+        {isSpinning && (
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -465,6 +469,165 @@ function RunNumberBadge({ index, done }: { index: number; done?: boolean }) {
       </svg>
       <span className="relative">{index}</span>
     </span>
+  );
+}
+
+function LiveRunProgressCircle({ progress, done }: { progress: number; done: boolean }) {
+  const size = 28;
+  const stroke = 2.25;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - Math.min(Math.max(progress, 0), 1));
+
+  const [tickDrawn, setTickDrawn] = useState(false);
+  useEffect(() => {
+    if (!done) { setTickDrawn(false); return; }
+    const id = requestAnimationFrame(() => setTickDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, [done]);
+
+  return (
+    <span
+      className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
+      style={{ background: done ? "#0080FF" : "transparent" }}
+    >
+      <svg width={size} height={size} className="absolute inset-0" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(120,120,120,0.24)" strokeWidth={stroke} />
+        {!done && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#0080FF"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            style={{ transition: "stroke-dashoffset 500ms cubic-bezier(0.23,1,0.32,1)" }}
+          />
+        )}
+      </svg>
+      {done && (
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="relative">
+          <polyline
+            points="20 6 9 17 4 12"
+            stroke="white"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={24}
+            strokeDashoffset={tickDrawn ? 0 : 24}
+            style={{ transition: "stroke-dashoffset 350ms ease-out" }}
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+function LiveRun({ onDone }: { onDone?: () => void } = {}) {
+  const [stageIndex, setStageIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const done = stageIndex >= STAGE_ROWS.length;
+  const currentLabel = STAGE_ROWS[done ? STAGE_ROWS.length - 1 : stageIndex].label;
+
+  useEffect(() => {
+    if (done) return;
+    const t = setTimeout(() => setStageIndex((i) => i + 1), STAGE_MS);
+    return () => clearTimeout(t);
+  }, [stageIndex, done]);
+
+  const doneRef = useRef(false);
+  useEffect(() => {
+    if (!done || doneRef.current) return;
+    doneRef.current = true;
+    onDone?.();
+  }, [done, onDone]);
+
+  return (
+    <div className="mt-1 flex w-full max-w-md flex-col gap-2">
+      <div
+        className="overflow-hidden rounded-xl"
+        style={{
+          background: "var(--content-bg)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          animation: "fade-up 420ms cubic-bezier(0.23,1,0.32,1) both",
+        }}
+      >
+        <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
+          <LiveRunProgressCircle progress={stageIndex / STAGE_ROWS.length} done={done} />
+          {done ? (
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100" style={{ animation: "fade-up 250ms ease-out both" }}>
+              {currentLabel}
+            </span>
+          ) : (
+            <span
+              key={currentLabel}
+              className="min-w-0 flex-1 truncate bg-clip-text text-[13px] font-semibold text-transparent"
+              style={{
+                backgroundImage: "linear-gradient(90deg, var(--muted-foreground) 35%, var(--foreground) 50%, var(--muted-foreground) 65%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer-text 1.4s linear infinite, fade-up 250ms ease-out both",
+              }}
+            >
+              {currentLabel}
+            </span>
+          )}
+          {done && (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((e) => !e)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10 dark:hover:text-stone-200"
+              style={{ background: "var(--raised)" }}
+            >
+              <ChevronDown
+                size={14}
+                className="transition-transform duration-300"
+                style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}
+              />
+            </button>
+          )}
+        </div>
+
+        {done && (
+          <div
+            className="grid transition-[grid-template-rows,opacity] duration-400"
+            style={{
+              gridTemplateRows: expanded ? "1fr" : "0fr",
+              opacity: expanded ? 1 : 0,
+              transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
+            }}
+          >
+            <div className="overflow-hidden">
+              <div className="flex flex-col gap-1 px-3 py-2">
+                {STAGE_ROWS.map((stage) => (
+                  <div key={stage.label} className="flex min-h-7 w-full items-center gap-2 rounded-md px-1 py-0.5">
+                    <CheckCheck size={14} strokeWidth={2.5} className="shrink-0 text-stone-400 dark:text-stone-500" />
+                    <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-stone-700 dark:text-stone-200">{stage.label}</span>
+                    <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-stone-400 dark:text-stone-500">{fmtDuration(stage.ms)}</span>
+                  </div>
+                ))}
+                <div className="mt-1 flex items-center justify-between gap-3 border-t px-1 pt-2" style={{ borderColor: "var(--border)" }}>
+                  <span className="text-[12.5px] font-medium text-stone-700 dark:text-stone-200">Total time</span>
+                  <span className="shrink-0 font-mono text-[11.5px] font-semibold tabular-nums text-stone-700 dark:text-stone-200">{fmtDuration(TOTAL_MS)}</span>
+                </div>
+              </div>
+
+              <div className="px-3 pb-2 pt-1">
+                <p className="text-[12.5px] font-semibold text-stone-700 dark:text-stone-200">What was asked for</p>
+                <div className="mt-1 flex items-center justify-between gap-3 px-1">
+                  <span className="text-[12.5px] text-stone-400 dark:text-stone-500">{ASKED_FOR.label}</span>
+                  <span className="text-[12.5px] text-stone-600 dark:text-stone-300">{ASKED_FOR.value}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -549,9 +712,11 @@ export type ChatMessage = {
   journeyChip?: { name: string };
   execChecklist?: { steps: string[] };
   runTasks?: RunTask[];
+  liveRun?: boolean;
   queryTrace?: boolean;
   declined?: boolean;
   extraEvent?: boolean;
+  noEmbed?: boolean;
   followUps?: string[];
 };
 
@@ -779,9 +944,7 @@ export default function BluChat({
   }
   const [planMode, setPlanMode] = useState(false);
   const [webMode, setWebMode] = useState(false);
-  const [contextScope, setContextScope] = useState<"Project" | "Org" | "Thread">("Project");
-  const [modeOpen, setModeOpen] = useState(false);
-  const modeRef = useRef<HTMLDivElement>(null);
+  const [contextScope, setContextScope] = useState<"Project" | "Thread">("Project");
   const [imageSettings, setImageSettings] = useState({
     aspect: "1:1",
     background: "Auto",
@@ -851,16 +1014,6 @@ export default function BluChat({
         setMentionCategory(null);
         setSlashOpen(false);
         setPlusPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
-
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (modeRef.current && !modeRef.current.contains(e.target as Node)) {
-        setModeOpen(false);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -1283,7 +1436,9 @@ export default function BluChat({
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCustomReport  = !overrideText && text.toLowerCase() === "custom-report";
     const isCustomReportDeclined = !overrideText && text.toLowerCase() === "custom-report-declined";
+    const isCustomReportNoEmbed = !overrideText && text.toLowerCase() === "custom-report-no-embed";
     const isAddEvent = !overrideText && text.toLowerCase() === "add-event";
+    const isLiveRun = !overrideText && text.toLowerCase() === "live-run";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -1316,6 +1471,13 @@ export default function BluChat({
           text: "",
           runTasks: RUN_TASKS.slice(0, runCount),
         });
+      } else if (isLiveRun) {
+        next.push({
+          id: `blu-liverun-${ts}`,
+          role: "blu",
+          text: "",
+          liveRun: true,
+        });
       } else if (isFailed || isError) {
         next.push({
           id: `blu-error-${ts}`,
@@ -1334,7 +1496,7 @@ export default function BluChat({
         });
       } else if (isCreateRecipe) {
         next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
-      } else if (isCustomReport || isCustomReportDeclined || isAddEvent) {
+      } else if (isCustomReport || isCustomReportDeclined || isCustomReportNoEmbed || isAddEvent) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
@@ -1345,7 +1507,7 @@ export default function BluChat({
       return next;
     });
 
-    if (isCustomReport || isCustomReportDeclined || isAddEvent) {
+    if (isCustomReport || isCustomReportDeclined || isCustomReportNoEmbed || isAddEvent) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1354,7 +1516,7 @@ export default function BluChat({
           const reportId = `blu-report-${Date.now()}`;
           next[typingIdx] = isCustomReportDeclined
             ? { id: reportId, role: "blu", text: "", queryTrace: true, declined: true }
-            : { id: reportId, role: "blu", text: "", queryTrace: true, extraEvent: isAddEvent, followUps: CUSTOM_REPORT_FOLLOW_UPS };
+            : { id: reportId, role: "blu", text: "", queryTrace: true, extraEvent: isAddEvent, noEmbed: isCustomReportNoEmbed, followUps: CUSTOM_REPORT_FOLLOW_UPS };
           setActiveReportId(reportId);
           return next;
         });
@@ -1376,7 +1538,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isAddEvent) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1796,12 +1958,15 @@ export default function BluChat({
               ) : null}
               {msg.runTasks ? (
                 <CreationRunStatus tasks={msg.runTasks} />
+              ) : msg.liveRun ? (
+                <LiveRun />
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.queryTrace ? (
                 <CustomReportBlock
                   declined={msg.declined}
                   extraEvent={msg.extraEvent}
+                  noEmbed={msg.noEmbed}
                   onSettled={() => {
                     setSettledReportIds((s) => new Set(s).add(msg.id));
                     setActiveReportId((id) => (id === msg.id ? null : id));
@@ -1950,7 +2115,7 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {!msg.feedbackForm && !msg.runTasks && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
+              {!msg.feedbackForm && !msg.runTasks && !msg.liveRun && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
                 <div className={`mt-2.5 flex w-full items-center gap-1 transition-opacity justify-start ${
                   msg.role === "blu" && msg.id === latestCompletedBluId
                     ? "opacity-100"
@@ -2644,56 +2809,15 @@ export default function BluChat({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <div ref={modeRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setModeOpen((open) => !open)}
-                  className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[filter] hover:brightness-95"
-                  style={
-                    modeOpen
-                      ? { background: "var(--state-selected)", color: "var(--state-selected-foreground)", border: "1px solid var(--state-selected)", boxShadow: "0 2px 6px rgba(0,0,0,0.08)" }
-                      : { background: "var(--raised)", color: "var(--muted-foreground)", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
-                  }
-                >
-                  <BookOpen size={12} />
-                  {contextScope}
-                  <ChevronDown
-                    size={12}
-                    className="transition-transform duration-200 ease-out"
-                    style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0)" }}
-                  />
-                </button>
-
-                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 flex w-full flex-col gap-1.5">
-                  {(["Project", "Org", "Thread"] as const).map((option, i) => {
-                    const isSelected = option === contextScope;
-                    const delay = modeOpen ? (2 - i) * 40 : 0;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => { setContextScope(option); setModeOpen(false); }}
-                        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-medium transition-[filter] hover:brightness-95"
-                        style={{
-                          background: isSelected ? "var(--state-selected)" : "var(--raised)",
-                          color: isSelected ? "var(--state-selected-foreground)" : "var(--muted-foreground)",
-                          border: isSelected ? "1px solid var(--state-selected)" : "1px solid var(--border)",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
-                          opacity: modeOpen ? 1 : 0,
-                          transform: modeOpen ? "translateY(0) scale(1)" : "translateY(10px) scale(0.92)",
-                          transitionProperty: "opacity, transform, filter",
-                          transitionDuration: "220ms",
-                          transitionTimingFunction: "cubic-bezier(0.23,1,0.32,1)",
-                          transitionDelay: `${delay}ms`,
-                          pointerEvents: modeOpen ? "auto" : "none",
-                        }}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setContextScope((s) => (s === "Project" ? "Thread" : "Project"))}
+                className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors"
+                style={{ background: "var(--raised)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+              >
+                <Brain size={12} />
+                {contextScope}
+              </button>
               <button
                 type="button"
                 onClick={() => setPlanMode((mode) => !mode)}

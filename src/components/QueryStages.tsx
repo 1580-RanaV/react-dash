@@ -11,7 +11,7 @@ import { CheckCheck, ChevronDown, Sparkle } from "lucide-react";
  * to a sparkle once every stage has settled.
  * ───────────────────────────────────────────────────────── */
 
-const STAGE_ROWS: { label: string; ms: number }[] = [
+export const STAGE_ROWS: { label: string; ms: number }[] = [
   { label: "Everything else", ms: 18 },
   { label: "Choosing the route", ms: 4114 },
   { label: "Running the query", ms: 13757 },
@@ -19,15 +19,15 @@ const STAGE_ROWS: { label: string; ms: number }[] = [
   { label: "Composing the query", ms: 10980 },
   { label: "Writing the reading", ms: 12690 },
 ];
-const TOTAL_MS = STAGE_ROWS.reduce((sum, r) => sum + r.ms, 0);
-const ASKED_FOR = { label: "Profile", value: "users" };
+export const TOTAL_MS = STAGE_ROWS.reduce((sum, r) => sum + r.ms, 0);
+export const ASKED_FOR = { label: "Profile", value: "users" };
 
-function fmtDuration(ms: number) {
+export function fmtDuration(ms: number) {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
 const WARMUP_MS = 400;
-const STAGE_MS = 4000;
+export const STAGE_MS = 4000;
 const SETTLE_DELAY_MS = 900;
 
 function TickingClock({ size = 18 }: { size?: number }) {
