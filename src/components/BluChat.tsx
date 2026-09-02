@@ -46,6 +46,8 @@ import {
   Bell,
   MessageSquare,
   MessagesSquare,
+  MessageSquareDot,
+  BellRing,
   Type,
   Zap,
   Eye,
@@ -913,6 +915,36 @@ export default function BluChat({
   const [threadSwitcherSearch, setThreadSwitcherSearch] = useState("");
   const [settledReportIds, setSettledReportIds] = useState<Set<string>>(new Set());
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [unreadThreadIds, setUnreadThreadIds] = useState<Set<string>>(new Set());
+  const hasUnreadThreads = unreadThreadIds.size > 0;
+  const [unreadIconPhase, setUnreadIconPhase] = useState<"dot" | "bell">("dot");
+
+  useEffect(() => {
+    if (!hasUnreadThreads) {
+      setUnreadIconPhase("dot");
+      return;
+    }
+    const id = setInterval(() => setUnreadIconPhase((p) => (p === "dot" ? "bell" : "dot")), 5000);
+    return () => clearInterval(id);
+  }, [hasUnreadThreads]);
+
+  const [notificationStripDismissed, setNotificationStripDismissed] = useState(false);
+
+  function markThreadsUnread(count: number) {
+    const pool = threads.filter((t) => t.id !== activeThreadId);
+    const picked = [...pool].sort(() => Math.random() - 0.5).slice(0, count).map((t) => t.id);
+    setUnreadThreadIds((prev) => new Set([...prev, ...picked]));
+    setNotificationStripDismissed(false);
+  }
+
+  function markThreadRead(id: string) {
+    setUnreadThreadIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
 
   function stopActiveReport() {
     if (!activeReportId) return;
@@ -1439,6 +1471,7 @@ export default function BluChat({
     const isCustomReportNoEmbed = !overrideText && text.toLowerCase() === "custom-report-no-embed";
     const isAddEvent = !overrideText && text.toLowerCase() === "add-event";
     const isLiveRun = !overrideText && text.toLowerCase() === "live-run";
+    const isNotification = !overrideText && text.toLowerCase() === "notification";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -1500,6 +1533,8 @@ export default function BluChat({
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isCreateJourney) {
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
+      } else if (isNotification) {
+        // no Blu reply — this just flips the thread-switcher icon below
       } else {
         generalReplyIndex = current.length;
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
@@ -1538,7 +1573,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun) {
+    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isNotification) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1572,7 +1607,11 @@ export default function BluChat({
       setTimeout(() => window.dispatchEvent(new CustomEvent("open-recipe-canvas")), 600);
     }
 
-    if (!isFeedback && !isCreateRecipe) {
+    if (isNotification) {
+      markThreadsUnread(2);
+    }
+
+    if (!isFeedback && !isCreateRecipe && !isNotification) {
       window.dispatchEvent(new CustomEvent("blu-image-generate", { detail: { text } }));
     }
   }
@@ -1658,7 +1697,34 @@ export default function BluChat({
                 onClick={() => setThreadSwitcherOpen((o) => !o)}
                 className="flex max-w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
               >
-                <MessagesSquare size={15} className="shrink-0 text-stone-400" />
+                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                  <MessagesSquare
+                    size={15}
+                    className="absolute text-stone-400 transition-[opacity,filter] duration-500"
+                    style={{ opacity: hasUnreadThreads ? 0 : 1, filter: hasUnreadThreads ? "blur(4px)" : "blur(0px)" }}
+                  />
+                  <MessageSquareDot
+                    size={15}
+                    className="absolute text-blue-500 transition-[opacity,filter] duration-500"
+                    style={{
+                      opacity: hasUnreadThreads && unreadIconPhase === "dot" ? 1 : 0,
+                      filter: hasUnreadThreads && unreadIconPhase === "dot" ? "blur(0px)" : "blur(4px)",
+                    }}
+                  />
+                  {hasUnreadThreads && (
+                    <BellRing
+                      key={unreadIconPhase}
+                      size={15}
+                      className="absolute text-blue-500 transition-[opacity,filter] duration-500"
+                      style={{
+                        opacity: unreadIconPhase === "bell" ? 1 : 0,
+                        filter: unreadIconPhase === "bell" ? "blur(0px)" : "blur(4px)",
+                        animation: unreadIconPhase === "bell" ? "bell-ring 0.8s ease-in-out" : undefined,
+                        transformOrigin: "50% 0%",
+                      }}
+                    />
+                  )}
+                </span>
                 <span className="max-w-[20ch] truncate text-sm font-medium leading-none text-stone-800 dark:text-stone-100">
                   {activeThreadTitle}
                 </span>
@@ -1706,16 +1772,20 @@ export default function BluChat({
                     .filter((t) => (t.title ?? "New chat").toLowerCase().includes(threadSwitcherSearch.toLowerCase()))
                     .map((t) => {
                       const isActive = t.id === activeThreadId;
+                      const isUnread = unreadThreadIds.has(t.id);
                       return (
                         <button
                           key={t.id}
                           type="button"
-                          onClick={() => { switchThread(t.id); setThreadSwitcherOpen(false); }}
-                          className={`flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                          onClick={() => { switchThread(t.id); markThreadRead(t.id); setThreadSwitcherOpen(false); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                             isActive ? "bg-stone-100 dark:bg-white/8" : "hover:bg-stone-100 dark:hover:bg-white/6"
                           }`}
                         >
-                          <span className={`truncate text-sm ${isActive ? "font-semibold text-stone-900 dark:text-stone-100" : "font-medium text-stone-700 dark:text-stone-200"}`}>
+                          {isUnread && (
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" style={{ animation: "fade-up 250ms ease-out both" }} />
+                          )}
+                          <span className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold text-stone-900 dark:text-stone-100" : "font-medium text-stone-700 dark:text-stone-200"}`}>
                             {t.title ?? "New chat"}
                           </span>
                           <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500">
@@ -2507,17 +2577,48 @@ export default function BluChat({
           </div>
         )}
 
-        <div
-          className="rounded-xl px-4 pt-4 pb-3"
-          style={{
-            border: "2px solid var(--border)",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
-            background: mode === "fullscreen" ? "var(--content-bg)" : undefined,
-            opacity: inputLocked ? 0.45 : 1,
-            pointerEvents: inputLocked ? "none" : undefined,
-            transition: "opacity 0.25s ease",
-          }}
-        >
+        {hasUnreadThreads && !notificationStripDismissed && (
+                <div
+                  className="flex items-center gap-2 rounded-t-xl px-3 py-2.5"
+                  style={{
+                    background: "var(--muted)",
+                    borderTop: "2px solid var(--border)",
+                    borderLeft: "2px solid var(--border)",
+                    borderRight: "2px solid var(--border)",
+                    animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setThreadSwitcherOpen(true); setNotificationStripDismissed(true); }}
+                    className="min-w-0 flex-1 truncate text-left text-xs font-medium text-stone-600 dark:text-stone-300 hover:underline"
+                  >
+                    You have notification from other chat(s), click to view
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationStripDismissed(true)}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              <div
+                className={`px-4 pt-4 pb-3 ${hasUnreadThreads && !notificationStripDismissed ? "rounded-b-xl" : "rounded-xl"}`}
+                style={{
+                  borderLeft: "2px solid var(--border)",
+                  borderRight: "2px solid var(--border)",
+                  borderBottom: "2px solid var(--border)",
+                  borderTop: hasUnreadThreads && !notificationStripDismissed ? "none" : "2px solid var(--border)",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+                  background: mode === "fullscreen" ? "var(--content-bg)" : undefined,
+                  opacity: inputLocked ? 0.45 : 1,
+                  pointerEvents: inputLocked ? "none" : undefined,
+                  transition: "opacity 0.25s ease",
+                }}
+              >
           {queue.length > 0 && (
             <div className="mb-2">
               {queue.map((item) => (
