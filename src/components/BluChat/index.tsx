@@ -45,9 +45,6 @@ import {
   Mail,
   Bell,
   MessageSquare,
-  MessagesSquare,
-  MessageSquareDot,
-  BellRing,
   Type,
   Zap,
   Eye,
@@ -60,832 +57,45 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
-import FeedbackQuestionnaire from "./FeedbackQuestionnaire";
-import LoadingState from "./LoadingState";
-import { useBluMessages } from "./BluMessagesContext";
-import QueryStages, { STAGE_ROWS, STAGE_MS, TOTAL_MS, ASKED_FOR, fmtDuration } from "./QueryStages";
-import CustomReportResult, { DeclinedResult } from "./CustomReportResult";
-import JourneyPreviewOverlay from "./JourneyPreviewOverlay";
-
-type MentionChip = {
-  id: string;
-  categoryKey: string;
-  label: string;
-};
-
-type QueueItem = {
-  id: string;
-  text: string;
-};
-
-const MENTION_CATEGORIES = [
-  { key: "journeys", label: "Journeys" },
-  { key: "experiences", label: "Experiences" },
-  { key: "avatars", label: "Avatars" },
-  { key: "scenes", label: "Scenes" },
-  { key: "poses", label: "Poses" },
-  { key: "design-system", label: "Design System" },
-  { key: "catalog", label: "Catalog Feed" },
-  { key: "events", label: "Events" },
-];
-
-const MENTION_ITEMS: Record<string, string[]> = {
-  journeys: ["Onboarding Flow", "Abandoned Cart Recovery", "Post-Purchase Nurture", "Win-Back Campaign", "Product Education Series", "VIP Loyalty Path"],
-  experiences: ["Summer Sale Banner", "Exit Intent Popup", "Welcome Modal", "Loyalty Badge", "Free Shipping Bar", "New Arrivals Spotlight"],
-  avatars: ["Aria", "Max", "Sophia", "Jordan", "Riley", "Blake"],
-  scenes: ["Paper sweep - White", "Vinyl sweep - Charcoal", "Warm gradient", "Blue seamless", "Walnut studio", "Concrete loft"],
-  poses: ["Standing Neutral", "Pointing Right", "Waving", "Crossed Arms", "Casual Lean", "Seated Relaxed"],
-  "design-system": ["FieldsUSA Dark", "FieldsUSA Light", "Minimal Clean", "Bold & Modern"],
-  catalog: ["Main Product Feed", "Sale Items", "New Arrivals", "Featured Collection", "Clearance Rack"],
-  events: ["Page View", "Add to Cart", "Purchase Complete", "Email Open", "Button Click", "Search Query"],
-};
-
-type HistoryItem = { id: string; title: string; preview: string; time: string };
-
-const ARCHIVED_HISTORY: HistoryItem[] = [
-  { id: "h1", title: "FieldsUSA Summer Campaign", preview: "Abandoned cart email — dark header, Anton headline, three cart rows with feed tags, red CTA", time: "2 days ago" },
-  { id: "h2", title: "Q3 Email Templates", preview: "Four-part series: welcome, nurture, win-back, and re-engage — all using your brand kit", time: "Last week" },
-];
-
-const PLAN_SAMPLE = `Create a new brand avatar: a distinguished South Asian male healthcare spokesperson in his 50s+ with a sharp, commanding personality, traditional-modern wardrobe blend, and authoritative yet approachable tone.
-
-Use this avatar across email campaigns, social media content, and product shot backgrounds.
-
-Steps:
-1. Generate base avatar in 3 poses — standing neutral, seated professional, casual lean
-2. Apply brand color palette and wardrobe guidelines
-3. Export in square and portrait formats for all channels
-4. Review against brand identity guidelines before publishing
-
-Target: medical professionals aged 40–65, South Asian market.`;
-
-const RUN_TASKS: RunTask[] = [
-  { id: "create-avatar", label: "Create Avatar", detail: "Creating avatar", icon: "avatar" },
-  { id: "create-pose", label: "Create Pose", detail: "Creating pose", icon: "pose" },
-  { id: "create-scene", label: "Create Scene", detail: "Creating scene", icon: "scene" },
-];
-
-function CustomReportBlock({ declined, extraEvent, noEmbed, onSettled }: { declined?: boolean; extraEvent?: boolean; noEmbed?: boolean; onSettled?: () => void }) {
-  const [showChart, setShowChart] = useState(false);
-  return (
-    <div className="flex flex-col gap-4">
-      {/* <QueryStages onSettled={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} /> */}
-      <LiveRun onDone={() => setTimeout(() => { setShowChart(true); onSettled?.(); }, 400)} />
-      {showChart && (declined ? <DeclinedResult /> : <CustomReportResult extraEvent={extraEvent} noEmbed={noEmbed} />)}
-    </div>
-  );
-}
-
-function ExecChecklist({ steps }: { steps: string[] }) {
-  const [current, setCurrent] = useState(0);
-  const doneCount = Math.min(current, steps.length);
-  const allDone = current >= steps.length;
-
-  useEffect(() => {
-    if (allDone) return;
-    const t = setTimeout(() => setCurrent((c) => c + 1), 1050);
-    return () => clearTimeout(t);
-  }, [current, allDone]);
-
-  return (
-    <div className="mt-1 rounded-xl overflow-hidden" style={{ background: "var(--content-bg)" }}>
-      {/* Header */}
-      <div className="flex items-center gap-2 px-1 pt-2 pb-2">
-        <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">Running recipe</span>
-        <div className="flex-1" />
-        <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
-          {doneCount}/{steps.length} done
-        </span>
-      </div>
-
-      {/* Step rows */}
-      <div className="px-1 pb-2 flex flex-col gap-2">
-        {steps.map((step, i) => {
-          const isDone   = i < current;
-          const isActive = i === current && !allDone;
-          return (
-            <div key={i} className="flex items-center gap-2.5">
-              {isDone ? (
-                <div className="w-3.75 h-3.75 shrink-0 rounded-full bg-blue-500 flex items-center justify-center">
-                  <Check size={9} className="text-white" strokeWidth={3} />
-                </div>
-              ) : isActive ? (
-                <Loader2 size={15} className="shrink-0 animate-spin text-blue-500" />
-              ) : (
-                <div className="w-3.75 h-3.75 shrink-0 rounded-full border-[1.5px] border-stone-200 dark:border-stone-700" />
-              )}
-              <span
-                className={`text-sm leading-snug ${
-                  isDone
-                    ? "text-stone-400 dark:text-stone-500"
-                    : isActive
-                    ? "font-semibold text-stone-800 dark:text-stone-100"
-                    : "text-stone-500 dark:text-stone-400"
-                }`}
-              >
-                {step}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PlanCard({ content, onApprove, onSkip }: {
-  content: string;
-  onApprove: () => void;
-  onSkip: () => void;
-}) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [decided, setDecided] = useState<"approved" | "skipped" | null>(null);
-  const firstLine = content.split("\n")[0];
-  const steps = content
-    .split("\n")
-    .filter((line) => /^\d+\./.test(line.trim()))
-    .slice(0, 4);
-
-  function handleApprove() {
-    setDecided("approved");
-    onApprove();
-  }
-  function handleSkip() {
-    setDecided("skipped");
-    onSkip();
-  }
-
-  return (
-    <>
-      <div className="shrink-0 px-3 pb-2 pt-2">
-        <div
-          className="overflow-hidden rounded-2xl"
-          style={{
-            border: "1px solid var(--border)",
-            background: "var(--content-bg)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-          }}
-        >
-          <div className="px-4 py-4">
-            <p className="text-[13px] font-semibold text-stone-900 dark:text-stone-100">
-              Want me to execute this plan?
-            </p>
-            <p
-              className="mt-1.5 min-h-12 text-[13px] leading-[1.6] text-stone-600 dark:text-stone-300"
-              style={{ animation: "fade-in 180ms ease-out both" }}
-            >
-              {firstLine}
-            </p>
-          </div>
-
-          <div
-            className="grid transition-[grid-template-rows,opacity] duration-300"
-            style={{
-              gridTemplateRows: detailsOpen ? "1fr" : "0fr",
-              opacity: detailsOpen ? 1 : 0,
-              transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
-            }}
-          >
-            <div className="overflow-hidden">
-              <div className="px-3 pb-3">
-                <div className="rounded-xl bg-stone-50 px-3 py-2.5 dark:bg-white/[0.04]">
-                  <p className="pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                    Steps
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {steps.map((step) => (
-                      <p key={step} className="text-[12.5px] leading-snug text-stone-600 dark:text-stone-300">
-                        {step}
-                      </p>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setReviewOpen(true)}
-                      className="mt-0.5 self-start text-[12.5px] font-semibold text-blue-500 transition-colors hover:text-blue-600"
-                    >
-                      Open full review
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 border-t border-stone-200 bg-stone-50 px-3 py-2.5 dark:border-(--border) dark:bg-white/[0.035]">
-            <button
-              onClick={handleSkip}
-              className="h-7 rounded-lg px-2.5 text-[12.5px] font-medium text-stone-500 transition-colors hover:bg-white hover:text-stone-800 dark:text-stone-400 dark:hover:bg-white/8 dark:hover:text-stone-100"
-            >
-              Skip
-            </button>
-            <span className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-expanded={detailsOpen}
-                onClick={() => setDetailsOpen((current) => !current)}
-                className={`h-7 rounded-lg px-2.5 text-[12.5px] font-medium transition-[background-color,transform] duration-100 active:scale-[0.96] ${
-                  detailsOpen
-                    ? "bg-white text-stone-900 dark:bg-white/10 dark:text-stone-100"
-                    : "bg-white text-stone-600 hover:bg-stone-100 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10"
-                }`}
-              >
-                Details
-              </button>
-              <button
-                onClick={handleApprove}
-                className="h-7 rounded-lg px-3 text-[12.5px] font-semibold text-white transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.96]"
-                style={{ background: decided === "approved" ? "#0080FF" : "#0080FF" }}
-              >
-                {decided === "approved" ? "Approved" : "Approve"}
-              </button>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {reviewOpen && createPortal(
-        <div className="fixed inset-0 z-9999 flex bg-white dark:bg-stone-950">
-          {/* Scrollable content — centered with comfortable reading width */}
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            <div className="w-full max-w-xl mx-auto px-10 py-16">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-5">Plan</p>
-              <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">{content}</p>
-            </div>
-          </div>
-
-          {/* Right action panel */}
-          <div className="shrink-0 w-52 flex flex-col">
-            <div className="flex justify-end p-4">
-              <button
-                type="button"
-                onClick={() => setReviewOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition hover:bg-stone-200 hover:text-stone-800 dark:bg-white/8 dark:text-stone-400 dark:hover:bg-white/14 dark:hover:text-stone-100"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex-1" />
-            {!decided && (
-              <div className="flex flex-col gap-2.5 p-5">
-                <button
-                  onClick={() => { setReviewOpen(false); handleApprove(); }}
-                  className="w-full h-10 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: "#0080FF" }}
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => { setReviewOpen(false); handleSkip(); }}
-                  className="w-full h-10 text-sm font-medium text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
-                >
-                  Skip
-                </button>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-function RecipeRow({ recipe, onSelect }: { recipe: SlashRecipe; onSelect: (r: SlashRecipe) => void }) {
-  return (
-    <button
-      onClick={() => onSelect(recipe)}
-      className="flex w-full items-center gap-3 px-3.5 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-white/5"
-    >
-      <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
-        style={{ background: "rgb(239,246,255)", color: "rgb(37,99,235)" }}
-      >
-        {recipe.icon}
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{recipe.label}</p>
-        <p className="text-xs text-stone-400 dark:text-stone-500">{recipe.desc}</p>
-      </div>
-    </button>
-  );
-}
-
-function CreationRunStatus({ tasks }: { tasks: RunTask[] }) {
-  const [completed, setCompleted] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const timers = tasks.map((task, index) => (
-      setTimeout(() => {
-        setCompleted((current) => ({ ...current, [task.id]: true }));
-      }, 2000)
-    ));
-
-    return () => timers.forEach(clearTimeout);
-  }, [tasks]);
-
-  return (
-    <div className="mt-1 flex w-full max-w-sm flex-col gap-2">
-      {tasks.map((task, index) => {
-        const done = completed[task.id];
-
-        return (
-          <div
-            key={task.id}
-            className="overflow-hidden rounded-xl"
-            style={{
-              background: "var(--content-bg)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              animation: `fade-up 420ms cubic-bezier(0.23,1,0.32,1) ${index * 80}ms both`,
-            }}
-          >
-            <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
-              <RunNumberBadge index={index + 1} done={done} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100">
-                  {task.label}
-                </span>
-                <span className="block truncate text-[12px] text-stone-400 dark:text-stone-500">
-                  {done ? "Completed" : task.detail}
-                </span>
-              </span>
-              {done ? (
-                <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-blue-50 px-2 text-[11.5px] font-semibold text-blue-500 dark:bg-blue-500/12 dark:text-blue-300">
-                  Completed
-                </span>
-              ) : (
-                <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-stone-100 px-2 text-[11.5px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-400">
-                  Pending
-                </span>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function RunNumberBadge({ index, done, state }: { index: number; done?: boolean; state?: "done" | "active" | "pending" }) {
-  const size = 28;
-  const stroke = 2.25;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const isDone = state ? state === "done" : !!done;
-  const isSpinning = state ? state === "active" : !done;
-
-  return (
-    <span
-      className={`relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums transition-colors ${
-        isDone ? "text-white" : "text-stone-600 dark:text-stone-300"
-      }`}
-      style={{ background: isDone ? "#0080FF" : "transparent" }}
-    >
-      <svg
-        width={size}
-        height={size}
-        className="absolute inset-0"
-        style={isSpinning ? { animation: "spin 1.1s linear infinite" } : undefined}
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={isDone ? "#0080FF" : "rgba(120,120,120,0.24)"}
-          strokeWidth={stroke}
-        />
-        {isSpinning && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="#0080FF"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={`${circumference * 0.28} ${circumference * 0.72}`}
-          />
-        )}
-      </svg>
-      <span className="relative">{index}</span>
-    </span>
-  );
-}
-
-function LiveRunProgressCircle({ progress, done }: { progress: number; done: boolean }) {
-  const size = 28;
-  const stroke = 2.25;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - Math.min(Math.max(progress, 0), 1));
-
-  const [tickDrawn, setTickDrawn] = useState(false);
-  useEffect(() => {
-    if (!done) { setTickDrawn(false); return; }
-    const id = requestAnimationFrame(() => setTickDrawn(true));
-    return () => cancelAnimationFrame(id);
-  }, [done]);
-
-  return (
-    <span
-      className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-      style={{ background: done ? "#0080FF" : "transparent" }}
-    >
-      <svg width={size} height={size} className="absolute inset-0" style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(120,120,120,0.24)" strokeWidth={stroke} />
-        {!done && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="#0080FF"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-            style={{ transition: "stroke-dashoffset 500ms cubic-bezier(0.23,1,0.32,1)" }}
-          />
-        )}
-      </svg>
-      {done && (
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="relative">
-          <polyline
-            points="20 6 9 17 4 12"
-            stroke="white"
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray={24}
-            strokeDashoffset={tickDrawn ? 0 : 24}
-            style={{ transition: "stroke-dashoffset 350ms ease-out" }}
-          />
-        </svg>
-      )}
-    </span>
-  );
-}
-
-function LiveRun({ onDone }: { onDone?: () => void } = {}) {
-  const [stageIndex, setStageIndex] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const done = stageIndex >= STAGE_ROWS.length;
-  const currentLabel = STAGE_ROWS[done ? STAGE_ROWS.length - 1 : stageIndex].label;
-
-  useEffect(() => {
-    if (done) return;
-    const t = setTimeout(() => setStageIndex((i) => i + 1), STAGE_MS);
-    return () => clearTimeout(t);
-  }, [stageIndex, done]);
-
-  const doneRef = useRef(false);
-  useEffect(() => {
-    if (!done || doneRef.current) return;
-    doneRef.current = true;
-    onDone?.();
-  }, [done, onDone]);
-
-  return (
-    <div className="mt-1 flex w-full max-w-md flex-col gap-2">
-      <div
-        className="overflow-hidden rounded-xl"
-        style={{
-          background: "var(--content-bg)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-          animation: "fade-up 420ms cubic-bezier(0.23,1,0.32,1) both",
-        }}
-      >
-        <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
-          <LiveRunProgressCircle progress={stageIndex / STAGE_ROWS.length} done={done} />
-          {done ? (
-            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100" style={{ animation: "fade-up 250ms ease-out both" }}>
-              {currentLabel}
-            </span>
-          ) : (
-            <span
-              key={currentLabel}
-              className="min-w-0 flex-1 truncate bg-clip-text text-[13px] font-semibold text-transparent"
-              style={{
-                backgroundImage: "linear-gradient(90deg, var(--muted-foreground) 35%, var(--foreground) 50%, var(--muted-foreground) 65%)",
-                backgroundSize: "200% 100%",
-                animation: "shimmer-text 1.4s linear infinite, fade-up 250ms ease-out both",
-              }}
-            >
-              {currentLabel}
-            </span>
-          )}
-          {done && (
-            <button
-              type="button"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((e) => !e)}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10 dark:hover:text-stone-200"
-              style={{ background: "var(--raised)" }}
-            >
-              <ChevronDown
-                size={14}
-                className="transition-transform duration-300"
-                style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}
-              />
-            </button>
-          )}
-        </div>
-
-        {done && (
-          <div
-            className="grid transition-[grid-template-rows,opacity] duration-400"
-            style={{
-              gridTemplateRows: expanded ? "1fr" : "0fr",
-              opacity: expanded ? 1 : 0,
-              transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
-            }}
-          >
-            <div className="overflow-hidden">
-              <div className="flex flex-col gap-1 px-3 py-2">
-                {STAGE_ROWS.map((stage) => (
-                  <div key={stage.label} className="flex min-h-7 w-full items-center gap-2 rounded-md px-1 py-0.5">
-                    <CheckCheck size={14} strokeWidth={2.5} className="shrink-0 text-stone-400 dark:text-stone-500" />
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-stone-700 dark:text-stone-200">{stage.label}</span>
-                    <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-stone-400 dark:text-stone-500">{fmtDuration(stage.ms)}</span>
-                  </div>
-                ))}
-                <div className="mt-1 flex items-center justify-between gap-3 border-t px-1 pt-2" style={{ borderColor: "var(--border)" }}>
-                  <span className="text-[12.5px] font-medium text-stone-700 dark:text-stone-200">Total time</span>
-                  <span className="shrink-0 font-mono text-[11.5px] font-semibold tabular-nums text-stone-700 dark:text-stone-200">{fmtDuration(TOTAL_MS)}</span>
-                </div>
-              </div>
-
-              <div className="px-3 pb-2 pt-1">
-                <p className="text-[12.5px] font-semibold text-stone-700 dark:text-stone-200">What was asked for</p>
-                <div className="mt-1 flex items-center justify-between gap-3 px-1">
-                  <span className="text-[12.5px] text-stone-400 dark:text-stone-500">{ASKED_FOR.label}</span>
-                  <span className="text-[12.5px] text-stone-600 dark:text-stone-300">{ASKED_FOR.value}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StreamingReply({ text, onDone }: { text: string; onDone: () => void }) {
-  const tokens = text.split(/(\s+)/).filter(Boolean);
-  const [count, setCount] = useState(0);
-  const done = count >= tokens.length;
-
-  useEffect(() => {
-    if (done) {
-      const doneTimer = setTimeout(onDone, 180);
-      return () => clearTimeout(doneTimer);
-    }
-
-    const current = tokens[count] ?? "";
-    const delay = current.trim() ? 42 + Math.min(current.length * 3, 38) : 12;
-    const timer = setTimeout(() => setCount((value) => value + 1), delay);
-    return () => clearTimeout(timer);
-  }, [count, done, onDone, tokens]);
-
-  return (
-    <p className="text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap">
-      {tokens.slice(0, count).map((token, index) => (
-        token.trim() ? (
-          <span
-            key={`${token}-${index}`}
-            className="inline-block"
-            style={{ animation: "blu-stream-in 360ms cubic-bezier(0.22,0.61,0.25,1) both" }}
-          >
-            {token}
-          </span>
-        ) : token
-      ))}
-      {!done && (
-        <span
-          className="ml-0.5 inline-block h-3 w-0.5 translate-y-0.5 rounded-full"
-          style={{ background: "#0080FF", animation: "fade-up 150ms ease-out both" }}
-        />
-      )}
-    </p>
-  );
-}
-
-function getMentionIcon(key: string, size = 13): React.ReactNode {
-  switch (key) {
-    case "journeys": return <Route size={size} />;
-    case "experiences": return <Shuffle size={size} />;
-    case "avatars": return <UserCircle size={size} />;
-    case "scenes": return <Clapperboard size={size} />;
-    case "poses": return <PersonStanding size={size} />;
-    case "design-system": return <PenTool size={size} />;
-    case "catalog": return <Package size={size} />;
-    case "events": return <Activity size={size} />;
-    default: return null;
-  }
-}
-
-type ReferenceAttachment = {
-  category: string;
-  title: string;
-  subtitle: string;
-  bg: string;
-};
-
-type RecipeChip = { key: string; label: string };
-type RunTask = { id: string; label: string; detail: string; icon: "avatar" | "pose" | "scene" };
-
-export type ChatMessage = {
-  id: string;
-  role: "user" | "blu";
-  text: string;
-  attachments?: ReferenceAttachment[];
-  images?: { id: string; url: string }[];
-  mentions?: MentionChip[];
-  recipes?: RecipeChip[];
-  feedbackForm?: boolean;
-  isTyping?: boolean;
-  isStreaming?: boolean;
-  isError?: boolean;
-  isPlan?: boolean;
-  planContent?: string;
-  journeyChip?: { name: string };
-  execChecklist?: { steps: string[] };
-  runTasks?: RunTask[];
-  liveRun?: boolean;
-  queryTrace?: boolean;
-  declined?: boolean;
-  extraEvent?: boolean;
-  noEmbed?: boolean;
-  followUps?: string[];
-};
-
-
-const SAMPLE: ChatMessage[] = [
-  {
-    id: "sample-user",
-    role: "user",
-    text: "2. Abandoned Cart Email\nGenerate an abandoned cart email for the customer's cart contents. Open with a minimal logo header — no hero. Show each cart item as a row with image, name, variant, and price. One full-width CTA linking directly to the cart. One supporting nudge below the cart — free shipping, return policy, or active offer if one exists. Keep the tone direct and low-pressure.",
-  },
-  {
-    id: "sample-blu",
-    role: "blu",
-    text: "Generated the FieldsUSA abandoned cart recovery email — minimal dark header, Anton headline, three cart rows with Liquid feed tags, single red CTA, nudge line, and compact dark footer with unsubscribe.",
-  },
-];
-
-const PLUS_ITEMS = [
-  {
-    icon: <AtSign size={15} className="text-stone-500 dark:text-stone-400" />,
-    label: "References",
-    desc: "Brand kit, products, feeds",
-    arrow: true,
-  },
-  {
-    icon: <Paperclip size={15} className="text-stone-500 dark:text-stone-400" />,
-    label: "Attach Files",
-    desc: "File from device",
-    arrow: false,
-  },
-];
-
-const REFERENCE_ITEMS = [
-  { label: "Assets", icon: <Library size={14} /> },
-  { label: "Attributes", icon: <Database size={14} /> },
-  { label: "Users", icon: <Users size={14} /> },
-  { label: "Events", icon: <Activity size={14} /> },
-  { label: "Avatars", icon: <UserCircle size={14} /> },
-  { label: "Scenes", icon: <Clapperboard size={14} /> },
-  { label: "Poses", icon: <PersonStanding size={14} /> },
-  { label: "Design System", icon: <PenTool size={14} /> },
-  { label: "Catalog", icon: <Package size={14} /> },
-  { label: "Feeds", icon: <Rss size={14} /> },
-  { label: "Journeys", icon: <Route size={14} /> },
-  { label: "Experiences", icon: <Shuffle size={14} /> },
-  { label: "Out of the box", icon: <PackageOpen size={14} /> },
-  { label: "Boards", icon: <LayoutDashboard size={14} /> },
-];
-
-const REFERENCE_TILES = [
-  { title: "Paper sweep - White", subtitle: "Lighting: high key floor", bg: "linear-gradient(135deg,#f8fafc 0%,#ffffff 55%,#dbe3ea 100%)" },
-  { title: "Paper sweep - Cream", subtitle: "Lighting: soft diffused", bg: "linear-gradient(135deg,#f6eedf 0%,#fffaf0 55%,#e8dcc4 100%)" },
-  { title: "Vinyl sweep - Charcoal", subtitle: "Lighting: studio", bg: "radial-gradient(circle at 50% 20%,#555 0%,#1f1f1f 50%,#090909 100%)" },
-  { title: "Warm gradient", subtitle: "Lighting: vivid backdrop", bg: "linear-gradient(160deg,#ff4d2d 0%,#ff8a35 55%,#ffd27a 100%)" },
-  { title: "White showroom", subtitle: "Lighting: natural", bg: "linear-gradient(135deg,#ffffff 0%,#eef2f5 58%,#d7dee6 100%)" },
-  { title: "Walnut studio", subtitle: "Lighting: warm accent", bg: "linear-gradient(135deg,#2b1710 0%,#704126 45%,#1d1512 100%)" },
-  { title: "Concrete loft", subtitle: "Lighting: soft industrial", bg: "linear-gradient(135deg,#d7d7d4 0%,#a8aaa9 58%,#737678 100%)" },
-  { title: "Blue seamless", subtitle: "Lighting: cool studio", bg: "linear-gradient(135deg,#d9ecff 0%,#8bbdf0 58%,#3975bd 100%)" },
-  { title: "Forest set", subtitle: "Lighting: moody natural", bg: "linear-gradient(135deg,#0f241a 0%,#2f5c39 50%,#0b1510 100%)" },
-  { title: "Retail shelf", subtitle: "Lighting: bright product", bg: "linear-gradient(135deg,#f6f7f8 0%,#ffffff 35%,#d6dde4 36%,#eef1f4 100%)" },
-  { title: "Steel table", subtitle: "Lighting: crisp overhead", bg: "linear-gradient(135deg,#c8ced5 0%,#f8fafc 45%,#737b83 100%)" },
-  { title: "Black marble", subtitle: "Lighting: premium contrast", bg: "linear-gradient(135deg,#080808 0%,#202020 42%,#4d4d4d 43%,#121212 100%)" },
-  { title: "Desert wall", subtitle: "Lighting: warm matte", bg: "linear-gradient(135deg,#c9905d 0%,#e7c198 50%,#925b34 100%)" },
-  { title: "Glass room", subtitle: "Lighting: airy daylight", bg: "linear-gradient(135deg,#f5fbff 0%,#dbeeff 48%,#ffffff 49%,#cddbe7 100%)" },
-  { title: "Red cyclorama", subtitle: "Lighting: campaign bold", bg: "linear-gradient(135deg,#8c1111 0%,#df2f24 55%,#ff8a64 100%)" },
-];
-
-const BLU_REPLIES = [
-  "On it — generating that for you now.",
-  "Got it! Putting that together.",
-  "Sure thing. Working on it now.",
-  "Let me craft that for you right away.",
-  "Great — I'll have that ready in a moment.",
-  "Understood. Creating that now.",
-  "I can do that! Give me just a sec.",
-  "All good — working on it.",
-];
-
-const GENERAL_FOLLOW_UPS = [
-  "Make it more concise",
-  "Try a bolder headline",
-  "Show me another variation",
-];
-
-const CUSTOM_REPORT_FOLLOW_UPS = [
-  "Which day had the strongest cart-to-view ratio",
-  "How does this compare to the previous 30 days",
-  "Break this down by traffic source",
-];
-
-function FollowUpArrow() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-stone-400 dark:text-stone-500">
-      <path d="M9 10l-5 5 5 5" />
-      <path d="M20 4v7a4 4 0 0 1-4 4H4" />
-    </svg>
-  );
-}
-
-type Placeholder = { text: string };
-const PLACEHOLDERS: Placeholder[] = [
-  { text: "Ask Blu to create anything..." },
-  { text: "Type / for recipes and prompt templates" },
-  { text: "Type @ to reference journeys, events, assets" },
-  { text: "Type + to attach files, feeds, or brand kit" },
-  { text: "Generate a banner, email, or product shot..." },
-];
-
-const LANDING_PROMPTS = [
-  "What do you want to create today?",
-  "Ready when you are.",
-  "What are we building today?",
-  "What's on your mind?",
-  "Let's create something great.",
-];
-
-const CONTEXT_RECIPE_KEYS: { match: RegExp; keys: string[] }[] = [
-  { match: /\/journeys/,     keys: ["nurture", "welcome", "email", "subject"] },
-  { match: /\/experiences/,  keys: ["banner", "email", "push", "landing"] },
-  { match: /\/users/,        keys: ["email", "sms", "push", "subject"] },
-  { match: /\/accounts/,     keys: ["email", "sms", "subject"] },
-  { match: /\/catalog/,      keys: ["product", "banner", "social"] },
-  { match: /\/subscription/, keys: ["email", "subject", "sms"] },
-  { match: /\/home/,         keys: ["email", "banner", "subject"] },
-  { match: /\/connections/,  keys: ["email", "push"] },
-];
-
-type SlashRecipe = { key: string; icon: React.ReactNode; label: string; desc: string };
-const SLASH_RECIPES: SlashRecipe[] = [
-  { key: "email",    icon: <Mail size={13} />,           label: "Email campaign",      desc: "Campaign or transactional email"     },
-  { key: "sms",      icon: <MessageSquare size={13} />,  label: "SMS message",          desc: "Short message for mobile"            },
-  { key: "push",     icon: <Bell size={13} />,           label: "Push notification",    desc: "App or browser push"                 },
-  { key: "social",   icon: <Globe size={13} />,          label: "Social post",          desc: "Instagram, LinkedIn, X"              },
-  { key: "banner",   icon: <Camera size={13} />,         label: "Banner creative",      desc: "Visual ad or hero banner"            },
-  { key: "subject",  icon: <Type size={13} />,           label: "Subject lines",        desc: "Email subject line variants"         },
-  { key: "product",  icon: <Package size={13} />,        label: "Product shot",         desc: "AI-generated product image"          },
-  { key: "landing",  icon: <LayoutDashboard size={13} />,label: "Landing page",         desc: "Full landing page copy"              },
-  { key: "nurture",  icon: <Route size={13} />,          label: "Nurture flow",         desc: "Multi-step email sequence"           },
-  { key: "welcome",  icon: <Zap size={13} />,            label: "Welcome series",       desc: "Onboarding email sequence"           },
-];
-
-const REFERENCE_LIST_ITEMS: Record<string, string[]> = {
-  Assets: ["Brand logo – Dark", "Brand logo – Light", "Hero banner – Summer", "Product shot – White BG", "Campaign header – Q3", "Email footer template", "Social post – Square", "Ad creative – 16:9"],
-  Attributes: ["First Name", "Last Name", "Email", "Phone", "Company", "Plan", "Country", "Created At", "Last Seen", "Total Spend"],
-  Users: ["Rana V.", "Alex Chen", "Sarah Kim", "Mike Johnson", "Emma Davis", "Tom Wilson", "Priya Patel", "James Lee"],
-  Events: ["Page View", "Add to Cart", "Purchase Complete", "Email Open", "Button Click", "Form Submit", "Sign Up", "Login", "Search Query", "Checkout Started"],
-  Avatars: ["Aria", "Max", "Sophia", "Jordan", "Riley", "Blake", "Morgan", "Casey"],
-  Scenes: ["Paper sweep – White", "Vinyl sweep – Charcoal", "Warm gradient", "Blue seamless", "Walnut studio", "Concrete loft", "Desert wall", "Glass room"],
-  Poses: ["Standing Neutral", "Pointing Right", "Waving", "Crossed Arms", "Casual Lean", "Seated Relaxed", "Walking Forward", "Hands on Hips"],
-  "Design System": ["FieldsUSA Dark", "FieldsUSA Light", "Minimal Clean", "Bold & Modern"],
-  Catalog: ["Main Product Feed", "Sale Items", "New Arrivals", "Featured Collection", "Clearance Rack", "Bundle Deals"],
-  Feeds: ["Main Product Feed", "Sale Items Feed", "New Arrivals Feed", "Seasonal Feed", "Custom Feed #1", "Custom Feed #2"],
-  Journeys: ["Onboarding Flow", "Abandoned Cart Recovery", "Post-Purchase Nurture", "Win-Back Campaign", "Product Education Series", "VIP Loyalty Path"],
-  Experiences: ["Summer Sale Banner", "Exit Intent Popup", "Welcome Modal", "Loyalty Badge", "Free Shipping Bar", "New Arrivals Spotlight"],
-  "Out of the box": ["Welcome Series", "Cart Recovery", "Post-Purchase", "Win-Back", "Browse Abandonment", "Order Confirmation", "Re-engagement"],
-  Boards: ["Marketing Overview", "Campaign Tracker", "Content Calendar", "Sales Pipeline", "Team Tasks"],
-};
-
-const IMAGE_ASPECT_OPTIONS = ["1:1", "16:9", "9:16", "4:3", "3:4", "4:5"];
-const IMAGE_BACKGROUND_OPTIONS = ["Auto", "White", "Transparent", "+ Custom background"];
-const IMAGE_STYLE_OPTIONS = ["Auto", "Studio", "Lifestyle", "Editorial", "On White", "Dark & Moody", "Abstract", "Macro", "Bokeh"];
-
-function referenceTitle(label: string) {
-  return label === "Products & Feeds" ? "Products & feeds" : `${label}s`;
-}
-
-export type BluMode = "panel" | "float" | "fullscreen";
+import { useBluMessages } from "../BluMessagesContext";
+
+import type { MentionChip, QueueItem, ReferenceAttachment, RecipeChip, ChatMessage, SlashRecipe, BluMode } from "./types";
+import {
+  MENTION_CATEGORIES,
+  MENTION_ITEMS,
+  ARCHIVED_HISTORY,
+  PLAN_SAMPLE,
+  RUN_TASKS,
+  PLUS_ITEMS,
+  REFERENCE_ITEMS,
+  REFERENCE_TILES,
+  BLU_REPLIES,
+  GENERAL_FOLLOW_UPS,
+  CUSTOM_REPORT_FOLLOW_UPS,
+  PLACEHOLDERS,
+  LANDING_PROMPTS,
+  CONTEXT_RECIPE_KEYS,
+  SLASH_RECIPES,
+  REFERENCE_LIST_ITEMS,
+  IMAGE_ASPECT_OPTIONS,
+  IMAGE_BACKGROUND_OPTIONS,
+  IMAGE_STYLE_OPTIONS,
+} from "./constants";
+import { getMentionIcon, createMentionChipEl, createReferenceChipEl, FollowUpArrow } from "./utils";
+
+import FeedbackQuestionnaire from "./blocks/FeedbackQuestionnaire";
+import LoadingState from "./blocks/LoadingState";
+import JourneyPreviewOverlay from "./blocks/JourneyPreviewOverlay";
+import { CreationRunStatus } from "./blocks/CreationRun";
+import { LiveRun } from "./blocks/LiveRun";
+import { CustomReportBlock } from "./blocks/CustomReport";
+import { ExecChecklist } from "./blocks/ExecChecklist";
+import { PlanCard } from "./blocks/PlanCard";
+import { StreamingReply } from "./blocks/StreamingReply";
+import { RecipeRow } from "./blocks/RecipeRow";
+import { NotificationIcon, NotificationStrip } from "./blocks/Notification";
+
+export type { ChatMessage, BluMode };
 
 export default function BluChat({
   onClose,
@@ -1697,34 +907,7 @@ export default function BluChat({
                 onClick={() => setThreadSwitcherOpen((o) => !o)}
                 className="flex max-w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
               >
-                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                  <MessagesSquare
-                    size={15}
-                    className="absolute text-stone-400 transition-[opacity,filter] duration-500"
-                    style={{ opacity: hasUnreadThreads ? 0 : 1, filter: hasUnreadThreads ? "blur(4px)" : "blur(0px)" }}
-                  />
-                  <MessageSquareDot
-                    size={15}
-                    className="absolute text-blue-500 transition-[opacity,filter] duration-500"
-                    style={{
-                      opacity: hasUnreadThreads && unreadIconPhase === "dot" ? 1 : 0,
-                      filter: hasUnreadThreads && unreadIconPhase === "dot" ? "blur(0px)" : "blur(4px)",
-                    }}
-                  />
-                  {hasUnreadThreads && (
-                    <BellRing
-                      key={unreadIconPhase}
-                      size={15}
-                      className="absolute text-blue-500 transition-[opacity,filter] duration-500"
-                      style={{
-                        opacity: unreadIconPhase === "bell" ? 1 : 0,
-                        filter: unreadIconPhase === "bell" ? "blur(0px)" : "blur(4px)",
-                        animation: unreadIconPhase === "bell" ? "bell-ring 0.8s ease-in-out" : undefined,
-                        transformOrigin: "50% 0%",
-                      }}
-                    />
-                  )}
-                </span>
+                <NotificationIcon hasUnread={hasUnreadThreads} phase={unreadIconPhase} />
                 <span className="max-w-[20ch] truncate text-sm font-medium leading-none text-stone-800 dark:text-stone-100">
                   {activeThreadTitle}
                 </span>
@@ -2333,21 +1516,32 @@ export default function BluChat({
         </div>
       </div>
 
-      {/* Pending plan card */}
+      {/* Pending plan card — docked directly above the composer in fullscreen (which is itself
+          position: absolute and anchored to the bottom), so it never overlaps it. */}
       {!historyOpen && pendingPlan && (
-        <PlanCard
-          content={pendingPlan.content}
-          onApprove={() => {
-            setPendingPlan(null);
-            const ts = Date.now();
-            setMessages(c => [...c, { id: `blu-plan-approved-${ts}`, role: "blu", text: "Plan approved. Starting execution now." }]);
-          }}
-          onSkip={() => {
-            setPendingPlan(null);
-            const ts = Date.now();
-            setMessages(c => [...c, { id: `blu-plan-skipped-${ts}`, role: "blu", text: "Got it, plan skipped. Let me know how you'd like to proceed." }]);
-          }}
-        />
+        <div
+          className={mode === "fullscreen" ? "absolute inset-x-0 z-20" : ""}
+          style={
+            mode === "fullscreen"
+              ? { margin: "0 auto", width: "100%", maxWidth: "48rem", bottom: `${composerHeight + 24}px` }
+              : undefined
+          }
+        >
+          <PlanCard
+            fullscreen={mode === "fullscreen"}
+            content={pendingPlan.content}
+            onApprove={() => {
+              setPendingPlan(null);
+              const ts = Date.now();
+              setMessages(c => [...c, { id: `blu-plan-approved-${ts}`, role: "blu", text: "Plan approved. Starting execution now." }]);
+            }}
+            onSkip={() => {
+              setPendingPlan(null);
+              const ts = Date.now();
+              setMessages(c => [...c, { id: `blu-plan-skipped-${ts}`, role: "blu", text: "Got it, plan skipped. Let me know how you'd like to proceed." }]);
+            }}
+          />
+        </div>
       )}
 
       {/* Input */}
@@ -2577,33 +1771,11 @@ export default function BluChat({
           </div>
         )}
 
-        {hasUnreadThreads && !notificationStripDismissed && (
-                <div
-                  className="flex items-center gap-2 rounded-t-xl px-3 py-2.5"
-                  style={{
-                    background: "var(--muted)",
-                    borderTop: "2px solid var(--border)",
-                    borderLeft: "2px solid var(--border)",
-                    borderRight: "2px solid var(--border)",
-                    animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => { setThreadSwitcherOpen(true); setNotificationStripDismissed(true); }}
-                    className="min-w-0 flex-1 truncate text-left text-xs font-medium text-stone-600 dark:text-stone-300 hover:underline"
-                  >
-                    You have notification from other chat(s), click to view
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationStripDismissed(true)}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
+        <NotificationStrip
+          visible={hasUnreadThreads && !notificationStripDismissed}
+          onOpen={() => { setThreadSwitcherOpen(true); setNotificationStripDismissed(true); }}
+          onDismiss={() => setNotificationStripDismissed(true)}
+        />
 
               <div
                 className={`px-4 pt-4 pb-3 ${hasUnreadThreads && !notificationStripDismissed ? "rounded-b-xl" : "rounded-xl"}`}
