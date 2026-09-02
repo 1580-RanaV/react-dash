@@ -4,7 +4,7 @@ import { STAGE_ROWS, STAGE_MS, TOTAL_MS, ASKED_FOR, fmtDuration } from "./QueryS
 
 /* Trigger word: live-run */
 
-export function LiveRunProgressCircle({ progress, done }: { progress: number; done: boolean }) {
+export function LiveRunProgressCircle({ progress, done, indeterminate }: { progress: number; done: boolean; indeterminate?: boolean }) {
   const size = 28;
   const stroke = 2.25;
   const radius = (size - stroke) / 2;
@@ -23,7 +23,12 @@ export function LiveRunProgressCircle({ progress, done }: { progress: number; do
       className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
       style={{ background: done ? "#0080FF" : "transparent" }}
     >
-      <svg width={size} height={size} className="absolute inset-0" style={{ transform: "rotate(-90deg)" }}>
+      <svg
+        width={size}
+        height={size}
+        className="absolute inset-0"
+        style={indeterminate && !done ? { animation: "spin 1s linear infinite" } : { transform: "rotate(-90deg)" }}
+      >
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(120,120,120,0.24)" strokeWidth={stroke} />
         {!done && (
           <circle
@@ -34,9 +39,9 @@ export function LiveRunProgressCircle({ progress, done }: { progress: number; do
             stroke="#0080FF"
             strokeWidth={stroke}
             strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-            style={{ transition: "stroke-dashoffset 500ms cubic-bezier(0.23,1,0.32,1)" }}
+            strokeDasharray={indeterminate ? `${circumference * 0.28} ${circumference * 0.72}` : circumference}
+            strokeDashoffset={indeterminate ? undefined : dashOffset}
+            style={indeterminate ? undefined : { transition: "stroke-dashoffset 500ms cubic-bezier(0.23,1,0.32,1)" }}
           />
         )}
       </svg>
@@ -78,7 +83,7 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
   }, [done, onDone]);
 
   return (
-    <div className="mt-1 flex w-full max-w-md flex-col gap-2">
+    <div className="mt-1 flex w-full max-w-64 flex-col gap-2">
       <div
         className="overflow-hidden rounded-xl"
         style={{
@@ -126,7 +131,7 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
 
         {done && (
           <div
-            className="grid transition-[grid-template-rows,opacity] duration-400"
+            className="grid transition-[grid-template-rows,opacity] duration-300"
             style={{
               gridTemplateRows: expanded ? "1fr" : "0fr",
               opacity: expanded ? 1 : 0,

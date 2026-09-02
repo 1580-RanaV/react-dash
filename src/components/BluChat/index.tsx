@@ -54,6 +54,9 @@ import {
   ChevronDown,
   RotateCcw,
   Square,
+  Pin,
+  Trash2,
+  ArchiveRestore,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
@@ -81,7 +84,7 @@ import {
   IMAGE_BACKGROUND_OPTIONS,
   IMAGE_STYLE_OPTIONS,
 } from "./constants";
-import { getMentionIcon, createMentionChipEl, createReferenceChipEl, FollowUpArrow } from "./utils";
+import { getMentionIcon, createMentionChipEl, createReferenceChipEl, getReferenceIconPaths, FollowUpArrow } from "./utils";
 
 import FeedbackQuestionnaire from "./blocks/FeedbackQuestionnaire";
 import LoadingState from "./blocks/LoadingState";
@@ -117,12 +120,15 @@ export default function BluChat({
   const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
   const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
 
-  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, renameActiveThread } = useBluMessages();
+  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, renameActiveThread, renameThread, togglePinThread, archiveThread, unarchiveThread, deleteThread } = useBluMessages();
   const activeThread = threads.find((t) => t.id === activeThreadId);
   const activeThreadTitle = activeThread?.title ?? "New chat";
   const [threadSwitcherOpen, setThreadSwitcherOpen] = useState(false);
   const threadSwitcherRef = useRef<HTMLDivElement>(null);
   const [threadSwitcherSearch, setThreadSwitcherSearch] = useState("");
+  const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [archivedViewOpen, setArchivedViewOpen] = useState(false);
   const [settledReportIds, setSettledReportIds] = useState<Set<string>>(new Set());
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const [unreadThreadIds, setUnreadThreadIds] = useState<Set<string>>(new Set());
@@ -167,7 +173,10 @@ export default function BluChat({
     setActiveReportId(null);
   }
   useEffect(() => {
-    if (!threadSwitcherOpen) setThreadSwitcherSearch("");
+    if (!threadSwitcherOpen) {
+      setThreadSwitcherSearch("");
+      setArchivedViewOpen(false);
+    }
   }, [threadSwitcherOpen]);
   const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
@@ -305,8 +314,7 @@ export default function BluChat({
 
   function addAttachment(name: string) {
     if (!selectedReference) return;
-    const next = { category: selectedReference, title: name, subtitle: "", bg: "" };
-    setAttachments((current) => [...current.filter((item) => item.category !== selectedReference), next]);
+    insertReferenceChip(selectedReference, name);
     setPlusOpen(false);
     setReferencesOpen(false);
     setSelectedReference(null);
@@ -509,6 +517,8 @@ export default function BluChat({
         text += `@${node.dataset.label}`;
       } else if (node instanceof HTMLElement && node.dataset.recipe) {
         // skip — recipes render as chips, not inline text
+      } else if (node instanceof HTMLElement && node.dataset.reference) {
+        // skip — references render as chips, not inline text
       } else {
         node.childNodes.forEach(walk);
       }
@@ -535,49 +545,18 @@ export default function BluChat({
     });
   }
 
+  function getEditorReferences(): ReferenceAttachment[] {
+    const editor = editorRef.current;
+    if (!editor) return [];
+    return Array.from(editor.querySelectorAll("[data-reference]")).map((el) => {
+      const e = el as HTMLElement;
+      return { category: e.dataset.category ?? "", title: e.dataset.refName ?? "", subtitle: "", bg: "" };
+    });
+  }
+
   function clearEditor() {
     if (editorRef.current) editorRef.current.innerHTML = "";
     setEditorEmpty(true);
-  }
-
-  function getReferenceIconPaths(label: string): string {
-    switch (label) {
-      case "Assets": return '<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>';
-      case "Attributes": return '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>';
-      case "Users": return '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
-      case "Events": return '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>';
-      case "Avatars": return '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>';
-      case "Scenes": return '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1-.3 2.1.3 2.4 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 3.8"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>';
-      case "Poses": return '<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>';
-      case "Design System": return '<path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/>';
-      case "Catalog": return '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>';
-      case "Feeds": return '<path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/>';
-      case "Journeys": return '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>';
-      case "Experiences": return '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="m18 22 4-4-4-4"/>';
-      case "Out of the box": return '<path d="M12 22v-9"/><path d="M3.17 8 12 13l8.83-5"/><path d="M3 13.5v5.37a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V13.5"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v1l9 5 9-5Z"/>';
-      case "Boards": return '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>';
-      default: return "";
-    }
-  }
-
-  function createReferenceChipEl(category: string, name: string): HTMLSpanElement {
-    const span = document.createElement("span");
-    span.contentEditable = "false";
-    span.className = "reference-chip";
-    span.dataset.reference = "true";
-    span.dataset.category = category;
-    span.dataset.refName = name;
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("width", "12"); svg.setAttribute("height", "12");
-    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none");
-    svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "2");
-    svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
-    svg.innerHTML = getReferenceIconPaths(category);
-    const lbl = document.createElement("span");
-    lbl.textContent = name;
-    span.appendChild(svg);
-    span.appendChild(lbl);
-    return span;
   }
 
   function insertReferenceChip(category: string, name: string) {
@@ -648,12 +627,15 @@ export default function BluChat({
     !msg.runTasks
   )?.id;
 
+  const lastBluMessageId = [...messages].reverse().find((msg) => msg.role === "blu")?.id;
+
   function sendMessage(overrideText?: string) {
     if (inputLocked) return;
     const text = overrideText ?? getEditorText();
     const currentMentions = overrideText ? [] : getEditorMentions();
     const currentRecipes = overrideText ? [] : getEditorRecipes();
-    if (!text && attachments.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0) return;
+    const currentReferences = overrideText ? [] : getEditorReferences();
+    if (!text && attachments.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0 && currentReferences.length === 0) return;
 
     // Queue intercept — "q1", "q2", etc.
     if (!overrideText && /^q\d+$/i.test(text.trim()) && queue.length < 4) {
@@ -692,7 +674,7 @@ export default function BluChat({
         id: `user-${ts}`,
         role: "user",
         text,
-        attachments,
+        attachments: [...attachments, ...currentReferences],
         images: imagePreviews.length ? imagePreviews.map((p) => ({ id: p.id, url: p.url })) : undefined,
         mentions: currentMentions,
         recipes: currentRecipes.length ? currentRecipes : undefined,
@@ -919,7 +901,7 @@ export default function BluChat({
               </button>
 
               <div
-                className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 overflow-hidden rounded-xl"
+                className="absolute left-0 top-[calc(100%+6px)] z-50 w-88 overflow-hidden rounded-xl"
                 style={{
                   background: "var(--content-bg)",
                   border: "1px solid var(--border)",
@@ -950,34 +932,165 @@ export default function BluChat({
                     New chat
                   </button>
                 </div>
+                {!archivedViewOpen ? (
                 <div className="max-h-64 overflow-y-auto chat-scroll px-1.5 pb-1.5">
                   {threads
+                    .filter((t) => !t.archived)
                     .filter((t) => (t.title ?? "New chat").toLowerCase().includes(threadSwitcherSearch.toLowerCase()))
+                    .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
                     .map((t) => {
                       const isActive = t.id === activeThreadId;
                       const isUnread = unreadThreadIds.has(t.id);
+                      const isRenaming = renamingThreadId === t.id;
+
+                      function commitRename() {
+                        renameThread(t.id, renameDraft);
+                        setRenamingThreadId(null);
+                      }
+
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          type="button"
-                          onClick={() => { switchThread(t.id); markThreadRead(t.id); setThreadSwitcherOpen(false); }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => { if (isRenaming) return; switchThread(t.id); markThreadRead(t.id); setThreadSwitcherOpen(false); }}
+                          onKeyDown={(e) => { if (!isRenaming && (e.key === "Enter" || e.key === " ")) { switchThread(t.id); markThreadRead(t.id); setThreadSwitcherOpen(false); } }}
+                          className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                             isActive ? "bg-stone-100 dark:bg-white/8" : "hover:bg-stone-100 dark:hover:bg-white/6"
                           }`}
                         >
                           {isUnread && (
                             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" style={{ animation: "fade-up 250ms ease-out both" }} />
                           )}
-                          <span className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold text-stone-900 dark:text-stone-100" : "font-medium text-stone-700 dark:text-stone-200"}`}>
-                            {t.title ?? "New chat"}
-                          </span>
-                          <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500">
-                            {isActive ? "Current" : t.time}
-                          </span>
-                        </button>
+                          {t.pinned && (
+                            <Pin size={11} className="shrink-0 fill-current text-blue-500" />
+                          )}
+                          {isRenaming ? (
+                            <input
+                              autoFocus
+                              value={renameDraft}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => setRenameDraft(e.target.value)}
+                              onBlur={commitRename}
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === "Enter") commitRename();
+                                if (e.key === "Escape") setRenamingThreadId(null);
+                              }}
+                              className="min-w-0 flex-1 rounded-md bg-white px-1.5 py-0.5 text-sm font-medium text-stone-900 outline-none ring-1 ring-blue-400 dark:bg-white/10 dark:text-stone-100"
+                            />
+                          ) : (
+                            <span className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold text-stone-900 dark:text-stone-100" : "font-medium text-stone-700 dark:text-stone-200"}`}>
+                              {t.title ?? "New chat"}
+                            </span>
+                          )}
+                          {!isRenaming && (
+                            <span className="relative h-6 w-26 shrink-0">
+                              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-xs text-stone-400 opacity-100 transition-opacity duration-100 group-hover:opacity-0 dark:text-stone-500">
+                                {isActive ? "Current" : t.time}
+                              </span>
+                              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:pointer-events-auto group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  title={t.pinned ? "Unpin" : "Pin"}
+                                  onClick={(e) => { e.stopPropagation(); togglePinThread(t.id); }}
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                >
+                                  <Pin size={12} className={t.pinned ? "fill-current text-blue-500" : ""} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Rename"
+                                  onClick={(e) => { e.stopPropagation(); setRenamingThreadId(t.id); setRenameDraft(t.title ?? "New chat"); }}
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Archive"
+                                  onClick={(e) => { e.stopPropagation(); archiveThread(t.id); }}
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                >
+                                  <Archive size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Delete"
+                                  onClick={(e) => { e.stopPropagation(); deleteThread(t.id); }}
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       );
                     })}
                 </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto chat-scroll px-1.5 pb-1.5">
+                  {threads
+                    .filter((t) => t.archived)
+                    .filter((t) => (t.title ?? "New chat").toLowerCase().includes(threadSwitcherSearch.toLowerCase()))
+                    .map((t) => (
+                      <div
+                        key={t.id}
+                        className="group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-stone-700 dark:text-stone-200">
+                          {t.title ?? "New chat"}
+                        </span>
+                        <span className="relative h-6 w-13 shrink-0">
+                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-xs text-stone-400 opacity-100 transition-opacity duration-100 group-hover:opacity-0 dark:text-stone-500">
+                            {t.time}
+                          </span>
+                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:pointer-events-auto group-hover:opacity-100">
+                            <button
+                              type="button"
+                              title="Restore"
+                              onClick={() => unarchiveThread(t.id)}
+                              className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                            >
+                              <ArchiveRestore size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              onClick={() => deleteThread(t.id)}
+                              className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  {threads.filter((t) => t.archived).length === 0 && (
+                    <p className="px-2.5 py-6 text-center text-xs text-stone-400 dark:text-stone-500">No archived chats</p>
+                  )}
+                </div>
+              )}
+              <div className="p-1.5 pt-0">
+                <button
+                  type="button"
+                  onClick={() => setArchivedViewOpen((o) => !o)}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                    archivedViewOpen ? "bg-stone-100 dark:bg-white/8" : "hover:bg-stone-100 dark:hover:bg-white/6"
+                  }`}
+                >
+                  <Archive size={14} className="shrink-0 text-stone-400" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-stone-700 dark:text-stone-200">
+                    Archived chats
+                  </span>
+                  {archivedViewOpen ? (
+                    <ChevronLeft size={13} className="shrink-0 text-stone-400" />
+                  ) : (
+                    <ChevronRight size={13} className="shrink-0 text-stone-400" />
+                  )}
+                </button>
+              </div>
               </div>
             </div>
           ) : (
@@ -1041,16 +1154,6 @@ export default function BluChat({
             </button>
           )}
 
-          <button
-            onClick={() => { setHistoryOpen((o) => !o); setHistorySearch(""); }}
-            className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${
-              historyOpen
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                : "hover:bg-stone-100 dark:hover:bg-white/8 text-stone-400"
-            }`}
-          >
-            <Archive size={13} />
-          </button>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
@@ -1165,7 +1268,7 @@ export default function BluChat({
         )}
         {messages.map((msg) => {
           const isEditingThis = msg.role === "user" && editingMsgId === msg.id;
-          const isFullWidthBlock = isEditingThis || !!msg.queryTrace;
+          const isFullWidthBlock = isEditingThis || !!msg.queryTrace || !!msg.liveRun || !!msg.runTasks;
           return (
           <div key={msg.id} className="relative flex animate-fade-up justify-start hover:z-20 focus-within:z-20">
           <div className={`group flex flex-col gap-1.5 items-start ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
@@ -1193,7 +1296,7 @@ export default function BluChat({
                 {msg.role === "user" ? "Rana" : "Blu"}
               </span>
             </div>
-            <div className={`min-w-0 ${isEditingThis ? "w-full" : ""}`}>
+            <div className={`min-w-0 ${isFullWidthBlock ? "w-full" : ""}`}>
               {msg.images?.length ? (
                 <div className="mb-2 flex flex-wrap justify-start gap-1.5">
                   {msg.images.map((img) => (
@@ -1487,7 +1590,7 @@ export default function BluChat({
                   )}
                 </div>
               )}
-              {msg.role === "blu" && !msg.isTyping && !msg.isStreaming && (!msg.queryTrace || settledReportIds.has(msg.id)) &&
+              {msg.role === "blu" && msg.id === lastBluMessageId && !msg.isTyping && !msg.isStreaming && (!msg.queryTrace || settledReportIds.has(msg.id)) &&
                 msg.followUps && msg.followUps.length > 0 && (
                 <div className="mt-2.5">
                   <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Follow-ups</p>

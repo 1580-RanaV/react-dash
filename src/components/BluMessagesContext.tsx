@@ -18,6 +18,8 @@ export type BluThread = {
   messages: ChatMessage[];
   sessionTime: string | null;
   time: string; // relative-time label shown in the switcher list
+  pinned?: boolean;
+  archived?: boolean;
 };
 
 const SEED_THREADS: BluThread[] = [
@@ -87,6 +89,7 @@ const SEED_THREADS: BluThread[] = [
     title: "Summer sale banner text",
     time: "3d",
     sessionTime: "3 days ago 1:15 PM",
+    archived: true,
     messages: [
       { id: "h7-u", role: "user", text: "Give me three headline variants for the summer sale hero banner — bold, punchy, benefit-led." },
       { id: "h7-b", role: "blu", text: "Here are three variants ranging from urgency-led to benefit-led, all sized for the hero banner's character limit." },
@@ -97,6 +100,7 @@ const SEED_THREADS: BluThread[] = [
     title: "Onboarding email #1",
     time: "1w",
     sessionTime: "Last week 11:30 AM",
+    archived: true,
     messages: [
       { id: "h8-u", role: "user", text: "Draft the first onboarding email — focus on product discovery and key features." },
       { id: "h8-b", role: "blu", text: "Drafted it — leads with the single most-used feature, then a lightweight tour of two more, closing with a getting-started CTA." },
@@ -107,6 +111,7 @@ const SEED_THREADS: BluThread[] = [
     title: "Abandoned cart — footwear",
     time: "1w",
     sessionTime: "Last week 8:44 AM",
+    archived: true,
     messages: [
       { id: "h9-u", role: "user", text: "Recovery email for the footwear category, with size-specific urgency copy." },
       { id: "h9-b", role: "blu", text: "Built it — cart rows pull live size and stock data from the feed, with a low-stock nudge only shown when the saved size is running out." },
@@ -124,6 +129,11 @@ type BluMessagesContextValue = {
   switchThread: (id: string) => void;
   createThread: () => void;
   renameActiveThread: (title: string) => void;
+  renameThread: (id: string, title: string) => void;
+  togglePinThread: (id: string) => void;
+  archiveThread: (id: string) => void;
+  unarchiveThread: (id: string) => void;
+  deleteThread: (id: string) => void;
 };
 
 const BluMessagesContext = createContext<BluMessagesContextValue | null>(null);
@@ -168,6 +178,46 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
     setThreads((prev) => prev.map((t) => (t.id !== activeThreadId || t.title ? t : { ...t, title })));
   }
 
+  function renameThread(id: string, title: string) {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, title: trimmed } : t)));
+  }
+
+  function togglePinThread(id: string) {
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, pinned: !t.pinned } : t)));
+  }
+
+  // Switch away from the given thread (if it's active) to the next best
+  // remaining, non-archived thread — creating a fresh one if none are left.
+  function switchAwayFrom(id: string, remaining: BluThread[]) {
+    if (activeThreadId !== id) return;
+    const next = remaining.find((t) => !t.archived);
+    if (next) {
+      setActiveThreadId(next.id);
+    } else {
+      const newId = `thread-${remaining.length}-${Math.round(performance.now())}`;
+      setThreads([{ id: newId, title: null, messages: [], sessionTime: null, time: "1m" }, ...remaining]);
+      setActiveThreadId(newId);
+    }
+  }
+
+  function archiveThread(id: string) {
+    const next = threads.map((t) => (t.id === id ? { ...t, archived: true, pinned: false } : t));
+    setThreads(next);
+    switchAwayFrom(id, next.filter((t) => t.id !== id));
+  }
+
+  function unarchiveThread(id: string) {
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, archived: false } : t)));
+  }
+
+  function deleteThread(id: string) {
+    const next = threads.filter((t) => t.id !== id);
+    setThreads(next);
+    switchAwayFrom(id, next);
+  }
+
   return (
     <BluMessagesContext.Provider
       value={{
@@ -180,6 +230,11 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
         switchThread,
         createThread,
         renameActiveThread,
+        renameThread,
+        togglePinThread,
+        archiveThread,
+        unarchiveThread,
+        deleteThread,
       }}
     >
       {children}
