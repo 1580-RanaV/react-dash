@@ -4,15 +4,15 @@ import { X, MessagesSquare, MessageSquareDot, BellRing } from "lucide-react";
 
 export function NotificationIcon({ hasUnread, phase }: { hasUnread: boolean; phase: "dot" | "bell" }) {
   return (
-    <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
       <MessagesSquare
-        size={15}
-        className="absolute text-stone-400 transition-[opacity,filter] duration-500"
+        size={17}
+        className="absolute inset-0 m-auto text-stone-400 transition-[opacity,filter] duration-500"
         style={{ opacity: hasUnread ? 0 : 1, filter: hasUnread ? "blur(4px)" : "blur(0px)" }}
       />
       <MessageSquareDot
-        size={15}
-        className="absolute text-blue-500 transition-[opacity,filter] duration-500"
+        size={17}
+        className="absolute inset-0 m-auto text-blue-500 transition-[opacity,filter] duration-500"
         style={{
           opacity: hasUnread && phase === "dot" ? 1 : 0,
           filter: hasUnread && phase === "dot" ? "blur(0px)" : "blur(4px)",
@@ -21,8 +21,8 @@ export function NotificationIcon({ hasUnread, phase }: { hasUnread: boolean; pha
       {hasUnread && (
         <BellRing
           key={phase}
-          size={15}
-          className="absolute text-blue-500 transition-[opacity,filter] duration-500"
+          size={17}
+          className="absolute inset-0 m-auto text-blue-500 transition-[opacity,filter] duration-500"
           style={{
             opacity: phase === "bell" ? 1 : 0,
             filter: phase === "bell" ? "blur(0px)" : "blur(4px)",
@@ -53,7 +53,7 @@ export function NotificationStrip({ visible, onOpen, onDismiss }: { visible: boo
         onClick={onOpen}
         className="min-w-0 flex-1 truncate text-left text-xs font-medium text-stone-600 dark:text-stone-300 hover:underline"
       >
-        You have notification from other chat(s), click to view
+        New activity in other chats
       </button>
       <button
         type="button"

@@ -57,6 +57,7 @@ import {
   Pin,
   Trash2,
   ArchiveRestore,
+  GitFork,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
@@ -120,7 +121,7 @@ export default function BluChat({
   const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
   const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
 
-  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, renameActiveThread, renameThread, togglePinThread, archiveThread, unarchiveThread, deleteThread } = useBluMessages();
+  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, forkThread, renameActiveThread, renameThread, togglePinThread, archiveThread, unarchiveThread, deleteThread } = useBluMessages();
   const activeThread = threads.find((t) => t.id === activeThreadId);
   const activeThreadTitle = activeThread?.title ?? "New chat";
   const [threadSwitcherOpen, setThreadSwitcherOpen] = useState(false);
@@ -140,7 +141,7 @@ export default function BluChat({
       setUnreadIconPhase("dot");
       return;
     }
-    const id = setInterval(() => setUnreadIconPhase((p) => (p === "dot" ? "bell" : "dot")), 5000);
+    const id = setInterval(() => setUnreadIconPhase((p) => (p === "dot" ? "bell" : "dot")), 2000);
     return () => clearInterval(id);
   }, [hasUnreadThreads]);
 
@@ -617,6 +618,13 @@ export default function BluChat({
     )));
   }
 
+  function forkFromMessage(msg: ChatMessage) {
+    const idx = messages.findIndex((item) => item.id === msg.id);
+    if (idx === -1) return;
+    const forked = messages.slice(0, idx + 1);
+    forkThread(forked, activeThread?.title ? `${activeThread.title} (fork)` : null);
+  }
+
   const latestCompletedBluId = [...messages].reverse().find((msg) =>
     msg.role === "blu" &&
     !msg.feedbackForm &&
@@ -883,18 +891,18 @@ export default function BluChat({
         )}
         <div className={`flex-1 min-w-0 ${mode === "panel" || mode === "fullscreen" ? "" : "pointer-events-none"}`}>
           {mode === "panel" || mode === "fullscreen" ? (
-            <div ref={threadSwitcherRef} className={`relative w-fit max-w-full ${mode === "panel" ? "-ml-2.5" : ""}`}>
+            <div ref={threadSwitcherRef} className={`relative w-fit max-w-full ${mode === "panel" ? "-ml-1.25" : ""}`}>
               <button
                 type="button"
                 onClick={() => setThreadSwitcherOpen((o) => !o)}
-                className="flex max-w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
+                className="flex max-w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
               >
                 <NotificationIcon hasUnread={hasUnreadThreads} phase={unreadIconPhase} />
                 <span className="max-w-[20ch] truncate text-sm font-medium leading-none text-stone-800 dark:text-stone-100">
                   {activeThreadTitle}
                 </span>
                 <ChevronDown
-                  size={14}
+                  size={15}
                   className="shrink-0 text-stone-400 transition-transform duration-200"
                   style={{ transform: threadSwitcherOpen ? "rotate(180deg)" : "rotate(0)" }}
                 />
@@ -985,7 +993,7 @@ export default function BluChat({
                             </span>
                           )}
                           {!isRenaming && (
-                            <span className="relative h-6 w-26 shrink-0">
+                            <span className="relative h-7 w-30 shrink-0">
                               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-xs text-stone-400 opacity-100 transition-opacity duration-100 group-hover:opacity-0 dark:text-stone-500">
                                 {isActive ? "Current" : t.time}
                               </span>
@@ -994,33 +1002,33 @@ export default function BluChat({
                                   type="button"
                                   title={t.pinned ? "Unpin" : "Pin"}
                                   onClick={(e) => { e.stopPropagation(); togglePinThread(t.id); }}
-                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
                                 >
-                                  <Pin size={12} className={t.pinned ? "fill-current text-blue-500" : ""} />
+                                  <Pin size={13} className={t.pinned ? "fill-current text-blue-500" : ""} />
                                 </button>
                                 <button
                                   type="button"
                                   title="Rename"
                                   onClick={(e) => { e.stopPropagation(); setRenamingThreadId(t.id); setRenameDraft(t.title ?? "New chat"); }}
-                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
                                 >
-                                  <Pencil size={12} />
+                                  <Pencil size={13} />
                                 </button>
                                 <button
                                   type="button"
                                   title="Archive"
                                   onClick={(e) => { e.stopPropagation(); archiveThread(t.id); }}
-                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
                                 >
-                                  <Archive size={12} />
+                                  <Archive size={13} />
                                 </button>
                                 <button
                                   type="button"
                                   title="Delete"
                                   onClick={(e) => { e.stopPropagation(); deleteThread(t.id); }}
-                                  className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={13} />
                                 </button>
                               </span>
                             </span>
@@ -1042,7 +1050,7 @@ export default function BluChat({
                         <span className="min-w-0 flex-1 truncate text-sm font-medium text-stone-700 dark:text-stone-200">
                           {t.title ?? "New chat"}
                         </span>
-                        <span className="relative h-6 w-13 shrink-0">
+                        <span className="relative h-7 w-15 shrink-0">
                           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-xs text-stone-400 opacity-100 transition-opacity duration-100 group-hover:opacity-0 dark:text-stone-500">
                             {t.time}
                           </span>
@@ -1051,17 +1059,17 @@ export default function BluChat({
                               type="button"
                               title="Restore"
                               onClick={() => unarchiveThread(t.id)}
-                              className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
                             >
-                              <ArchiveRestore size={12} />
+                              <ArchiveRestore size={13} />
                             </button>
                             <button
                               type="button"
                               title="Delete"
                               onClick={() => deleteThread(t.id)}
-                              className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={13} />
                             </button>
                           </span>
                         </span>
@@ -1296,7 +1304,7 @@ export default function BluChat({
                 {msg.role === "user" ? "Rana" : "Blu"}
               </span>
             </div>
-            <div className={`min-w-0 ${isFullWidthBlock ? "w-full" : ""}`}>
+            <div className="min-w-0 w-full">
               {msg.images?.length ? (
                 <div className="mb-2 flex flex-wrap justify-start gap-1.5">
                   {msg.images.map((img) => (
@@ -1401,8 +1409,15 @@ export default function BluChat({
                     </button>
                   </div>
                 </div>
+              ) : msg.role === "user" ? (
+                <p
+                  className="inline-block max-w-full whitespace-pre-wrap wrap-break-word rounded-2xl px-3.5 py-2.5 text-sm leading-[1.55] text-stone-800 dark:text-stone-100"
+                  style={{ background: "var(--muted)", borderTopLeftRadius: 4 }}
+                >
+                  {msg.text}
+                </p>
               ) : (
-                <p className="text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap">
+                <p className="max-w-full text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap wrap-break-word">
                   {msg.text}
                 </p>
               )}
@@ -1495,6 +1510,18 @@ export default function BluChat({
                     </button>
                     <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
                       {copiedId === msg.id ? "Copied!" : "Copy"}
+                    </span>
+                  </div>
+                  {/* Fork from here */}
+                  <div className="group/tip relative">
+                    <button
+                      onClick={() => forkFromMessage(msg)}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-300"
+                    >
+                      <GitFork size={13} />
+                    </button>
+                    <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                      Fork from here
                     </span>
                   </div>
                   {msg.role === "user" && (
@@ -2012,7 +2039,7 @@ export default function BluChat({
                     return !open;
                   });
                 }}
-                className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                   plusOpen
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
                     : "text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"

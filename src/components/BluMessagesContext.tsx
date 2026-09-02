@@ -128,6 +128,7 @@ type BluMessagesContextValue = {
   activeThreadId: string;
   switchThread: (id: string) => void;
   createThread: () => void;
+  forkThread: (messages: ChatMessage[], title: string | null) => void;
   renameActiveThread: (title: string) => void;
   renameThread: (id: string, title: string) => void;
   togglePinThread: (id: string) => void;
@@ -171,6 +172,12 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
   function createThread() {
     const id = `thread-${threads.length}-${Math.round(performance.now())}`;
     setThreads((prev) => [{ id, title: null, messages: [], sessionTime: null, time: "1m" }, ...prev]);
+    setActiveThreadId(id);
+  }
+
+  function forkThread(messages: ChatMessage[], title: string | null) {
+    const id = `thread-${threads.length}-${Math.round(performance.now())}`;
+    setThreads((prev) => [{ id, title, messages, sessionTime: activeThread.sessionTime, time: "1m" }, ...prev]);
     setActiveThreadId(id);
   }
 
@@ -229,6 +236,7 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
         activeThreadId,
         switchThread,
         createThread,
+        forkThread,
         renameActiveThread,
         renameThread,
         togglePinThread,

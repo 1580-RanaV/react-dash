@@ -169,9 +169,10 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
           disabled={!hasAnswer}
           className={`h-8 rounded-lg px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
             hasAnswer
-              ? "bg-blue-600 text-white hover:bg-blue-700"
+              ? "text-white hover:opacity-90"
               : "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"
           }`}
+          style={hasAnswer ? { background: "#0080FF" } : undefined}
         >
           {isLast ? "Submit" : "Next"}
         </button>
