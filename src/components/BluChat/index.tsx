@@ -48,6 +48,7 @@ import {
   Check,
   Maximize2,
   Minimize2,
+  Download,
   AppWindow,
   Mail,
   Bell,
@@ -395,23 +396,65 @@ export default function BluChat({
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const dragCounterRef = useRef(0);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function exportThread(format: "md" | "json") {
+    const title = activeThread?.title ?? "New chat";
+    let content: string;
+    let mime: string;
+    let ext: string;
+    if (format === "json") {
+      content = JSON.stringify(messages, null, 2);
+      mime = "application/json";
+      ext = "json";
+    } else {
+      content = messages
+        .map((m) => `**${m.role === "user" ? "Rana" : "Blu"}**\n\n${m.text || "*(non-text content)*"}`)
+        .join("\n\n---\n\n");
+      mime = "text/markdown";
+      ext = "md";
+    }
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "chat"}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setExportMenuOpen(false);
+  }
   const [micState, setMicState] = useState<"idle" | "recording" | "denied">("idle");
   const micStreamRef = useRef<MediaStream | null>(null);
 
   async function toggleMic() {
-    if (micState === "denied") return;
     if (micState === "recording") {
       micStreamRef.current?.getTracks().forEach((t) => t.stop());
       micStreamRef.current = null;
       setMicState("idle");
       return;
     }
+    // Denied isn't a dead end — clicking again re-requests access (the browser
+    // re-prompts unless it's permanently blocked) and surfaces a notice either way.
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
       setMicState("recording");
     } catch {
       setMicState("denied");
+      setComposerNotice("Microphone access is blocked. Enable it in your browser's site settings, then try again.");
     }
   }
 
@@ -1482,6 +1525,44 @@ export default function BluChat({
             </button>
           )}
 
+          <div ref={exportMenuRef} className="relative">
+            <button
+              onClick={() => setExportMenuOpen((o) => !o)}
+              title="Export thread"
+              className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${
+                exportMenuOpen
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                  : "text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8"
+              }`}
+            >
+              <Download size={13} />
+            </button>
+            {exportMenuOpen && (
+              <div
+                className="absolute right-0 top-[calc(100%+6px)] z-30 w-44 rounded-xl overflow-hidden animate-card-in transition-all duration-200"
+                style={{
+                  background: "var(--content-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                <button
+                  onClick={() => exportThread("md")}
+                  className="w-full px-3.5 py-2.5 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5"
+                >
+                  Markdown (.md)
+                </button>
+                <button
+                  onClick={() => exportThread("json")}
+                  className="w-full border-t px-3.5 py-2.5 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  JSON (.json)
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
@@ -1576,6 +1657,26 @@ export default function BluChat({
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgBottomFade ? 1 : 0, background: "linear-gradient(to top, var(--content-bg) 0%, transparent 100%)" }}
         />
+        {messages.length > 0 && (
+          <div
+            className="pointer-events-none absolute inset-x-0 z-20 flex justify-center transition-all duration-200"
+            style={{
+              bottom: mode === "fullscreen" ? composerHeight + 24 : 12,
+              opacity: msgBottomFade ? 1 : 0,
+              transform: msgBottomFade ? "translateY(0)" : "translateY(6px)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" })}
+              className="pointer-events-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/8"
+              style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
+            >
+              <ChevronDown size={12} />
+              Jump to latest
+            </button>
+          </div>
+        )}
         <div
           ref={messagesRef}
           onScroll={checkMsgFades}
@@ -2591,16 +2692,15 @@ export default function BluChat({
             <button
               type="button"
               aria-label={
-                micState === "denied" ? "Microphone access denied" : micState === "recording" ? "Stop recording" : "Voice input"
+                micState === "denied" ? "Microphone access denied — click to try again" : micState === "recording" ? "Stop recording" : "Voice input"
               }
-              title={micState === "denied" ? "Microphone access denied" : undefined}
-              disabled={micState === "denied"}
+              title={micState === "denied" ? "Microphone access denied — click to try again" : undefined}
               onClick={toggleMic}
               className={`absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                 micState === "recording"
                   ? "text-white"
                   : micState === "denied"
-                    ? "cursor-not-allowed text-stone-300 dark:text-stone-600"
+                    ? "text-stone-300 hover:bg-stone-100 hover:text-stone-500 dark:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-400"
                     : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
               }`}
               style={{
