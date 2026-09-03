@@ -67,6 +67,7 @@ import {
   GitFork,
   GripVertical,
   Mic,
+  MicOff,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -333,6 +334,20 @@ export default function BluChat({
     )));
     setActiveReportId(null);
   }
+
+  function stopGeneration() {
+    if (activeReportId) { stopActiveReport(); return; }
+    setMessages((current) => {
+      const idx = current.findIndex((m) => m.role === "blu" && (m.isTyping || m.isStreaming));
+      if (idx === -1) return current;
+      const target = current[idx];
+      const next = [...current];
+      next[idx] = target.isTyping
+        ? { id: target.id, role: "blu", text: "Generation stopped." }
+        : { ...target, isStreaming: false };
+      return next;
+    });
+  }
   useEffect(() => {
     if (!threadSwitcherOpen) {
       setThreadSwitcherSearch("");
@@ -378,6 +393,31 @@ export default function BluChat({
   const [referenceListSearch, setReferenceListSearch] = useState("");
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragCounterRef = useRef(0);
+  const [micState, setMicState] = useState<"idle" | "recording" | "denied">("idle");
+  const micStreamRef = useRef<MediaStream | null>(null);
+
+  async function toggleMic() {
+    if (micState === "denied") return;
+    if (micState === "recording") {
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+      setMicState("idle");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      setMicState("recording");
+    } catch {
+      setMicState("denied");
+    }
+  }
+
+  useEffect(() => {
+    return () => { micStreamRef.current?.getTracks().forEach((t) => t.stop()); };
+  }, []);
   const [placeholderVisible, setPlaceholderVisible] = useState(true);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionCategory, setMentionCategory] = useState<string | null>(null);
@@ -650,6 +690,24 @@ export default function BluChat({
     editorRef.current?.focus();
     updateEditorEmpty();
     fileInputRef.current?.click();
+  }
+
+  function ingestFiles(files: File[]) {
+    if (files.length === 0) return;
+    const withinSize = files.filter((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES);
+    if (withinSize.length < files.length) setComposerNotice("File size exceeds limit");
+    const room = Math.max(MAX_ATTACHMENTS - filePreviews.length, 0);
+    const accepted = withinSize.slice(0, room);
+    if (withinSize.length > accepted.length) setComposerNotice("Max 7 files attached. Remove one to add another");
+    accepted.forEach((file) => {
+      const kind = classifyFileKind(file);
+      const id = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const url = URL.createObjectURL(file);
+      setFilePreviews((prev) => [...prev, { id, url, name: file.name, kind, uploading: true }]);
+      setTimeout(() => {
+        setFilePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, uploading: false } : p)));
+      }, 3000);
+    });
   }
 
   function selectRecipe(recipe: SlashRecipe) {
@@ -1103,7 +1161,31 @@ export default function BluChat({
 
   return (
     <div
-      className={`flex flex-col h-full ${mode === "fullscreen" ? "" : "rounded-xl overflow-hidden"}`}
+      className={`relative flex flex-col h-full ${mode === "fullscreen" ? "" : "rounded-xl overflow-hidden"}`}
+      onDragEnter={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        dragCounterRef.current += 1;
+        setIsDraggingFiles(true);
+      }}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        dragCounterRef.current = Math.max(dragCounterRef.current - 1, 0);
+        if (dragCounterRef.current === 0) setIsDraggingFiles(false);
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        dragCounterRef.current = 0;
+        setIsDraggingFiles(false);
+        ingestFiles(Array.from(e.dataTransfer.files ?? []));
+      }}
       style={
         mode === "fullscreen"
           ? { background: "var(--content-bg)" }
@@ -1975,21 +2057,7 @@ export default function BluChat({
           multiple
           className="hidden"
           onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            const withinSize = files.filter((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES);
-            if (withinSize.length < files.length) setComposerNotice("File size exceeds limit");
-            const room = Math.max(MAX_ATTACHMENTS - filePreviews.length, 0);
-            const accepted = withinSize.slice(0, room);
-            if (withinSize.length > accepted.length) setComposerNotice("Max 7 files attached. Remove one to add another");
-            accepted.forEach((file) => {
-              const kind = classifyFileKind(file);
-              const id = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-              const url = URL.createObjectURL(file);
-              setFilePreviews((prev) => [...prev, { id, url, name: file.name, kind, uploading: true }]);
-              setTimeout(() => {
-                setFilePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, uploading: false } : p)));
-              }, 3000);
-            });
+            ingestFiles(Array.from(e.target.files ?? []));
             e.target.value = "";
           }}
         />
@@ -2500,6 +2568,12 @@ export default function BluChat({
               contentEditable
               suppressContentEditableWarning
               onInput={handleEditorInput}
+              onPaste={(e) => {
+                const files = Array.from(e.clipboardData?.files ?? []);
+                if (files.length === 0) return;
+                e.preventDefault();
+                ingestFiles(files);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") { setMentionOpen(false); setMentionCategory(null); setSlashOpen(false); setPlusPickerOpen(false); return; }
                 if (e.key === "Enter" && plusPickerOpen) { e.preventDefault(); openFilePicker(); return; }
@@ -2516,11 +2590,38 @@ export default function BluChat({
             />
             <button
               type="button"
-              aria-label="Voice input"
-              className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
-              style={{ opacity: editorEmpty ? 1 : 0, pointerEvents: editorEmpty ? "auto" : "none", transition: "opacity 200ms ease, background-color 150ms ease, color 150ms ease" }}
+              aria-label={
+                micState === "denied" ? "Microphone access denied" : micState === "recording" ? "Stop recording" : "Voice input"
+              }
+              title={micState === "denied" ? "Microphone access denied" : undefined}
+              disabled={micState === "denied"}
+              onClick={toggleMic}
+              className={`absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                micState === "recording"
+                  ? "text-white"
+                  : micState === "denied"
+                    ? "cursor-not-allowed text-stone-300 dark:text-stone-600"
+                    : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
+              }`}
+              style={{
+                background: micState === "recording" ? "#ef4444" : undefined,
+                opacity: micState === "recording" ? 1 : editorEmpty ? 1 : 0,
+                pointerEvents: micState === "recording" ? "auto" : editorEmpty ? "auto" : "none",
+                transition: "opacity 200ms ease, background-color 150ms ease, color 150ms ease",
+              }}
             >
-              <Mic size={14} />
+              {micState === "recording" && (
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full"
+                  style={{ background: "#ef4444", animation: "mic-pulse-ring 1.4s ease-out infinite" }}
+                />
+              )}
+              {micState === "denied" ? (
+                <MicOff size={14} className="relative" />
+              ) : (
+                <Mic size={14} className="relative" />
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between mt-4">
@@ -2621,11 +2722,11 @@ export default function BluChat({
                 Web
               </button>
               <button
-                onClick={() => (activeReportId ? stopActiveReport() : sendMessage())}
+                onClick={() => ((activeReportId || bluReplying) ? stopGeneration() : sendMessage())}
                 className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150"
-                style={{ background: activeReportId || !editorEmpty || attachments.length || filePreviews.length ? "#0080FF" : "var(--border)" }}
+                style={{ background: activeReportId || bluReplying || !editorEmpty || attachments.length || filePreviews.length ? "#0080FF" : "var(--border)" }}
               >
-                {activeReportId ? (
+                {activeReportId || bluReplying ? (
                   <Square size={11} fill="white" className="text-white" />
                 ) : (
                   <ArrowUp size={13} className={!editorEmpty || attachments.length || filePreviews.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
@@ -2745,6 +2846,26 @@ export default function BluChat({
           </div>
         </div>
       )}
+
+      {/* Drag-and-drop overlay — dims the whole window and shows a drop target;
+          opacity/scale driven rather than conditionally mounted so it animates both in and out. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 z-40 flex items-center justify-center transition-opacity duration-200 ${mode === "fullscreen" ? "" : "rounded-xl"}`}
+        style={{ background: "rgba(0,0,0,0.5)", opacity: isDraggingFiles ? 1 : 0 }}
+      >
+        <div
+          className="flex flex-col items-center gap-2.5 rounded-2xl px-9 py-7 transition-transform duration-200"
+          style={{
+            border: "2px dashed rgba(255,255,255,0.55)",
+            background: "rgba(255,255,255,0.08)",
+            transform: isDraggingFiles ? "scale(1)" : "scale(0.92)",
+          }}
+        >
+          <Paperclip size={22} className="text-white" />
+          <p className="text-sm font-semibold text-white">Drop files to attach</p>
+        </div>
+      </div>
     </div>
   );
 }
