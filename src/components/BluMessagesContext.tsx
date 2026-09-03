@@ -21,6 +21,7 @@ export type BluThread = {
   pinned?: boolean;
   archived?: boolean;
   forkedFrom?: string; // title of the thread this one was forked from, if any
+  forkedMessageCount?: number; // how many messages were copied at fork time — the badge renders right after this many
 };
 
 const SEED_THREADS: BluThread[] = [
@@ -179,7 +180,7 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
   function forkThread(messages: ChatMessage[], title: string | null) {
     const id = `thread-${threads.length}-${Math.round(performance.now())}`;
     const forkedFrom = activeThread.title ?? "New chat";
-    setThreads((prev) => [{ id, title, messages, sessionTime: activeThread.sessionTime, time: "1m", forkedFrom }, ...prev]);
+    setThreads((prev) => [{ id, title, messages, sessionTime: activeThread.sessionTime, time: "1m", forkedFrom, forkedMessageCount: messages.length }, ...prev]);
     setActiveThreadId(id);
   }
 

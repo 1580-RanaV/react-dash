@@ -216,6 +216,14 @@ function QueueItemRow({
             {item.text}
           </span>
         )}
+        {!isEditing && (
+          <button
+            onClick={onStartEdit}
+            className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-stone-500 opacity-0 transition-all hover:bg-stone-200 group-hover:opacity-100 dark:text-stone-400 dark:hover:bg-white/8"
+          >
+            Edit
+          </button>
+        )}
         <button
           onClick={onDelete}
           className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-red-500 opacity-0 transition-all hover:bg-red-50 group-hover:opacity-100 dark:text-red-400 dark:hover:bg-red-500/10"
@@ -810,6 +818,22 @@ export default function BluChat({
 
   const lastBluMessageId = [...messages].reverse().find((msg) => msg.role === "blu")?.id;
 
+  const bluReplying = messages.some((msg) => msg.role === "blu" && (msg.isTyping || msg.isStreaming));
+
+  const queueRef = useRef(queue);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+
+  useEffect(() => {
+    if (bluReplying || queueRef.current.length === 0) return;
+    const next = queueRef.current[0];
+    const timer = setTimeout(() => {
+      setQueue((q) => q.filter((item) => item.id !== next.id));
+      sendMessage(next.text);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bluReplying]);
+
   function sendMessage(overrideText?: string) {
     if (inputLocked) return;
     const text = overrideText ?? getEditorText();
@@ -818,8 +842,9 @@ export default function BluChat({
     const currentReferences = overrideText ? [] : getEditorReferences();
     if (!text && attachments.length === 0 && filePreviews.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0 && currentReferences.length === 0) return;
 
-    // Queue intercept — "q1", "q2", etc.
-    if (!overrideText && /^q\d+$/i.test(text.trim())) {
+    // Blu is still replying — queue this one instead of sending it immediately,
+    // the same way a real chat app holds a message you send mid-reply.
+    if (!overrideText && bluReplying) {
       if (queue.length >= MAX_QUEUE) {
         setComposerNotice("Queue full. Delete one or wait for a slot to open up.");
         return;
@@ -1484,7 +1509,7 @@ export default function BluChat({
         )}
         {(() => {
           let lastShownTs: number | null = null;
-          return messages.map((msg) => {
+          return messages.map((msg, msgIndex) => {
             const isEditingThis = msg.role === "user" && editingMsgId === msg.id;
             const isFullWidthBlock = isEditingThis || !!msg.queryTrace || !!msg.liveRun || !!msg.acceptRun || !!msg.runTasks;
             const showTimestamp =
@@ -1492,6 +1517,7 @@ export default function BluChat({
               msg.timestamp != null &&
               (lastShownTs === null || msg.timestamp - lastShownTs >= TIMESTAMP_DIVIDER_GAP_MS);
             if (showTimestamp) lastShownTs = msg.timestamp!;
+            const showForkBadge = !!activeThread?.forkedFrom && activeThread?.forkedMessageCount === msgIndex + 1;
             return (
           <Fragment key={msg.id}>
           {showTimestamp && (
@@ -1879,18 +1905,18 @@ export default function BluChat({
             </div>
           </div>
           </div>
+          {showForkBadge && (
+            <div className="flex items-center justify-center py-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-stone-500 dark:text-stone-400" style={{ background: "var(--muted)" }}>
+                <GitFork size={11} className="shrink-0" />
+                Forked from "{activeThread?.forkedFrom}"
+              </span>
+            </div>
+          )}
           </Fragment>
             );
           });
         })()}
-        {activeThread?.forkedFrom && (
-          <div className="flex items-center justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-stone-500 dark:text-stone-400" style={{ background: "var(--muted)" }}>
-              <GitFork size={11} className="shrink-0" />
-              Forked from "{activeThread.forkedFrom}"
-            </span>
-          </div>
-        )}
         </div>
         </div>
       </div>
