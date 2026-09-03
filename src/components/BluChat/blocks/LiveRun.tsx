@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, CheckCheck } from "lucide-react";
+import { ChevronDown, CheckCheck, X } from "lucide-react";
 import { STAGE_ROWS, STAGE_MS, TOTAL_MS, ASKED_FOR, fmtDuration } from "./QueryStages";
 
-/* Trigger word: live-run */
+/* Trigger words: live-run, live-run-declined */
+
+export function DeclinedBadge() {
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "#ef4444" }}>
+      <X size={14} className="text-white" strokeWidth={3} />
+    </span>
+  );
+}
 
 export function LiveRunProgressCircle({ progress, done, indeterminate }: { progress: number; done: boolean; indeterminate?: boolean }) {
   const size = 28;
@@ -63,11 +71,13 @@ export function LiveRunProgressCircle({ progress, done, indeterminate }: { progr
   );
 }
 
-export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
+export function LiveRun({ onDone, declined }: { onDone?: () => void; declined?: boolean } = {}) {
   const [stageIndex, setStageIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const done = stageIndex >= STAGE_ROWS.length;
   const currentLabel = STAGE_ROWS[done ? STAGE_ROWS.length - 1 : stageIndex].label;
+  const completedStages = STAGE_ROWS.slice(0, done ? STAGE_ROWS.length : stageIndex);
+  const canExpand = done || stageIndex > 0;
 
   useEffect(() => {
     if (done) return;
@@ -94,7 +104,7 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
         }}
       >
         <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
-          <LiveRunProgressCircle progress={stageIndex / STAGE_ROWS.length} done={done} />
+          {done && declined ? <DeclinedBadge /> : <LiveRunProgressCircle progress={stageIndex / STAGE_ROWS.length} done={done} />}
           {done ? (
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100" style={{ animation: "fade-up 250ms ease-out both" }}>
               {currentLabel}
@@ -112,7 +122,7 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
               {currentLabel}
             </span>
           )}
-          {done && (
+          {canExpand && (
             <button
               type="button"
               aria-expanded={expanded}
@@ -129,7 +139,7 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
           )}
         </div>
 
-        {done && (
+        {canExpand && (
           <div
             className="grid transition-[grid-template-rows,opacity] duration-300"
             style={{
@@ -140,26 +150,30 @@ export function LiveRun({ onDone }: { onDone?: () => void } = {}) {
           >
             <div className="overflow-hidden">
               <div className="flex flex-col gap-1 px-3 py-2">
-                {STAGE_ROWS.map((stage) => (
-                  <div key={stage.label} className="flex min-h-7 w-full items-center gap-2 rounded-md px-1 py-0.5">
+                {completedStages.map((stage) => (
+                  <div key={stage.label} className="flex min-h-7 w-full items-center gap-2 rounded-md px-1 py-0.5" style={{ animation: "fade-up 250ms ease-out both" }}>
                     <CheckCheck size={14} strokeWidth={2.5} className="shrink-0 text-stone-400 dark:text-stone-500" />
                     <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-stone-700 dark:text-stone-200">{stage.label}</span>
                     <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-stone-400 dark:text-stone-500">{fmtDuration(stage.ms)}</span>
                   </div>
                 ))}
-                <div className="mt-1 flex items-center justify-between gap-3 border-t px-1 pt-2" style={{ borderColor: "var(--border)" }}>
-                  <span className="text-[12.5px] font-medium text-stone-700 dark:text-stone-200">Total time</span>
-                  <span className="shrink-0 font-mono text-[11.5px] font-semibold tabular-nums text-stone-700 dark:text-stone-200">{fmtDuration(TOTAL_MS)}</span>
-                </div>
+                {done && (
+                  <div className="mt-1 flex items-center justify-between gap-3 border-t px-1 pt-2" style={{ borderColor: "var(--border)" }}>
+                    <span className="text-[12.5px] font-medium text-stone-700 dark:text-stone-200">Total time</span>
+                    <span className="shrink-0 font-mono text-[11.5px] font-semibold tabular-nums text-stone-700 dark:text-stone-200">{fmtDuration(TOTAL_MS)}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="px-3 pb-2 pt-1">
-                <p className="text-[12.5px] font-semibold text-stone-700 dark:text-stone-200">What was asked for</p>
-                <div className="mt-1 flex items-center justify-between gap-3 px-1">
-                  <span className="text-[12.5px] text-stone-400 dark:text-stone-500">{ASKED_FOR.label}</span>
-                  <span className="text-[12.5px] text-stone-600 dark:text-stone-300">{ASKED_FOR.value}</span>
+              {done && (
+                <div className="px-3 pb-2 pt-1">
+                  <p className="text-[12.5px] font-semibold text-stone-700 dark:text-stone-200">What was asked for</p>
+                  <div className="mt-1 flex items-center justify-between gap-3 px-1">
+                    <span className="text-[12.5px] text-stone-400 dark:text-stone-500">{ASKED_FOR.label}</span>
+                    <span className="text-[12.5px] text-stone-600 dark:text-stone-300">{ASKED_FOR.value}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}

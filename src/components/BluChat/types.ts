@@ -23,12 +23,16 @@ export type ReferenceAttachment = {
 export type RecipeChip = { key: string; label: string };
 export type RunTask = { id: string; label: string; detail: string; icon: "avatar" | "pose" | "scene" };
 
+export type UploadedFileKind = "image" | "pdf" | "html" | "md" | "file";
+export type UploadedFile = { id: string; url: string; name: string; kind: UploadedFileKind };
+
 export type ChatMessage = {
   id: string;
   role: "user" | "blu";
   text: string;
+  timestamp?: number;
   attachments?: ReferenceAttachment[];
-  images?: { id: string; url: string }[];
+  files?: UploadedFile[];
   mentions?: MentionChip[];
   recipes?: RecipeChip[];
   feedbackForm?: boolean;
@@ -41,6 +45,7 @@ export type ChatMessage = {
   execChecklist?: { steps: string[] };
   runTasks?: RunTask[];
   liveRun?: boolean;
+  acceptRun?: boolean;
   queryTrace?: boolean;
   declined?: boolean;
   extraEvent?: boolean;

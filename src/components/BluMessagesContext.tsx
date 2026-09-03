@@ -20,6 +20,7 @@ export type BluThread = {
   time: string; // relative-time label shown in the switcher list
   pinned?: boolean;
   archived?: boolean;
+  forkedFrom?: string; // title of the thread this one was forked from, if any
 };
 
 const SEED_THREADS: BluThread[] = [
@@ -177,7 +178,8 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
 
   function forkThread(messages: ChatMessage[], title: string | null) {
     const id = `thread-${threads.length}-${Math.round(performance.now())}`;
-    setThreads((prev) => [{ id, title, messages, sessionTime: activeThread.sessionTime, time: "1m" }, ...prev]);
+    const forkedFrom = activeThread.title ?? "New chat";
+    setThreads((prev) => [{ id, title, messages, sessionTime: activeThread.sessionTime, time: "1m", forkedFrom }, ...prev]);
     setActiveThreadId(id);
   }
 

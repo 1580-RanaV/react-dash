@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import type { RunTask } from "../types";
-import { LiveRunProgressCircle } from "./LiveRun";
+import { LiveRunProgressCircle, DeclinedBadge } from "./LiveRun";
 
-/* Trigger words: run, run-2, run-3 */
+/* Trigger words: run, run-2, run-3, run-declined */
 
-export function CreationRunStatus({ tasks }: { tasks: RunTask[] }) {
+export function CreationRunStatus({ tasks, declined }: { tasks: RunTask[]; declined?: boolean }) {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -34,7 +34,11 @@ export function CreationRunStatus({ tasks }: { tasks: RunTask[] }) {
             }}
           >
             <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
-              <LiveRunProgressCircle progress={done ? 1 : 0} done={!!done} indeterminate />
+              {done && declined ? (
+                <DeclinedBadge />
+              ) : (
+                <LiveRunProgressCircle progress={done ? 1 : 0} done={!!done} indeterminate />
+              )}
               <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-stone-900 dark:text-stone-100">
                 {task.label}
               </span>

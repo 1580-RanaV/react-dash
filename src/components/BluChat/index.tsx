@@ -1,6 +1,13 @@
 
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import {
+  DndContext, closestCenter,
+  PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import {
   X,
@@ -58,12 +65,14 @@ import {
   Trash2,
   ArchiveRestore,
   GitFork,
+  GripVertical,
+  Mic,
 } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useBluMessages } from "../BluMessagesContext";
 
-import type { MentionChip, QueueItem, ReferenceAttachment, RecipeChip, ChatMessage, SlashRecipe, BluMode } from "./types";
+import type { MentionChip, QueueItem, ReferenceAttachment, RecipeChip, ChatMessage, SlashRecipe, BluMode, UploadedFile, UploadedFileKind } from "./types";
 import {
   MENTION_CATEGORIES,
   MENTION_ITEMS,
@@ -84,6 +93,9 @@ import {
   IMAGE_ASPECT_OPTIONS,
   IMAGE_BACKGROUND_OPTIONS,
   IMAGE_STYLE_OPTIONS,
+  RESPONSE_DEPTH_OPTIONS,
+  MODEL_TIER_OPTIONS,
+  KNOWLEDGE_SCOPE_OPTIONS,
 } from "./constants";
 import { getMentionIcon, createMentionChipEl, createReferenceChipEl, getReferenceIconPaths, FollowUpArrow } from "./utils";
 
@@ -92,6 +104,7 @@ import LoadingState from "./blocks/LoadingState";
 import JourneyPreviewOverlay from "./blocks/JourneyPreviewOverlay";
 import { CreationRunStatus } from "./blocks/CreationRun";
 import { LiveRun } from "./blocks/LiveRun";
+import { AcceptRun } from "./blocks/AcceptRun";
 import { CustomReportBlock } from "./blocks/CustomReport";
 import { ExecChecklist } from "./blocks/ExecChecklist";
 import { PlanCard } from "./blocks/PlanCard";
@@ -100,6 +113,144 @@ import { RecipeRow } from "./blocks/RecipeRow";
 import { NotificationIcon, NotificationStrip } from "./blocks/Notification";
 
 export type { ChatMessage, BluMode };
+
+/* A timestamp divider only reappears once the gap since the last one shown
+ * crosses this threshold — not on every message. */
+const TIMESTAMP_DIVIDER_GAP_MS = 30 * 60 * 1000;
+
+const MAX_ATTACHMENTS = 7;
+const MAX_QUEUE = 4;
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+
+function classifyFileKind(file: File): UploadedFileKind {
+  if (file.type.startsWith("image/")) return "image";
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "pdf";
+  if (ext === "html" || ext === "htm") return "html";
+  if (ext === "md") return "md";
+  return "file";
+}
+
+const FILE_KIND_LABEL: Record<Exclude<UploadedFileKind, "image">, string> = {
+  pdf: "PDF",
+  html: "HTML",
+  md: "MD",
+  file: "FILE",
+};
+
+function FileKindBadge({ kind }: { kind: UploadedFileKind }) {
+  if (kind === "image") return null;
+  return (
+    <span
+      className="absolute bottom-1.5 right-1.5 rounded px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-stone-600 dark:text-stone-300"
+      style={{ background: "rgba(120,120,120,0.18)" }}
+    >
+      {FILE_KIND_LABEL[kind]}
+    </span>
+  );
+}
+
+function FileKindName({ name }: { name: string }) {
+  return (
+    <span className="absolute left-1.5 right-1.5 top-1.5 line-clamp-3 wrap-break-word text-[9px] font-medium leading-snug text-stone-500 dark:text-stone-400">
+      {name}
+    </span>
+  );
+}
+
+function QueueItemRow({
+  item,
+  isEditing,
+  editingText,
+  onStartEdit,
+  onEditChange,
+  onSave,
+  onCancelEdit,
+  onDelete,
+}: {
+  item: QueueItem;
+  isEditing: boolean;
+  editingText: string;
+  onStartEdit: () => void;
+  onEditChange: (value: string) => void;
+  onSave: () => void;
+  onCancelEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, background: "var(--muted)" }}
+      className="group rounded-lg px-2.5 py-2"
+    >
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="flex h-4 w-4 shrink-0 cursor-grab items-center justify-center text-stone-300 active:cursor-grabbing dark:text-stone-600"
+        >
+          <GripVertical size={12} />
+        </button>
+        <CornerLeftUp size={12} className="shrink-0 text-stone-400 dark:text-stone-500" />
+        {isEditing ? (
+          <input
+            autoFocus
+            value={editingText}
+            onChange={(e) => onEditChange(e.target.value)}
+            onBlur={onSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSave();
+              if (e.key === "Escape") onCancelEdit();
+            }}
+            className="min-w-0 flex-1 bg-transparent text-sm text-stone-700 outline-none dark:text-stone-200"
+          />
+        ) : (
+          <span
+            className="min-w-0 flex-1 cursor-pointer truncate text-sm text-stone-600 dark:text-stone-300"
+            onClick={() => setExpanded((current) => !current)}
+            onDoubleClick={onStartEdit}
+          >
+            {item.text}
+          </span>
+        )}
+        <button
+          onClick={onDelete}
+          className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-red-500 opacity-0 transition-all hover:bg-red-50 group-hover:opacity-100 dark:text-red-400 dark:hover:bg-red-500/10"
+        >
+          Delete
+        </button>
+      </div>
+      {!isEditing && (
+        <div
+          className="grid transition-[grid-template-rows,opacity] duration-200"
+          style={{ gridTemplateRows: expanded ? "1fr" : "0fr", opacity: expanded ? 1 : 0 }}
+        >
+          <div className="overflow-hidden">
+            <p className="ml-5 mt-1 line-clamp-4 whitespace-pre-wrap text-xs leading-snug text-stone-500 dark:text-stone-400">
+              {item.text}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function fmtTimestampDivider(ts: number): string {
+  const date = new Date(ts);
+  const now = new Date();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / (24 * 60 * 60 * 1000));
+
+  if (dayDiff === 0) return `Today ${time}`;
+  if (dayDiff === 1) return `Yesterday ${time}`;
+  if (dayDiff > 1 && dayDiff < 7) return `${date.toLocaleDateString("en-US", { weekday: "long" })} ${time}`;
+  return `${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })} ${time}`;
+}
 
 export default function BluChat({
   onClose,
@@ -117,6 +268,7 @@ export default function BluChat({
   onHeaderMouseDown?: (e: React.MouseEvent) => void;
 }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const contextKeys = CONTEXT_RECIPE_KEYS.find(c => c.match.test(pathname))?.keys ?? [];
   const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
   const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
@@ -182,13 +334,18 @@ export default function BluChat({
   const [pendingPlan, setPendingPlan] = useState<{ content: string } | null>(null);
   const [reactions, setReactions] = useState<Record<string, "up" | "down">>({});
   const [reactionMenuId, setReactionMenuId] = useState<string | null>(null);
+  const [badResponseModalId, setBadResponseModalId] = useState<string | null>(null);
+  const [badResponseTags, setBadResponseTags] = useState<string[]>([]);
+  const [badResponseDetail, setBadResponseDetail] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<ReferenceAttachment[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<{ id: string; url: string; uploading: boolean }[]>([]);
+  const [filePreviews, setFilePreviews] = useState<(UploadedFile & { uploading: boolean })[]>([]);
+  const [composerNotice, setComposerNotice] = useState<string | null>(null);
+  const [upgradeStripVisible, setUpgradeStripVisible] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-  function removeImagePreview(id: string) {
-    setImagePreviews((prev) => {
+  function removeFilePreview(id: string) {
+    setFilePreviews((prev) => {
       const found = prev.find((p) => p.id === id);
       if (found) URL.revokeObjectURL(found.url);
       return prev.filter((p) => p.id !== id);
@@ -202,6 +359,9 @@ export default function BluChat({
     background: "Auto",
     style: "Auto",
   });
+  const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const [responseDepth, setResponseDepth] = useState("Standard");
+  const [modelTier, setModelTier] = useState("Premium");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [plusOpen, setPlusOpen] = useState(false);
@@ -222,6 +382,7 @@ export default function BluChat({
   const savedPlusRangeRef = useRef<Range | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const queueSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
@@ -251,8 +412,6 @@ export default function BluChat({
     function handle(e: MouseEvent) {
       if (plusRef.current && !plusRef.current.contains(e.target as Node)) {
         setPlusOpen(false);
-        setReferencesOpen(false);
-        setSelectedReference(null);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -266,6 +425,9 @@ export default function BluChat({
         setMentionCategory(null);
         setSlashOpen(false);
         setPlusPickerOpen(false);
+        setChatSettingsOpen(false);
+        setReferencesOpen(false);
+        setSelectedReference(null);
       }
     }
     document.addEventListener("mousedown", handle);
@@ -587,6 +749,17 @@ export default function BluChat({
     setEditingQueueId(null);
   }
 
+  function handleQueueDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setQueue((q) => {
+      const oldIdx = q.findIndex((item) => item.id === active.id);
+      const newIdx = q.findIndex((item) => item.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return q;
+      return arrayMove(q, oldIdx, newIdx);
+    });
+  }
+
   function startMsgEdit(msg: ChatMessage) {
     setEditingMsgId(msg.id);
     setEditingMsgText(msg.text);
@@ -643,10 +816,14 @@ export default function BluChat({
     const currentMentions = overrideText ? [] : getEditorMentions();
     const currentRecipes = overrideText ? [] : getEditorRecipes();
     const currentReferences = overrideText ? [] : getEditorReferences();
-    if (!text && attachments.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0 && currentReferences.length === 0) return;
+    if (!text && attachments.length === 0 && filePreviews.length === 0 && currentMentions.length === 0 && currentRecipes.length === 0 && currentReferences.length === 0) return;
 
     // Queue intercept — "q1", "q2", etc.
-    if (!overrideText && /^q\d+$/i.test(text.trim()) && queue.length < 4) {
+    if (!overrideText && /^q\d+$/i.test(text.trim())) {
+      if (queue.length >= MAX_QUEUE) {
+        setComposerNotice("Queue full. Delete one or wait for a slot to open up.");
+        return;
+      }
       setQueue((q) => [...q, { id: `q-${Date.now()}`, text: text.trim() }]);
       clearEditor();
       return;
@@ -665,13 +842,17 @@ export default function BluChat({
     const isPlan = !overrideText && text.toLowerCase() === "plan";
     const runMatch = !overrideText ? text.toLowerCase().match(/^run(?:-(2|3))?$/) : null;
     const runCount = runMatch ? Number(runMatch[1] ?? 1) : 0;
+    const isRunDeclined = !overrideText && text.toLowerCase() === "run-declined";
+    const isLiveRunDeclined = !overrideText && text.toLowerCase() === "live-run-declined";
     const isCreateRecipe  = !overrideText && text === "create-recipe";
     const isCustomReport  = !overrideText && text.toLowerCase() === "custom-report";
     const isCustomReportDeclined = !overrideText && text.toLowerCase() === "custom-report-declined";
     const isCustomReportNoEmbed = !overrideText && text.toLowerCase() === "custom-report-no-embed";
     const isAddEvent = !overrideText && text.toLowerCase() === "add-event";
     const isLiveRun = !overrideText && text.toLowerCase() === "live-run";
+    const isAcceptRun = !overrideText && text.toLowerCase() === "accept-run";
     const isNotification = !overrideText && text.toLowerCase() === "notification";
+    const isUpgrade = !overrideText && text.toLowerCase() === "upgrade";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     let generalReplyIndex = 0;
@@ -682,8 +863,9 @@ export default function BluChat({
         id: `user-${ts}`,
         role: "user",
         text,
+        timestamp: ts,
         attachments: [...attachments, ...currentReferences],
-        images: imagePreviews.length ? imagePreviews.map((p) => ({ id: p.id, url: p.url })) : undefined,
+        files: filePreviews.length ? filePreviews.map((p) => ({ id: p.id, url: p.url, name: p.name, kind: p.kind })) : undefined,
         mentions: currentMentions,
         recipes: currentRecipes.length ? currentRecipes : undefined,
       };
@@ -704,12 +886,35 @@ export default function BluChat({
           text: "",
           runTasks: RUN_TASKS.slice(0, runCount),
         });
+      } else if (isRunDeclined) {
+        next.push({
+          id: `blu-run-${ts}`,
+          role: "blu",
+          text: "",
+          runTasks: RUN_TASKS.slice(0, 1),
+          declined: true,
+        });
       } else if (isLiveRun) {
         next.push({
           id: `blu-liverun-${ts}`,
           role: "blu",
           text: "",
           liveRun: true,
+        });
+      } else if (isLiveRunDeclined) {
+        next.push({
+          id: `blu-liverun-${ts}`,
+          role: "blu",
+          text: "",
+          liveRun: true,
+          declined: true,
+        });
+      } else if (isAcceptRun) {
+        next.push({
+          id: `blu-acceptrun-${ts}`,
+          role: "blu",
+          text: "",
+          acceptRun: true,
         });
       } else if (isFailed || isError) {
         next.push({
@@ -735,6 +940,8 @@ export default function BluChat({
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       } else if (isNotification) {
         // no Blu reply — this just flips the thread-switcher icon below
+      } else if (isUpgrade) {
+        // no Blu reply — this just opens the upgrade strip above the composer
       } else {
         generalReplyIndex = current.length;
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
@@ -773,7 +980,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isNotification) {
+    } else if (!isPlan && !runMatch && !isRunDeclined && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isLiveRunDeclined && !isAcceptRun && !isNotification && !isUpgrade) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -795,7 +1002,7 @@ export default function BluChat({
     if (!overrideText) {
       clearEditor();
       setAttachments([]);
-      setImagePreviews([]);
+      setFilePreviews([]);
       setMentionOpen(false);
       setMentionCategory(null);
       setPlusOpen(false);
@@ -811,7 +1018,11 @@ export default function BluChat({
       markThreadsUnread(2);
     }
 
-    if (!isFeedback && !isCreateRecipe && !isNotification) {
+    if (isUpgrade) {
+      setUpgradeStripVisible(true);
+    }
+
+    if (!isFeedback && !isCreateRecipe && !isNotification && !isUpgrade) {
       window.dispatchEvent(new CustomEvent("blu-image-generate", { detail: { text } }));
     }
   }
@@ -843,6 +1054,8 @@ export default function BluChat({
       window.removeEventListener("blu-recipe-run", handleRecipeRun);
     };
   });
+
+  const topStripVisible = chatSettingsOpen || referencesOpen || !!selectedReference || composerNotice !== null || upgradeStripVisible || (hasUnreadThreads && !notificationStripDismissed);
 
   const isLanding = mode === "fullscreen" && messages.length === 0;
   const [landingPrompt] = useState(() => LANDING_PROMPTS[Math.floor(Math.random() * LANDING_PROMPTS.length)]);
@@ -1002,7 +1215,7 @@ export default function BluChat({
                                   type="button"
                                   title={t.pinned ? "Unpin" : "Pin"}
                                   onClick={(e) => { e.stopPropagation(); togglePinThread(t.id); }}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/6 dark:hover:text-stone-200"
                                 >
                                   <Pin size={13} className={t.pinned ? "fill-current text-blue-500" : ""} />
                                 </button>
@@ -1010,7 +1223,7 @@ export default function BluChat({
                                   type="button"
                                   title="Rename"
                                   onClick={(e) => { e.stopPropagation(); setRenamingThreadId(t.id); setRenameDraft(t.title ?? "New chat"); }}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/6 dark:hover:text-stone-200"
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -1018,7 +1231,7 @@ export default function BluChat({
                                   type="button"
                                   title="Archive"
                                   onClick={(e) => { e.stopPropagation(); archiveThread(t.id); }}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/6 dark:hover:text-stone-200"
                                 >
                                   <Archive size={13} />
                                 </button>
@@ -1059,7 +1272,7 @@ export default function BluChat({
                               type="button"
                               title="Restore"
                               onClick={() => unarchiveThread(t.id)}
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-white/10 dark:hover:text-stone-200"
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/6 dark:hover:text-stone-200"
                             >
                               <ArchiveRestore size={13} />
                             </button>
@@ -1269,16 +1482,24 @@ export default function BluChat({
             <p className="text-xs text-stone-400 dark:text-stone-500">What are you working on today?</p>
           </div>
         )}
-        {sessionTime && (
-          <div className="flex items-center justify-center">
-            <span className="text-xs text-stone-400 dark:text-stone-500">{sessionTime}</span>
-          </div>
-        )}
-        {messages.map((msg) => {
-          const isEditingThis = msg.role === "user" && editingMsgId === msg.id;
-          const isFullWidthBlock = isEditingThis || !!msg.queryTrace || !!msg.liveRun || !!msg.runTasks;
-          return (
-          <div key={msg.id} className="relative flex animate-fade-up justify-start hover:z-20 focus-within:z-20">
+        {(() => {
+          let lastShownTs: number | null = null;
+          return messages.map((msg) => {
+            const isEditingThis = msg.role === "user" && editingMsgId === msg.id;
+            const isFullWidthBlock = isEditingThis || !!msg.queryTrace || !!msg.liveRun || !!msg.acceptRun || !!msg.runTasks;
+            const showTimestamp =
+              msg.role === "user" &&
+              msg.timestamp != null &&
+              (lastShownTs === null || msg.timestamp - lastShownTs >= TIMESTAMP_DIVIDER_GAP_MS);
+            if (showTimestamp) lastShownTs = msg.timestamp!;
+            return (
+          <Fragment key={msg.id}>
+          {showTimestamp && (
+            <div className="flex items-center justify-center py-1">
+              <span className="text-xs text-stone-400 dark:text-stone-500">{fmtTimestampDivider(msg.timestamp!)}</span>
+            </div>
+          )}
+          <div className="relative flex animate-fade-up justify-start hover:z-20 focus-within:z-20">
           <div className={`group flex flex-col gap-1.5 items-start ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
             <div className="flex items-center gap-1.5">
               {/* Avatar */}
@@ -1305,25 +1526,38 @@ export default function BluChat({
               </span>
             </div>
             <div className="min-w-0 w-full">
-              {msg.images?.length ? (
+              {msg.files?.length ? (
                 <div className="mb-2 flex flex-wrap justify-start gap-1.5">
-                  {msg.images.map((img) => (
-                    <button
-                      key={img.id}
-                      type="button"
-                      onClick={() => setLightboxUrl(img.url)}
-                      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl transition-opacity hover:opacity-90"
-                      style={{ border: "1px solid var(--border)" }}
-                    >
-                      <img src={img.url} alt="" className="h-full w-full object-cover" />
-                    </button>
-                  ))}
+                  {msg.files.map((f) =>
+                    f.kind === "image" ? (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setLightboxUrl(f.url)}
+                        className="h-28 w-28 shrink-0 overflow-hidden rounded-xl transition-opacity hover:opacity-90"
+                        style={{ border: "1px solid var(--border)" }}
+                      >
+                        <img src={f.url} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    ) : (
+                      <div
+                        key={f.id}
+                        className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl"
+                        style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
+                      >
+                        <FileKindName name={f.name} />
+                        <FileKindBadge kind={f.kind} />
+                      </div>
+                    )
+                  )}
                 </div>
               ) : null}
               {msg.runTasks ? (
-                <CreationRunStatus tasks={msg.runTasks} />
+                <CreationRunStatus tasks={msg.runTasks} declined={msg.declined} />
               ) : msg.liveRun ? (
-                <LiveRun />
+                <LiveRun declined={msg.declined} />
+              ) : msg.acceptRun ? (
+                <AcceptRun />
               ) : msg.execChecklist ? (
                 <ExecChecklist steps={msg.execChecklist.steps} />
               ) : msg.queryTrace ? (
@@ -1486,7 +1720,7 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {!msg.feedbackForm && !msg.runTasks && !msg.liveRun && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
+              {!msg.feedbackForm && !msg.runTasks && !msg.liveRun && !msg.acceptRun && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
                 <div className={`mt-2.5 flex w-full items-center gap-1 transition-opacity justify-start ${
                   msg.role === "blu" && msg.id === latestCompletedBluId
                     ? "opacity-100"
@@ -1587,6 +1821,11 @@ export default function BluChat({
                                 onClick={() => {
                                   setReactions((current) => ({ ...current, [msg.id]: item.value }));
                                   setReactionMenuId(null);
+                                  if (item.value === "down") {
+                                    setBadResponseTags([]);
+                                    setBadResponseDetail("");
+                                    setBadResponseModalId(msg.id);
+                                  }
                                 }}
                                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                                   active
@@ -1640,8 +1879,18 @@ export default function BluChat({
             </div>
           </div>
           </div>
-          );
-        })}
+          </Fragment>
+            );
+          });
+        })()}
+        {activeThread?.forkedFrom && (
+          <div className="flex items-center justify-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-stone-500 dark:text-stone-400" style={{ background: "var(--muted)" }}>
+              <GitFork size={11} className="shrink-0" />
+              Forked from "{activeThread.forkedFrom}"
+            </span>
+          </div>
+        )}
         </div>
         </div>
       </div>
@@ -1701,20 +1950,19 @@ export default function BluChat({
           className="hidden"
           onChange={(e) => {
             const files = Array.from(e.target.files ?? []);
-            files.forEach((file) => {
-              if (file.type.startsWith("image/")) {
-                const id = `img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                const url = URL.createObjectURL(file);
-                setImagePreviews((prev) => [...prev, { id, url, uploading: true }]);
-                setTimeout(() => {
-                  setImagePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, uploading: false } : p)));
-                }, 3000);
-              } else {
-                setAttachments((prev) => [
-                  ...prev.filter((a) => a.category !== "File"),
-                  { category: "File", title: file.name, subtitle: "", bg: "" },
-                ]);
-              }
+            const withinSize = files.filter((file) => file.size <= MAX_ATTACHMENT_SIZE_BYTES);
+            if (withinSize.length < files.length) setComposerNotice("File size exceeds limit");
+            const room = Math.max(MAX_ATTACHMENTS - filePreviews.length, 0);
+            const accepted = withinSize.slice(0, room);
+            if (withinSize.length > accepted.length) setComposerNotice("Max 7 files attached. Remove one to add another");
+            accepted.forEach((file) => {
+              const kind = classifyFileKind(file);
+              const id = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+              const url = URL.createObjectURL(file);
+              setFilePreviews((prev) => [...prev, { id, url, name: file.name, kind, uploading: true }]);
+              setTimeout(() => {
+                setFilePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, uploading: false } : p)));
+              }, 3000);
             });
             e.target.value = "";
           }}
@@ -1901,19 +2149,241 @@ export default function BluChat({
           </div>
         )}
 
-        <NotificationStrip
-          visible={hasUnreadThreads && !notificationStripDismissed}
-          onOpen={() => { setThreadSwitcherOpen(true); setNotificationStripDismissed(true); }}
-          onDismiss={() => setNotificationStripDismissed(true)}
-        />
+        {chatSettingsOpen ? (
+          <div
+            className="flex flex-col rounded-t-xl px-3.5 py-3"
+            style={{
+              background: "var(--content-bg)",
+              borderTop: "2px solid var(--border)",
+              borderLeft: "2px solid var(--border)",
+              borderRight: "2px solid var(--border)",
+              animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Chat Settings</span>
+              <button
+                type="button"
+                onClick={() => setChatSettingsOpen(false)}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+              >
+                <X size={13} />
+              </button>
+            </div>
+            <div className="space-y-4 pb-1">
+              {[
+                { title: "Response depth", options: RESPONSE_DEPTH_OPTIONS, value: responseDepth, set: setResponseDepth },
+                { title: "Model tier", options: MODEL_TIER_OPTIONS, value: modelTier, set: setModelTier },
+                { title: "Knowledge scope", options: KNOWLEDGE_SCOPE_OPTIONS, value: contextScope, set: (v: string) => setContextScope(v as "Project" | "Thread") },
+              ].map((group) => (
+                <div key={group.title}>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                    {group.title}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.options.map((option) => {
+                      const isActive = group.value === option;
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => group.set(option)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                            isActive
+                              ? "text-white"
+                              : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+                          }`}
+                          style={isActive ? { background: "#0080FF" } : undefined}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : referencesOpen || selectedReference ? (
+          <div
+            className="flex flex-col overflow-hidden rounded-t-xl"
+            style={{
+              maxHeight: 280,
+              background: "var(--content-bg)",
+              borderTop: "2px solid var(--border)",
+              borderLeft: "2px solid var(--border)",
+              borderRight: "2px solid var(--border)",
+              animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
+            }}
+          >
+            <div className="flex shrink-0 items-center justify-between px-3.5 py-2.5">
+              {selectedReference ? (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedReference(null); setReferencesOpen(true); }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100"
+                >
+                  <ChevronLeft size={13} />
+                  Back to References
+                </button>
+              ) : (
+                <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">References</span>
+              )}
+              <button
+                type="button"
+                onClick={() => { setReferencesOpen(false); setSelectedReference(null); }}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+              >
+                <X size={13} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {selectedReference ? (
+                selectedReference === "Image settings" ? (
+                  <div className="space-y-4 px-3.5 py-3">
+                    {[
+                      { title: "Aspect ratio", key: "aspect" as const, options: IMAGE_ASPECT_OPTIONS },
+                      { title: "Background", key: "background" as const, options: IMAGE_BACKGROUND_OPTIONS },
+                      { title: "Style", key: "style" as const, options: IMAGE_STYLE_OPTIONS },
+                    ].map((group) => (
+                      <div key={group.title}>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                          {group.title}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.options.map((option) => {
+                            const isActive = imageSettings[group.key] === option;
+                            return (
+                              <button
+                                key={option}
+                                onClick={() => updateImageSetting(group.key, option)}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                                  isActive
+                                    ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/25 dark:bg-blue-500/12 dark:text-blue-300"
+                                    : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50 dark:border-(--border) dark:bg-white/3 dark:text-stone-400 dark:hover:bg-white/6"
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col px-3.5 py-3">
+                    <div className="relative mb-2">
+                      <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+                      <input
+                        type="search"
+                        value={referenceListSearch}
+                        onChange={(e) => setReferenceListSearch(e.target.value)}
+                        placeholder={`Search ${selectedReference.toLowerCase()}...`}
+                        className="h-8 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
+                      />
+                    </div>
+                    <div className="max-h-52 overflow-y-auto">
+                      {(REFERENCE_LIST_ITEMS[selectedReference] ?? [])
+                        .filter((name) => name.toLowerCase().includes(referenceListSearch.toLowerCase()))
+                        .map((name) => (
+                          <button
+                            key={name}
+                            onClick={() => addAttachment(name)}
+                            className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/6"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="py-1">
+                  {REFERENCE_ITEMS.map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => { setSelectedReference(item.label); setReferenceListSearch(""); }}
+                      className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-stone-500 dark:text-stone-400">
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : composerNotice ? (
+          <div
+            className="flex items-start gap-2 rounded-t-xl px-3 py-2.5"
+            style={{
+              background: "rgba(239,68,68,0.1)",
+              borderTop: "2px solid var(--border)",
+              borderLeft: "2px solid var(--border)",
+              borderRight: "2px solid var(--border)",
+              animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
+            }}
+          >
+            <span className="min-w-0 flex-1 text-xs font-medium text-red-600 dark:text-red-400">
+              {composerNotice}
+            </span>
+            <button
+              type="button"
+              onClick={() => setComposerNotice(null)}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-700 dark:hover:bg-red-500/15 dark:hover:text-red-300"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ) : upgradeStripVisible ? (
+          <div
+            className="flex items-center gap-2.5 rounded-t-xl px-3 py-2.5"
+            style={{
+              background: "rgba(0,128,255,0.1)",
+              borderTop: "2px solid var(--border)",
+              borderLeft: "2px solid var(--border)",
+              borderRight: "2px solid var(--border)",
+              animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
+            }}
+          >
+            <span className="min-w-0 flex-1 text-xs font-medium leading-none text-blue-700 dark:text-blue-300">
+              {mode === "fullscreen"
+                ? "You're on a limited plan. Upgrade to keep using Blu."
+                : "Upgrade to keep using Blu."}
+            </span>
+            <button
+              type="button"
+              onClick={() => { setUpgradeStripVisible(false); navigate("/settings/billing"); }}
+              className="flex h-6 shrink-0 items-center rounded-full px-2.5 text-xs font-semibold leading-none text-white transition-opacity hover:opacity-90"
+              style={{ background: "#0080FF" }}
+            >
+              Upgrade now
+            </button>
+            <button
+              type="button"
+              onClick={() => setUpgradeStripVisible(false)}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-blue-500 transition-colors hover:bg-blue-500/10 hover:text-blue-700 dark:hover:bg-blue-500/15 dark:hover:text-blue-300"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <NotificationStrip
+            visible={hasUnreadThreads && !notificationStripDismissed}
+            onOpen={() => { setThreadSwitcherOpen(true); setNotificationStripDismissed(true); }}
+            onDismiss={() => setNotificationStripDismissed(true)}
+          />
+        )}
 
               <div
-                className={`px-4 pt-4 pb-3 ${hasUnreadThreads && !notificationStripDismissed ? "rounded-b-xl" : "rounded-xl"}`}
+                className={`px-4 pt-4 pb-4 ${topStripVisible ? "rounded-b-xl" : "rounded-xl"}`}
                 style={{
                   borderLeft: "2px solid var(--border)",
                   borderRight: "2px solid var(--border)",
                   borderBottom: "2px solid var(--border)",
-                  borderTop: hasUnreadThreads && !notificationStripDismissed ? "none" : "2px solid var(--border)",
+                  borderTop: topStripVisible ? "none" : "2px solid var(--border)",
                   boxShadow: "0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
                   background: mode === "fullscreen" ? "var(--content-bg)" : undefined,
                   opacity: inputLocked ? 0.45 : 1,
@@ -1922,70 +2392,63 @@ export default function BluChat({
                 }}
               >
           {queue.length > 0 && (
-            <div className="mb-2">
-              {queue.map((item) => (
-                <div
-                  key={item.id}
-                  className="group flex items-center gap-2.5 border-b border-stone-100 py-2 dark:border-white/6"
-                >
-                  <CornerLeftUp size={13} className="shrink-0 text-stone-400 dark:text-stone-500" />
-                  {editingQueueId === item.id ? (
-                    <input
-                      autoFocus
-                      value={editingQueueText}
-                      onChange={(e) => setEditingQueueText(e.target.value)}
-                      onBlur={() => saveQueueEdit(item.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveQueueEdit(item.id);
-                        if (e.key === "Escape") setEditingQueueId(null);
-                      }}
-                      className="min-w-0 flex-1 bg-transparent text-sm text-stone-700 outline-none dark:text-stone-200"
+            <div className="mb-2 flex flex-col gap-1.5">
+              <DndContext sensors={queueSensors} collisionDetection={closestCenter} onDragEnd={handleQueueDragEnd}>
+                <SortableContext items={queue.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                  {queue.map((item) => (
+                    <QueueItemRow
+                      key={item.id}
+                      item={item}
+                      isEditing={editingQueueId === item.id}
+                      editingText={editingQueueText}
+                      onStartEdit={() => { setEditingQueueId(item.id); setEditingQueueText(item.text); }}
+                      onEditChange={setEditingQueueText}
+                      onSave={() => saveQueueEdit(item.id)}
+                      onCancelEdit={() => setEditingQueueId(null)}
+                      onDelete={() => removeQueueItem(item.id)}
                     />
-                  ) : (
-                    <span
-                      className="min-w-0 flex-1 truncate text-sm text-stone-600 dark:text-stone-300"
-                      onDoubleClick={() => { setEditingQueueId(item.id); setEditingQueueText(item.text); }}
-                    >
-                      {item.text}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => removeQueueItem(item.id)}
-                    className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-red-500 opacity-0 transition-all hover:bg-red-50 group-hover:opacity-100 dark:text-red-400 dark:hover:bg-red-500/10"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           )}
-          {imagePreviews.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2">
-              {imagePreviews.map((img) => (
+          {filePreviews.length > 0 && (
+            <div className={`mb-2 gap-2 ${mode === "fullscreen" ? "flex flex-nowrap overflow-x-auto" : "grid grid-cols-3"}`}>
+              {filePreviews.map((f) => (
                 <div
-                  key={img.id}
-                  className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl"
+                  key={f.id}
+                  className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl"
                   style={{ border: "1px solid var(--border)" }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setLightboxUrl(img.url)}
-                    className="block h-full w-full"
-                  >
-                    <img
-                      src={img.url}
-                      alt=""
-                      className="h-full w-full object-cover transition-[filter] duration-500 ease-out"
-                      style={{ filter: img.uploading ? "blur(6px)" : "blur(0px)" }}
-                    />
-                  </button>
-                  {img.uploading && (
+                  {f.kind === "image" ? (
+                    <button
+                      type="button"
+                      onClick={() => setLightboxUrl(f.url)}
+                      className="block h-full w-full"
+                    >
+                      <img
+                        src={f.url}
+                        alt=""
+                        className="h-full w-full object-cover transition-[filter] duration-500 ease-out"
+                        style={{ filter: f.uploading ? "blur(6px)" : "blur(0px)" }}
+                      />
+                    </button>
+                  ) : (
+                    <div
+                      className="h-full w-full transition-[filter] duration-500 ease-out"
+                      style={{ background: "var(--muted)", filter: f.uploading ? "blur(6px)" : "blur(0px)" }}
+                    >
+                      <FileKindName name={f.name} />
+                    </div>
+                  )}
+                  <FileKindBadge kind={f.kind} />
+                  {f.uploading && (
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     </div>
                   )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); removeImagePreview(img.id); }}
+                    onClick={(e) => { e.stopPropagation(); removeFilePreview(f.id); }}
                     className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <X size={10} />
@@ -2000,7 +2463,7 @@ export default function BluChat({
               return (
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute top-0 left-0 select-none text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
+                  className={`pointer-events-none absolute top-0 left-0 select-none pr-7 text-sm text-stone-400 dark:text-stone-500 transition-opacity duration-300 ${placeholderVisible ? "opacity-100" : "opacity-0"}`}
                 >
                   {ph.text}
                 </span>
@@ -2023,10 +2486,18 @@ export default function BluChat({
                   sendMessage();
                 }
               }}
-              className="w-full min-h-5 max-h-32 overflow-y-auto bg-transparent text-sm text-stone-700 dark:text-stone-200 outline-none leading-relaxed"
+              className="w-full min-h-5 max-h-32 overflow-y-auto bg-transparent pr-7 text-sm text-stone-700 dark:text-stone-200 outline-none leading-relaxed"
             />
+            <button
+              type="button"
+              aria-label="Voice input"
+              className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
+              style={{ opacity: editorEmpty ? 1 : 0, pointerEvents: editorEmpty ? "auto" : "none", transition: "opacity 200ms ease, background-color 150ms ease, color 150ms ease" }}
+            >
+              <Mic size={14} />
+            </button>
           </div>
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-4">
             {/* + with dropup */}
             <div ref={plusRef} className="relative">
               <button
@@ -2035,6 +2506,7 @@ export default function BluChat({
                     if (open) {
                       setReferencesOpen(false);
                       setSelectedReference(null);
+                      setChatSettingsOpen(false);
                     }
                     return !open;
                   });
@@ -2050,168 +2522,46 @@ export default function BluChat({
 
               {plusOpen && (
                 <div
-                  className="absolute bottom-[calc(100%+8px)] left-0 z-20"
+                  className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-56 rounded-xl overflow-hidden animate-card-in transition-all duration-200"
+                  style={{
+                    background: "var(--content-bg)",
+                    border: "1px solid var(--border)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                  }}
                 >
-                  {selectedReference ? (
-                    <div
-                      className="absolute bottom-[calc(100%+8px)] left-0 w-84 max-h-115 rounded-xl overflow-hidden animate-card-in transition-all duration-200"
-                      style={{
-                        background: "var(--content-bg)",
-                        border: "1px solid var(--border)",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                  {PLUS_ITEMS.map((item, i) => (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        setPlusOpen(false);
+                        if (item.label === "References") {
+                          setReferencesOpen(true);
+                          return;
+                        }
+                        if (item.label === "Chat Settings") {
+                          setChatSettingsOpen(true);
+                          return;
+                        }
+                        if (item.label === "Attach Files") openFilePicker();
                       }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors
+                        ${i > 0 ? "border-t" : ""}`}
+                      style={i > 0 ? { borderColor: "var(--border)" } : undefined}
                     >
-                      <div className="flex items-center justify-between px-3.5 py-3">
-                        <button
-                          onClick={() => {
-                            setSelectedReference(null);
-                            setReferencesOpen(true);
-                          }}
-                          className="flex items-center gap-1.5 text-xs font-medium text-stone-500 transition-colors hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100"
-                        >
-                          <ChevronLeft size={13} />
-                          Back to References
-                        </button>
-                        <button
-                          onClick={() => {
-                            setPlusOpen(false);
-                            setReferencesOpen(false);
-                            setSelectedReference(null);
-                          }}
-                          className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
-                        >
-                          <X size={13} />
-                        </button>
+                      <span className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-white/6 flex items-center justify-center shrink-0">
+                        {item.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-stone-700 dark:text-stone-200 leading-none mb-0.5">{item.label}</p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 leading-none">{item.desc}</p>
                       </div>
-
-                      {selectedReference === "Image settings" ? (
-                        <div className="space-y-4 px-3.5 pb-4">
-                          {[
-                            { title: "Aspect ratio", key: "aspect" as const, options: IMAGE_ASPECT_OPTIONS },
-                            { title: "Background", key: "background" as const, options: IMAGE_BACKGROUND_OPTIONS },
-                            { title: "Style", key: "style" as const, options: IMAGE_STYLE_OPTIONS },
-                          ].map((group) => (
-                            <div key={group.title}>
-                              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                                {group.title}
-                              </p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {group.options.map((option) => {
-                                  const isActive = imageSettings[group.key] === option;
-                                  return (
-                                    <button
-                                      key={option}
-                                      onClick={() => updateImageSetting(group.key, option)}
-                                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                                        isActive
-                                          ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-500/25 dark:bg-blue-500/12 dark:text-blue-300"
-                                          : "border-stone-200 bg-white text-stone-500 hover:bg-stone-50 dark:border-(--border) dark:bg-white/3 dark:text-stone-400 dark:hover:bg-white/6"
-                                      }`}
-                                    >
-                                      {option}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col px-3.5 pb-3">
-                          <div className="relative mb-2">
-                            <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
-                            <input
-                              type="search"
-                              value={referenceListSearch}
-                              onChange={(e) => setReferenceListSearch(e.target.value)}
-                              placeholder={`Search ${selectedReference.toLowerCase()}...`}
-                              className="h-8 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-xs font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-white/3 dark:text-stone-100 dark:placeholder:text-stone-500"
-                            />
-                          </div>
-                          <div className="max-h-52 overflow-y-auto">
-                            {(REFERENCE_LIST_ITEMS[selectedReference] ?? [])
-                              .filter((name) => name.toLowerCase().includes(referenceListSearch.toLowerCase()))
-                              .map((name) => (
-                                <button
-                                  key={name}
-                                  onClick={() => addAttachment(name)}
-                                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-white/6"
-                                >
-                                  {name}
-                                </button>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : referencesOpen ? (
-                    <div
-                      className="absolute bottom-[calc(100%+8px)] left-0 w-64 rounded-xl overflow-hidden animate-card-in transition-all duration-200 flex flex-col"
-                      style={{
-                        maxHeight: 216,
-                        background: "var(--content-bg)",
-                        border: "1px solid var(--border)",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
-                      }}
-                    >
-                      <div className="flex-1 overflow-y-auto py-1">
-                        {REFERENCE_ITEMS.map((item) => (
-                          <button
-                            key={item.label}
-                            onClick={() => { setSelectedReference(item.label); setReferenceListSearch(""); }}
-                            className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-white/5"
-                          >
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-stone-500 dark:text-stone-400">
-                              {item.icon}
-                            </span>
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div
-                    className="w-56 rounded-xl overflow-hidden animate-card-in transition-all duration-200"
-                    style={{
-                      background: "var(--content-bg)",
-                      border: "1px solid var(--border)",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    {PLUS_ITEMS.map((item, i) => (
-                      <button
-                        key={item.label}
-                        onMouseEnter={() => item.label === "References" && setReferencesOpen(true)}
-                        onClick={() => {
-                          if (item.label === "References") {
-                            setReferencesOpen(true);
-                            return;
-                          }
-                          setPlusOpen(false);
-                          setReferencesOpen(false);
-                          setSelectedReference(null);
-                          if (item.label === "Attach Files") openFilePicker();
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-white/5 transition-colors
-                          ${i > 0 ? "border-t" : ""}`}
-                        style={i > 0 ? { borderColor: "var(--border)" } : undefined}
-                      >
-                        <span className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-white/6 flex items-center justify-center shrink-0">
-                          {item.icon}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-stone-700 dark:text-stone-200 leading-none mb-0.5">{item.label}</p>
-                          <p className="text-xs text-stone-400 dark:text-stone-500 leading-none">{item.desc}</p>
-                        </div>
-                        {item.arrow && <ChevronRight size={12} className="text-stone-400 shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
+                      {item.arrow && <ChevronRight size={12} className="text-stone-400 shrink-0" />}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setContextScope((s) => (s === "Project" ? "Thread" : "Project"))}
@@ -2247,12 +2597,12 @@ export default function BluChat({
               <button
                 onClick={() => (activeReportId ? stopActiveReport() : sendMessage())}
                 className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150"
-                style={{ background: activeReportId || !editorEmpty || attachments.length ? "#0080FF" : "var(--border)" }}
+                style={{ background: activeReportId || !editorEmpty || attachments.length || filePreviews.length ? "#0080FF" : "var(--border)" }}
               >
                 {activeReportId ? (
                   <Square size={11} fill="white" className="text-white" />
                 ) : (
-                  <ArrowUp size={13} className={!editorEmpty || attachments.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
+                  <ArrowUp size={13} className={!editorEmpty || attachments.length || filePreviews.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
                 )}
               </button>
             </div>
@@ -2261,6 +2611,89 @@ export default function BluChat({
       </div>
 
       </div>}
+
+      {/* Bad response feedback modal */}
+      {badResponseModalId && (
+        <div
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm"
+          onClick={() => setBadResponseModalId(null)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl p-5 animate-card-in"
+            style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setBadResponseModalId(null)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-800 dark:border-white/10 dark:bg-white/6 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-stone-100"
+            >
+              <X size={14} />
+            </button>
+            <p className="pr-8 text-base font-semibold text-stone-900 dark:text-stone-100">What went wrong?</p>
+            <p className="mt-1 pr-8 text-xs text-stone-400 dark:text-stone-500">Pick what didn't work (optional) and add any detail.</p>
+
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {["Inaccurate", "Tone", "Length"].map((tag) => {
+                const active = badResponseTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() =>
+                      setBadResponseTags((current) =>
+                        active ? current.filter((t) => t !== tag) : [...current, tag]
+                      )
+                    }
+                    className={`inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                      active
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                        : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10"
+                    }`}
+                    style={active ? { border: "1px solid rgba(0,128,255,0.3)" } : { border: "1px solid var(--border)" }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="relative mt-3">
+              <textarea
+                value={badResponseDetail}
+                onChange={(e) => setBadResponseDetail(e.target.value.slice(0, 250))}
+                maxLength={250}
+                rows={4}
+                placeholder="Add more detail (optional)"
+                className="w-full resize-none rounded-lg border px-3 py-2.5 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:text-stone-100"
+                style={{ borderColor: "var(--border)", background: "var(--input)" }}
+              />
+              <span className="pointer-events-none absolute bottom-2 right-2.5 text-[11px] tabular-nums text-stone-400 dark:text-stone-500">
+                {badResponseDetail.length}/250
+              </span>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setBadResponseModalId(null)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setBadResponseModalId(null)}
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "#0080FF" }}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Journey preview overlay */}
       {journeyPreviewName && (

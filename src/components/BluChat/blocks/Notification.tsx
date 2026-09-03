@@ -39,7 +39,7 @@ export function NotificationStrip({ visible, onOpen, onDismiss }: { visible: boo
   if (!visible) return null;
   return (
     <div
-      className="flex items-center gap-2 rounded-t-xl px-3 py-2.5"
+      className="flex items-start gap-2 rounded-t-xl px-3 py-2.5"
       style={{
         background: "var(--muted)",
         borderTop: "2px solid var(--border)",
@@ -51,7 +51,7 @@ export function NotificationStrip({ visible, onOpen, onDismiss }: { visible: boo
       <button
         type="button"
         onClick={onOpen}
-        className="min-w-0 flex-1 truncate text-left text-xs font-medium text-stone-600 dark:text-stone-300 hover:underline"
+        className="min-w-0 flex-1 text-left text-xs font-medium text-stone-600 dark:text-stone-300 hover:underline"
       >
         New activity in other chats
       </button>

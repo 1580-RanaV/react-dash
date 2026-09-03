@@ -22,6 +22,7 @@ import {
   Camera,
   Type,
   Zap,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { HistoryItem, RunTask, ChatMessage, SlashRecipe, Placeholder } from "./types";
 
@@ -96,7 +97,17 @@ export const PLUS_ITEMS = [
     desc: "File from device",
     arrow: false,
   },
+  {
+    icon: <SlidersHorizontal size={15} className="text-stone-500 dark:text-stone-400" />,
+    label: "Chat Settings",
+    desc: "Response depth & model tier",
+    arrow: false,
+  },
 ];
+
+export const RESPONSE_DEPTH_OPTIONS = ["Concise", "Standard", "Extended"];
+export const MODEL_TIER_OPTIONS = ["Default", "Premium", "Max"];
+export const KNOWLEDGE_SCOPE_OPTIONS = ["Thread", "Project"];
 
 export const REFERENCE_ITEMS = [
   { label: "Assets", icon: <Library size={14} /> },
@@ -111,7 +122,7 @@ export const REFERENCE_ITEMS = [
   { label: "Feeds", icon: <Rss size={14} /> },
   { label: "Journeys", icon: <Route size={14} /> },
   { label: "Experiences", icon: <Shuffle size={14} /> },
-  { label: "Out of the box", icon: <PackageOpen size={14} /> },
+  { label: "Out of the Box", icon: <PackageOpen size={14} /> },
   { label: "Boards", icon: <LayoutDashboard size={14} /> },
 ];
 
@@ -209,7 +220,7 @@ export const REFERENCE_LIST_ITEMS: Record<string, string[]> = {
   Feeds: ["Main Product Feed", "Sale Items Feed", "New Arrivals Feed", "Seasonal Feed", "Custom Feed #1", "Custom Feed #2"],
   Journeys: ["Onboarding Flow", "Abandoned Cart Recovery", "Post-Purchase Nurture", "Win-Back Campaign", "Product Education Series", "VIP Loyalty Path"],
   Experiences: ["Summer Sale Banner", "Exit Intent Popup", "Welcome Modal", "Loyalty Badge", "Free Shipping Bar", "New Arrivals Spotlight"],
-  "Out of the box": ["Welcome Series", "Cart Recovery", "Post-Purchase", "Win-Back", "Browse Abandonment", "Order Confirmation", "Re-engagement"],
+  "Out of the Box": ["Welcome Series", "Cart Recovery", "Post-Purchase", "Win-Back", "Browse Abandonment", "Order Confirmation", "Re-engagement"],
   Boards: ["Marketing Overview", "Campaign Tracker", "Content Calendar", "Sales Pipeline", "Team Tasks"],
 };
 
