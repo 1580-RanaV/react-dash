@@ -2,13 +2,37 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Moon, Settings, Sun } from "lucide-react";
+
+type HomeState = "empty" | "partial" | "full";
+
+const HOME_STATE_TABS: { key: HomeState; label: string }[] = [
+  { key: "empty", label: "New" },
+  { key: "partial", label: "No data" },
+  { key: "full", label: "Loaded" },
+];
+
+const HOME_TAB_KEYS = new Set(["design", "marketing", "sales", "analytics"]);
 
 export default function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const onHome = location.pathname === "/home";
+
+  const searchParams = new URLSearchParams(location.search);
+  const rawTab = searchParams.get("tab") ?? "analytics/full";
+  const [rawHomeTab, rawState] = rawTab.split("/");
+  const homeTab = HOME_TAB_KEYS.has(rawHomeTab) ? rawHomeTab : "analytics";
+  const homeState: HomeState =
+    rawState === "1" || rawState === "empty"
+      ? "empty"
+      : rawState === "partial"
+        ? "partial"
+        : "full";
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -89,6 +113,30 @@ export default function ProfileMenu() {
               </button>
             </div>
           </div>
+
+          {/* Home data-state switcher — only meaningful on the /home route */}
+          {onHome && (
+            <div className="px-3 pb-2.5">
+              <p className="mb-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                Home data state
+              </p>
+              <div className="flex items-center gap-0.5 rounded-lg bg-stone-100 dark:bg-white/8 p-0.5">
+                {HOME_STATE_TABS.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => navigate(`/home?tab=${homeTab}/${item.key}`, { replace: true })}
+                    className={`flex flex-1 items-center justify-center h-8 rounded-md text-xs font-medium transition-all ${
+                      homeState === item.key
+                        ? "bg-white dark:bg-white/12 text-stone-900 dark:text-stone-100 shadow-sm"
+                        : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Menu items */}
           <div className="px-2 py-2">

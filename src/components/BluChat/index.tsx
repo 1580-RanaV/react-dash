@@ -49,6 +49,7 @@ import {
   Maximize2,
   Minimize2,
   Download,
+  Coins,
   AppWindow,
   Mail,
   Bell,
@@ -262,6 +263,14 @@ function fmtTimestampDivider(ts: number): string {
   return `${date.toLocaleDateString("en-US", { month: "long", day: "numeric" })} ${time}`;
 }
 
+// Mock credit cost per Blu reply — deterministic per message id (not random on
+// every render), standing in for a real per-reply usage/billing signal.
+function mockCredits(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return (Math.abs(hash) % 8) + 1;
+}
+
 export default function BluChat({
   onClose,
   mode = "panel",
@@ -283,7 +292,7 @@ export default function BluChat({
   const suggestedRecipes = contextKeys.map(k => SLASH_RECIPES.find(r => r.key === k)).filter(Boolean) as SlashRecipe[];
   const otherRecipes = SLASH_RECIPES.filter(r => !contextKeys.includes(r.key));
 
-  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, forkThread, renameActiveThread, renameThread, togglePinThread, archiveThread, unarchiveThread, deleteThread } = useBluMessages();
+  const { messages, setMessages, sessionTime, setSessionTime, threads, activeThreadId, switchThread, createThread, forkThread, renameActiveThread, renameThread, togglePinThread, archiveThread, unarchiveThread, deleteThread, credits, spendCredits } = useBluMessages();
   const activeThread = threads.find((t) => t.id === activeThreadId);
   const activeThreadTitle = activeThread?.title ?? "New chat";
   const [threadSwitcherOpen, setThreadSwitcherOpen] = useState(false);
@@ -473,6 +482,11 @@ export default function BluChat({
   const savedPlusRangeRef = useRef<Range | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  useEffect(() => {
+    if (queue.length < MAX_QUEUE) {
+      setComposerNotice((n) => (n === "Queue full. Delete one or wait for a slot to open up." ? null : n));
+    }
+  }, [queue.length]);
   const queueSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
@@ -487,17 +501,35 @@ export default function BluChat({
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const messagesContentRef = useRef<HTMLDivElement>(null);
+  const wasNearBottomRef = useRef(true);
+  const forceScrollRef = useRef(false);
   const [msgTopFade, setMsgTopFade] = useState(false);
-  const [msgBottomFade, setMsgBottomFade] = useState(true);
+  const [msgBottomFade, setMsgBottomFade] = useState(false);
   const [journeyPreviewName, setJourneyPreviewName] = useState<string | null>(null);
   const [inputLocked, setInputLocked] = useState(false);
 
   function checkMsgFades() {
     const el = messagesRef.current;
     if (!el) return;
+    const nearBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight - 8;
     setMsgTopFade(el.scrollTop > 8);
-    setMsgBottomFade(Math.ceil(el.scrollTop + el.clientHeight) < el.scrollHeight - 8);
+    setMsgBottomFade(!nearBottom);
+    wasNearBottomRef.current = nearBottom;
   }
+
+  // Recompute on any content-height change too (new messages, streaming text
+  // growing character by character, initial mount) — not just on manual
+  // scroll — otherwise a short conversation that never overflows (or hasn't
+  // been scrolled yet) leaves msgBottomFade stuck at its stale default and
+  // "Jump to latest" shows even though there's nothing below to jump to.
+  useEffect(() => {
+    const content = messagesContentRef.current;
+    if (!content) return;
+    const ro = new ResizeObserver(checkMsgFades);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -552,6 +584,8 @@ export default function BluChat({
   }, [mentionCategory]);
 
   useEffect(() => {
+    if (!forceScrollRef.current && !wasNearBottomRef.current) return;
+    forceScrollRef.current = false;
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
@@ -924,6 +958,29 @@ export default function BluChat({
   const queueRef = useRef(queue);
   useEffect(() => { queueRef.current = queue; }, [queue]);
 
+  // Spend credits the moment a reply actually finishes (bluReplying true -> false),
+  // charging exactly the same mockCredits(id) amount already shown in that
+  // message's own credit-cost tooltip. Skips the very first effect run (mount)
+  // so pre-existing seeded history never gets charged retroactively, and tracks
+  // already-charged ids so a given reply is never double-spent.
+  const creditEffectMountedRef = useRef(false);
+  const chargedMsgIdsRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!creditEffectMountedRef.current) {
+      creditEffectMountedRef.current = true;
+      return;
+    }
+    if (bluReplying) return;
+    const lastReply = [...messages].reverse().find(
+      (m) => m.role === "blu" && !m.isTyping && !m.isStreaming && !m.outOfCredits && !m.isError
+    );
+    if (lastReply && !chargedMsgIdsRef.current.has(lastReply.id)) {
+      chargedMsgIdsRef.current.add(lastReply.id);
+      spendCredits(mockCredits(lastReply.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bluReplying]);
+
   useEffect(() => {
     if (bluReplying || queueRef.current.length === 0) return;
     const next = queueRef.current[0];
@@ -955,6 +1012,8 @@ export default function BluChat({
       return;
     }
 
+    forceScrollRef.current = true;
+
     if (!sessionTime) {
       const now = new Date();
       setSessionTime(now.toLocaleDateString("en-US", { weekday: "long" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
@@ -981,6 +1040,7 @@ export default function BluChat({
     const isUpgrade = !overrideText && text.toLowerCase() === "upgrade";
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
+    const isOutOfCredits = !overrideText && credits <= 0;
     let generalReplyIndex = 0;
 
     setMessages((current) => {
@@ -996,7 +1056,14 @@ export default function BluChat({
         recipes: currentRecipes.length ? currentRecipes : undefined,
       };
       const next: ChatMessage[] = [...current, userMsg];
-      if (isPlan) {
+      if (isOutOfCredits) {
+        next.push({
+          id: `blu-outofcredits-${ts}`,
+          role: "blu",
+          text: "",
+          outOfCredits: true,
+        });
+      } else if (isPlan) {
         next.push({
           id: `blu-plan-${ts}`,
           role: "blu",
@@ -1106,7 +1173,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isPlan && !runMatch && !isRunDeclined && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isLiveRunDeclined && !isAcceptRun && !isNotification && !isUpgrade) {
+    } else if (!isOutOfCredits && !isPlan && !runMatch && !isRunDeclined && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isLiveRunDeclined && !isAcceptRun && !isNotification && !isUpgrade) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1657,6 +1724,9 @@ export default function BluChat({
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 transition-opacity duration-300"
           style={{ opacity: msgBottomFade ? 1 : 0, background: "linear-gradient(to top, var(--content-bg) 0%, transparent 100%)" }}
         />
+        {/* Floats over the scrollable area (no reserved layout space, nothing behind it
+            but the messages themselves) — z-20 keeps it visually above the z-10 fade
+            gradients so it never reads as sitting "behind" them. */}
         {messages.length > 0 && (
           <div
             className="pointer-events-none absolute inset-x-0 z-20 flex justify-center transition-all duration-200"
@@ -1668,12 +1738,16 @@ export default function BluChat({
           >
             <button
               type="button"
+              aria-label="Jump to latest"
+              title="Jump to latest"
               onClick={() => messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" })}
-              className="pointer-events-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/8"
+              className={`pointer-events-auto flex items-center text-stone-600 shadow-sm transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/8 ${
+                mode === "fullscreen" ? "gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium" : "h-8 w-8 justify-center rounded-full"
+              }`}
               style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
             >
-              <ChevronDown size={12} />
-              Jump to latest
+              <ChevronDown size={mode === "fullscreen" ? 12 : 14} />
+              {mode === "fullscreen" && "Jump to latest"}
             </button>
           </div>
         )}
@@ -1681,9 +1755,9 @@ export default function BluChat({
           ref={messagesRef}
           onScroll={checkMsgFades}
           className="h-full overflow-y-auto px-4 py-4 chat-scroll"
-          style={{ paddingBottom: mode === "fullscreen" ? composerHeight + 48 : undefined }}
+          style={{ paddingBottom: mode === "fullscreen" ? composerHeight + 48 : 48 }}
         >
-        <div className={`space-y-4 ${mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}`}>
+        <div ref={messagesContentRef} className={`space-y-4 ${mode === "fullscreen" ? "max-w-3xl mx-auto" : ""}`}>
         {messages.length === 0 && mode !== "fullscreen" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pb-8 select-none text-center">
             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">Ask Blu anything</p>
@@ -1701,6 +1775,7 @@ export default function BluChat({
               (lastShownTs === null || msg.timestamp - lastShownTs >= TIMESTAMP_DIVIDER_GAP_MS);
             if (showTimestamp) lastShownTs = msg.timestamp!;
             const showForkBadge = !!activeThread?.forkedFrom && activeThread?.forkedMessageCount === msgIndex + 1;
+            const isUser = msg.role === "user";
             return (
           <Fragment key={msg.id}>
           {showTimestamp && (
@@ -1708,9 +1783,9 @@ export default function BluChat({
               <span className="text-xs text-stone-400 dark:text-stone-500">{fmtTimestampDivider(msg.timestamp!)}</span>
             </div>
           )}
-          <div className="relative flex animate-fade-up justify-start hover:z-20 focus-within:z-20">
-          <div className={`group flex flex-col gap-1.5 items-start ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
-            <div className="flex items-center gap-1.5">
+          <div className={`relative flex animate-fade-up hover:z-20 focus-within:z-20 ${isUser ? "justify-end" : "justify-start"}`}>
+          <div className={`group flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
+            <div className={`flex items-center gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
               {/* Avatar */}
               {msg.role === "user" ? (
                 <div className="h-6 w-6 rounded-full overflow-hidden shrink-0">
@@ -1734,9 +1809,9 @@ export default function BluChat({
                 {msg.role === "user" ? "Rana" : "Blu"}
               </span>
             </div>
-            <div className="min-w-0 w-full">
+            <div className={`min-w-0 w-full flex flex-col ${isUser ? "items-end" : "items-start"}`}>
               {msg.files?.length ? (
-                <div className="mb-2 flex flex-wrap justify-start gap-1.5">
+                <div className={`mb-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
                   {msg.files.map((f) =>
                     f.kind === "image" ? (
                       <button
@@ -1788,6 +1863,22 @@ export default function BluChat({
                     setMessages((current) => current.map((item) => item.id === msg.id ? { ...item, isStreaming: false } : item));
                   }}
                 />
+              ) : msg.outOfCredits ? (
+                <div
+                  className="inline-flex flex-col gap-2.5 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(0,128,255,0.06)", border: "1px solid rgba(0,128,255,0.18)" }}
+                >
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Looks like your credits took a little break. Top up or upgrade to keep the ideas flowing.
+                  </p>
+                  <button
+                    onClick={() => navigate("/settings/billing")}
+                    className="self-start inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#0080FF" }}
+                  >
+                    Upgrade now
+                  </button>
+                </div>
               ) : msg.isError ? (
                 <div
                   className="inline-flex flex-col gap-2.5 rounded-xl px-4 py-3"
@@ -1855,7 +1946,7 @@ export default function BluChat({
               ) : msg.role === "user" ? (
                 <p
                   className="inline-block max-w-full whitespace-pre-wrap wrap-break-word rounded-2xl px-3.5 py-2.5 text-sm leading-[1.55] text-stone-800 dark:text-stone-100"
-                  style={{ background: "var(--muted)", borderTopLeftRadius: 4 }}
+                  style={{ background: "var(--muted)", borderTopRightRadius: 4 }}
                 >
                   {msg.text}
                 </p>
@@ -1892,7 +1983,7 @@ export default function BluChat({
                 <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} />
               )}
               {msg.mentions?.length ? (
-                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
+                <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
                   {msg.mentions.map((m) => (
                     <span
                       key={m.id}
@@ -1905,7 +1996,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.recipes?.length ? (
-                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
+                <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
                   {msg.recipes.map((r) => (
                     <span
                       key={r.key}
@@ -1918,7 +2009,7 @@ export default function BluChat({
                 </div>
               ) : null}
               {msg.attachments?.length ? (
-                <div className="mt-2 flex flex-wrap justify-start gap-1.5">
+                <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
                   {msg.attachments.map((item) => (
                     <span
                       key={`${msg.id}-${item.category}`}
@@ -1929,12 +2020,24 @@ export default function BluChat({
                   ))}
                 </div>
               ) : null}
-              {!msg.feedbackForm && !msg.runTasks && !msg.liveRun && !msg.acceptRun && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.isPlan && editingMsgId !== msg.id && (
-                <div className={`mt-2.5 flex w-full items-center gap-1 transition-opacity justify-start ${
+              {!msg.feedbackForm && !msg.runTasks && !msg.liveRun && !msg.acceptRun && !msg.isTyping && !msg.isStreaming && !msg.isError && !msg.outOfCredits && !msg.isPlan && editingMsgId !== msg.id && (
+                <div className={`mt-2.5 flex w-full items-center gap-1 transition-opacity ${isUser ? "justify-end" : "justify-start"} ${
                   msg.role === "blu" && msg.id === latestCompletedBluId
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                 }`}>
+                  {/* Credit cost */}
+                  {msg.role === "blu" && (
+                    <div className="group/tip relative">
+                      <span className="flex h-7 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-stone-400 dark:text-stone-500">
+                        <Coins size={13} />
+                        {mockCredits(msg.id)} credit{mockCredits(msg.id) === 1 ? "" : "s"}
+                      </span>
+                      <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                        {mockCredits(msg.id)} credit{mockCredits(msg.id) === 1 ? "" : "s"} used
+                      </span>
+                    </div>
+                  )}
                   {/* Copy */}
                   <div className="group/tip relative">
                     <button
@@ -2670,10 +2773,31 @@ export default function BluChat({
               suppressContentEditableWarning
               onInput={handleEditorInput}
               onPaste={(e) => {
-                const files = Array.from(e.clipboardData?.files ?? []);
-                if (files.length === 0) return;
+                const fromFiles = Array.from(e.clipboardData?.files ?? []);
+                const fromItems = Array.from(e.clipboardData?.items ?? [])
+                  .filter((item) => item.kind === "file")
+                  .map((item) => item.getAsFile())
+                  .filter((f): f is File => f !== null);
+                const files = fromFiles.length ? fromFiles : fromItems;
                 e.preventDefault();
-                ingestFiles(files);
+                if (files.length > 0) {
+                  ingestFiles(files);
+                  return;
+                }
+                // Paste as plain text — otherwise rich HTML from the clipboard
+                // (markdown previews, code editors, etc.) drags its own inline
+                // styling/backgrounds straight into the composer.
+                const text = e.clipboardData?.getData("text/plain") ?? "";
+                if (!text) return;
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) return;
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(document.createTextNode(text));
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                updateEditorEmpty();
               }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") { setMentionOpen(false); setMentionCategory(null); setSlashOpen(false); setPlusPickerOpen(false); return; }

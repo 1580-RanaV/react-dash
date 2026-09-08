@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, Workflow, Waypoints } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Menu, Workflow, Waypoints, Coins } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
-import { BluMessagesProvider } from "./BluMessagesContext";
+import { BluMessagesProvider, useBluMessages, MAX_CREDITS } from "./BluMessagesContext";
 import { BoardsProvider } from "./boards/boardsStore";
 import { HomeWidgetsProvider } from "./homeWidgets/homeWidgetsStore";
 import NotificationsMenu from "./NotificationsMenu";
@@ -189,50 +189,37 @@ function FloatingBluWindow({
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
-type HomeState = "empty" | "partial" | "full";
-
-const HOME_STATE_TABS: { key: HomeState; label: string }[] = [
-  { key: "empty", label: "New" },
-  { key: "partial", label: "No data" },
-  { key: "full", label: "Loaded" },
-];
-
-const HOME_TAB_KEYS = new Set(["design", "marketing", "sales", "analytics"]);
-
-function ShellHomeStateSwitcher() {
+function CreditsMeter() {
+  const { credits } = useBluMessages();
   const navigate = useNavigate();
-  const location = useLocation();
-  if (location.pathname !== "/home") return null;
 
-  const searchParams = new URLSearchParams(location.search);
-  const rawTab = searchParams.get("tab") ?? "analytics/full";
-  const [rawHomeTab, rawState] = rawTab.split("/");
-  const homeTab = HOME_TAB_KEYS.has(rawHomeTab) ? rawHomeTab : "analytics";
-  const state: HomeState =
-    rawState === "1" || rawState === "empty"
-      ? "empty"
-      : rawState === "partial"
-        ? "partial"
-        : "full";
+  if (credits <= 0) {
+    return (
+      <button
+        onClick={() => navigate("/settings/billing")}
+        className="mr-1 flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-red-600 transition-colors hover:opacity-90 dark:text-red-400"
+        style={{ background: "rgba(239,68,68,0.1)" }}
+      >
+        Out of credits
+      </button>
+    );
+  }
 
+  const pct = (credits / MAX_CREDITS) * 100;
   return (
-    <div
-      className="hidden items-center rounded-lg p-0.5 sm:inline-flex"
-      style={{ border: "1px solid var(--border)", background: "var(--muted)" }}
-    >
-      {HOME_STATE_TABS.map((item) => (
-        <button
-          key={item.key}
-          onClick={() => navigate(`/home?tab=${homeTab}/${item.key}`, { replace: true })}
-          className={`h-7 rounded-md px-3 text-xs font-medium transition-colors ${
-            state === item.key
-              ? "bg-white text-stone-900 shadow-sm dark:bg-stone-800 dark:text-stone-100"
-              : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-          }`}
-        >
-          {item.label}
-        </button>
-      ))}
+    <div className="group/tip relative mr-1">
+      <button
+        onClick={() => navigate("/settings/billing")}
+        className="flex h-8 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
+      >
+        <Coins size={14} className="shrink-0 text-stone-500 dark:text-stone-400" />
+        <span className="h-1.5 w-14 overflow-hidden rounded-full" style={{ background: "var(--muted)" }}>
+          <span className="block h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#0080FF" }} />
+        </span>
+      </button>
+      <span className="pointer-events-none absolute top-full right-0 z-50 mt-1.5 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+        {credits}/{MAX_CREDITS} credits
+      </span>
     </div>
   );
 }
@@ -346,23 +333,25 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </button>
 
           <NotificationsMenu />
-          <ShellHomeStateSwitcher />
           <button
             onClick={() => window.open("/public-recipe", "_blank")}
-            className="flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+            aria-label="Public recipe"
+            title="Public recipe"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
           >
-            <Workflow size={13} className="shrink-0" />
-            Public recipe
+            <Workflow size={15} className="shrink-0" />
           </button>
           <button
             onClick={() => window.open("/public-workflow", "_blank")}
-            className="flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+            aria-label="Public workflow"
+            title="Public workflow"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
           >
-            <Waypoints size={13} className="shrink-0" />
-            Public workflow
+            <Waypoints size={15} className="shrink-0" />
           </button>
-          <UpgradeButton />
+          {/* <UpgradeButton /> */}
           {/* <LanguageSwitcher /> */}
+          <CreditsMeter />
           <ProfileMenu />
         </div>
 

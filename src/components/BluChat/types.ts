@@ -39,6 +39,7 @@ export type ChatMessage = {
   isTyping?: boolean;
   isStreaming?: boolean;
   isError?: boolean;
+  outOfCredits?: boolean;
   isPlan?: boolean;
   planContent?: string;
   journeyChip?: { name: string };

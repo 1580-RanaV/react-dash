@@ -121,6 +121,8 @@ const SEED_THREADS: BluThread[] = [
   },
 ];
 
+export const MAX_CREDITS = 10;
+
 type BluMessagesContextValue = {
   messages: ChatMessage[];
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
@@ -137,6 +139,8 @@ type BluMessagesContextValue = {
   archiveThread: (id: string) => void;
   unarchiveThread: (id: string) => void;
   deleteThread: (id: string) => void;
+  credits: number;
+  spendCredits: (amount: number) => void;
 };
 
 const BluMessagesContext = createContext<BluMessagesContextValue | null>(null);
@@ -144,6 +148,11 @@ const BluMessagesContext = createContext<BluMessagesContextValue | null>(null);
 export function BluMessagesProvider({ children }: { children: ReactNode }) {
   const [threads, setThreads] = useState<BluThread[]>(SEED_THREADS);
   const [activeThreadId, setActiveThreadId] = useState(SEED_THREADS[0].id);
+  const [credits, setCredits] = useState(MAX_CREDITS);
+
+  function spendCredits(amount: number) {
+    setCredits((c) => Math.max(0, c - amount));
+  }
 
   const activeThread = threads.find((t) => t.id === activeThreadId) ?? threads[0];
 
@@ -246,6 +255,8 @@ export function BluMessagesProvider({ children }: { children: ReactNode }) {
         archiveThread,
         unarchiveThread,
         deleteThread,
+        credits,
+        spendCredits,
       }}
     >
       {children}
