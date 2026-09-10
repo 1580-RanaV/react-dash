@@ -265,10 +265,8 @@ function fmtTimestampDivider(ts: number): string {
 
 // Mock credit cost per Blu reply — deterministic per message id (not random on
 // every render), standing in for a real per-reply usage/billing signal.
-function mockCredits(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return (Math.abs(hash) % 8) + 1;
+function mockCredits(_id: string): number {
+  return 1;
 }
 
 export default function BluChat({
@@ -1785,30 +1783,32 @@ export default function BluChat({
           )}
           <div className={`relative flex animate-fade-up hover:z-20 focus-within:z-20 ${isUser ? "justify-end" : "justify-start"}`}>
           <div className={`group flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
-            <div className={`flex items-center gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
-              {/* Avatar */}
-              {msg.role === "user" ? (
-                <div className="h-6 w-6 rounded-full overflow-hidden shrink-0">
-                  <img src="/dp.png" alt="You" width={24} height={24} className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                  style={{ background: "rgba(0,128,255,0.12)" }}
-                >
-                  <img
-                    src="/mascot.png"
-                    alt="Blu"
-                    width={24}
-                    height={24}
-                    className="h-6 w-6 object-contain"
-                  />
+            {!msg.isTyping && (
+              <div className={`flex items-center gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
+                {/* Avatar */}
+                {msg.role === "user" ? (
+                  <div className="h-6 w-6 rounded-full overflow-hidden shrink-0">
+                    <img src="/dp.png" alt="You" width={24} height={24} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <span
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "rgba(0,128,255,0.12)" }}
+                  >
+                    <img
+                      src="/mascot.png"
+                      alt="Blu"
+                      width={24}
+                      height={24}
+                      className="h-6 w-6 object-contain"
+                    />
+                  </span>
+                )}
+                <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+                  {msg.role === "user" ? "Rana" : "Blu"}
                 </span>
-              )}
-              <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                {msg.role === "user" ? "Rana" : "Blu"}
-              </span>
-            </div>
+              </div>
+            )}
             <div className={`min-w-0 w-full flex flex-col ${isUser ? "items-end" : "items-start"}`}>
               {msg.files?.length ? (
                 <div className={`mb-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>

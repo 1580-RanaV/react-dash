@@ -103,9 +103,11 @@ export default function LoadingState({
       >
         {label}
       </span>
+      {/* Elapsed-time counter — commented out for now, not the timer logic itself.
       <span className="font-mono text-[12px] tabular-nums" style={{ color: "var(--muted-foreground)" }}>
         {elapsed}
       </span>
+      */}
     </div>
   );
 }
