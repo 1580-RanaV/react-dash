@@ -36,6 +36,7 @@ export type ChatMessage = {
   mentions?: MentionChip[];
   recipes?: RecipeChip[];
   feedbackForm?: boolean;
+  feedbackNoField?: boolean;
   isTyping?: boolean;
   isStreaming?: boolean;
   isError?: boolean;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 const QUESTIONS = [
   {
@@ -21,7 +22,14 @@ const QUESTIONS = [
   },
 ];
 
-export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: string) => void }) {
+export default function FeedbackQuestionnaire({
+  onSubmit,
+  allowCustom = true,
+}: {
+  onSubmit: (text: string) => void;
+  /** stepper-no-field: just the fixed options, no "type something" fallback */
+  allowCustom?: boolean;
+}) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState<Record<string, string>>({});
@@ -49,6 +57,11 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
       }
       return { ...current, [question.id]: value.trim() };
     });
+  }
+
+  function back() {
+    if (step === 0) return;
+    setStep((current) => current - 1);
   }
 
   function next() {
@@ -119,34 +132,50 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
             );
           })}
 
-          <label className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-stone-100 focus-within:bg-stone-100 dark:hover:bg-white/6 dark:focus-within:bg-white/6 ${customSelected ? "bg-stone-100 dark:bg-white/6" : ""}`}>
-            <span
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
-                customSelected
-                  ? "text-white"
-                  : "border border-stone-300 text-transparent dark:border-white/18"
-              }`}
-              style={customSelected ? { background: "#0080FF" } : undefined}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${customSelected ? "scale-100" : "scale-0"}`} />
-            </span>
-            <input
-              value={customValue}
-              onChange={(event) => updateCustom(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  next();
-                }
-              }}
-              placeholder="Type something..."
-              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-stone-700 outline-none placeholder:text-stone-400 dark:text-stone-300 dark:placeholder:text-stone-600"
-            />
-          </label>
+          {allowCustom && (
+            <label className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-stone-100 focus-within:bg-stone-100 dark:hover:bg-white/6 dark:focus-within:bg-white/6 ${customSelected ? "bg-stone-100 dark:bg-white/6" : ""}`}>
+              <span
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
+                  customSelected
+                    ? "text-white"
+                    : "border border-stone-300 text-transparent dark:border-white/18"
+                }`}
+                style={customSelected ? { background: "#0080FF" } : undefined}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${customSelected ? "scale-100" : "scale-0"}`} />
+              </span>
+              <input
+                value={customValue}
+                onChange={(event) => updateCustom(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    next();
+                  }
+                }}
+                placeholder="Type something..."
+                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-stone-700 outline-none placeholder:text-stone-400 dark:text-stone-300 dark:placeholder:text-stone-600"
+              />
+            </label>
+          )}
         </div>
       </div>
 
       <div className="flex items-center justify-between px-4 py-3">
+        <button
+          type="button"
+          onClick={back}
+          disabled={step === 0}
+          aria-label="Back"
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            step === 0
+              ? "cursor-not-allowed text-stone-300 dark:text-stone-700"
+              : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+          }`}
+        >
+          <ChevronLeft size={15} />
+        </button>
+
         <span className="flex items-center gap-1.5">
           {QUESTIONS.map((item, index) => (
             <span
@@ -167,7 +196,7 @@ export default function FeedbackQuestionnaire({ onSubmit }: { onSubmit: (text: s
           type="button"
           onClick={next}
           disabled={!hasAnswer}
-          className={`h-8 rounded-lg px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+          className={`h-8 shrink-0 rounded-lg px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
             hasAnswer
               ? "text-white hover:opacity-90"
               : "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"

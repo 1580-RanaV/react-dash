@@ -1019,7 +1019,8 @@ export default function BluChat({
     if (messages.length === 0 && text.trim()) {
       renameActiveThread(text.trim().slice(0, 60));
     }
-    const isFeedback = !overrideText && text.toLowerCase() === "feedback";
+    const isFeedback = !overrideText && (text.toLowerCase() === "feedback" || text.toLowerCase() === "stepper");
+    const isStepperNoField = !overrideText && text.toLowerCase() === "stepper-no-field";
     const isFailed = !overrideText && text.toLowerCase() === "failed";
     const isError = !overrideText && text.toLowerCase() === "error";
     const isPlan = !overrideText && text.toLowerCase() === "plan";
@@ -1116,12 +1117,13 @@ export default function BluChat({
             : "Blu didn't respond properly. This might be a temporary issue — try again or report it if it keeps happening.",
           isError: true,
         });
-      } else if (isFeedback) {
+      } else if (isFeedback || isStepperNoField) {
         next.push({
           id: `blu-feedback-${ts}`,
           role: "blu",
           text: "I'd love to help capture that! Answer a few quick questions so your feedback reaches the right people.",
           feedbackForm: true,
+          feedbackNoField: isStepperNoField,
         });
       } else if (isCreateRecipe) {
         next.push({ id: `blu-recipe-${ts}`, role: "blu", text: "Opening recipe canvas — wire up your pipeline steps and hit Run when ready." });
@@ -1171,7 +1173,7 @@ export default function BluChat({
           return next;
         });
       }, 3000);
-    } else if (!isOutOfCredits && !isPlan && !runMatch && !isRunDeclined && !isFailed && !isError && !isFeedback && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isLiveRunDeclined && !isAcceptRun && !isNotification && !isUpgrade) {
+    } else if (!isOutOfCredits && !isPlan && !runMatch && !isRunDeclined && !isFailed && !isError && !isFeedback && !isStepperNoField && !isCreateRecipe && !isCustomReport && !isCustomReportDeclined && !isCustomReportNoEmbed && !isAddEvent && !isLiveRun && !isLiveRunDeclined && !isAcceptRun && !isNotification && !isUpgrade) {
       setTimeout(() => {
         setMessages((current) => {
           const typingIdx = current.findIndex((m) => m.isTyping);
@@ -1213,7 +1215,7 @@ export default function BluChat({
       setUpgradeStripVisible(true);
     }
 
-    if (!isFeedback && !isCreateRecipe && !isNotification && !isUpgrade) {
+    if (!isFeedback && !isStepperNoField && !isCreateRecipe && !isNotification && !isUpgrade) {
       window.dispatchEvent(new CustomEvent("blu-image-generate", { detail: { text } }));
     }
   }
@@ -1980,7 +1982,7 @@ export default function BluChat({
                 </div>
               )}
               {msg.feedbackForm && (
-                <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} />
+                <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} allowCustom={!msg.feedbackNoField} />
               )}
               {msg.mentions?.length ? (
                 <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
