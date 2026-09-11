@@ -1220,6 +1220,34 @@ export default function BluChat({
     }
   }
 
+  // Submitting the feedback stepper doesn't inject a separate visible "user
+  // message" bubble — the stepper card itself (now showing its done checkmark)
+  // stays as the last thing the user "said," and Blu just replies directly
+  // after it, the same as any other reply would land.
+  function submitFeedback() {
+    const ts = Date.now();
+    if (credits <= 0) {
+      setMessages((current) => [...current, { id: `blu-outofcredits-${ts}`, role: "blu", text: "", outOfCredits: true }]);
+      return;
+    }
+    setMessages((current) => [...current, { id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true }]);
+    setTimeout(() => {
+      setMessages((current) => {
+        const typingIdx = current.findIndex((m) => m.isTyping);
+        if (typingIdx === -1) return current;
+        const doneTs = Date.now();
+        const next = [...current];
+        next[typingIdx] = {
+          id: `blu-${doneTs}`,
+          role: "blu",
+          text: "Thanks for the feedback — I'll make sure it reaches the right team.",
+          isStreaming: true,
+        };
+        return next;
+      });
+    }, 1200);
+  }
+
   useEffect(() => {
     function handleSuggestedPrompt(event: Event) {
       const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt?.trim();
@@ -1982,7 +2010,7 @@ export default function BluChat({
                 </div>
               )}
               {msg.feedbackForm && (
-                <FeedbackQuestionnaire onSubmit={(text) => sendMessage(text)} allowCustom={!msg.feedbackNoField} />
+                <FeedbackQuestionnaire onSubmit={() => submitFeedback()} allowCustom={!msg.feedbackNoField} />
               )}
               {msg.mentions?.length ? (
                 <div className={`mt-2 flex flex-wrap gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>

@@ -65,6 +65,13 @@ export default function FeedbackQuestionnaire({
   }
 
   function next() {
+    if (sent) {
+      // Locked (already submitted) — Next just pages forward through the
+      // review, it can never re-trigger a submit.
+      if (!isLast) setStep((current) => current + 1);
+      return;
+    }
+
     if (!hasAnswer) return;
 
     if (!isLast) {
@@ -77,28 +84,12 @@ export default function FeedbackQuestionnaire({
     onSubmit(`Feedback:\n${lines.join("\n")}`);
   }
 
-  if (sent) {
-    return (
-      <div
-        className="mt-2 flex min-h-[132px] w-full max-w-80 flex-col items-center justify-center rounded-xl px-4 py-5"
-        style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
-      >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full text-white" style={{ background: "#0080FF" }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        </span>
-        <p className="mt-2 text-sm font-semibold text-stone-800 dark:text-stone-100">Feedback sent</p>
-      </div>
-    );
-  }
-
   return (
     <div
       className="mt-2 w-full max-w-80 overflow-hidden rounded-xl"
       style={{ background: "var(--content-bg)", border: "1px solid var(--border)" }}
     >
-      <div key={question.id} className="px-4 pb-3 pt-4 animate-fade-up">
+      <div key={question.id} className={`px-4 pb-3 pt-4 animate-fade-up ${sent ? "opacity-60" : ""}`}>
         <p className="text-sm font-semibold leading-snug text-stone-800 dark:text-stone-100">
           {question.question}
         </p>
@@ -112,8 +103,11 @@ export default function FeedbackQuestionnaire({
                 key={option}
                 type="button"
                 aria-pressed={active}
+                disabled={sent}
                 onClick={() => selectOption(option)}
-                className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
+                className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors ${
+                  sent ? "cursor-default" : "hover:bg-stone-100 dark:hover:bg-white/6"
+                }`}
               >
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
@@ -121,11 +115,11 @@ export default function FeedbackQuestionnaire({
                       ? "text-white"
                       : "border border-stone-300 text-transparent dark:border-white/18"
                   }`}
-                  style={active ? { background: "#0080FF" } : undefined}
+                  style={active ? { background: sent ? "var(--muted-foreground)" : "#0080FF" } : undefined}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${active ? "scale-100" : "scale-0"}`} />
                 </span>
-                <span className={`text-sm ${active ? "font-semibold text-blue-600 dark:text-blue-400" : "font-medium text-stone-600 dark:text-stone-400"}`}>
+                <span className={`text-sm ${active ? `font-semibold ${sent ? "text-stone-500 dark:text-stone-400" : "text-blue-600 dark:text-blue-400"}` : "font-medium text-stone-600 dark:text-stone-400"}`}>
                   {option}
                 </span>
               </button>
@@ -133,19 +127,20 @@ export default function FeedbackQuestionnaire({
           })}
 
           {allowCustom && (
-            <label className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-stone-100 focus-within:bg-stone-100 dark:hover:bg-white/6 dark:focus-within:bg-white/6 ${customSelected ? "bg-stone-100 dark:bg-white/6" : ""}`}>
+            <label className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors ${sent ? "cursor-default" : "hover:bg-stone-100 focus-within:bg-stone-100 dark:hover:bg-white/6 dark:focus-within:bg-white/6"} ${customSelected ? "bg-stone-100 dark:bg-white/6" : ""}`}>
               <span
                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
                   customSelected
                     ? "text-white"
                     : "border border-stone-300 text-transparent dark:border-white/18"
                 }`}
-                style={customSelected ? { background: "#0080FF" } : undefined}
+                style={customSelected ? { background: sent ? "var(--muted-foreground)" : "#0080FF" } : undefined}
               >
                 <span className={`h-1.5 w-1.5 rounded-full bg-current transition-transform ${customSelected ? "scale-100" : "scale-0"}`} />
               </span>
               <input
                 value={customValue}
+                disabled={sent}
                 onChange={(event) => updateCustom(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -183,9 +178,9 @@ export default function FeedbackQuestionnaire({
               className="rounded-full transition-all"
               style={
                 index === step
-                  ? { width: 10, height: 10, border: "2px solid #0080FF" }
+                  ? { width: 10, height: 10, border: `2px solid ${sent ? "var(--muted-foreground)" : "#0080FF"}` }
                   : index < step
-                    ? { width: 7, height: 7, background: "#0080FF", opacity: 0.7 }
+                    ? { width: 7, height: 7, background: sent ? "var(--muted-foreground)" : "#0080FF", opacity: 0.7 }
                     : { width: 7, height: 7, border: "1px solid var(--border)" }
               }
             />
@@ -195,15 +190,17 @@ export default function FeedbackQuestionnaire({
         <button
           type="button"
           onClick={next}
-          disabled={!hasAnswer}
+          disabled={sent ? isLast : !hasAnswer}
           className={`h-8 shrink-0 rounded-lg px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
-            hasAnswer
-              ? "text-white hover:opacity-90"
-              : "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"
+            sent
+              ? "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"
+              : hasAnswer
+                ? "text-white hover:opacity-90"
+                : "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-white/6 dark:text-stone-600"
           }`}
-          style={hasAnswer ? { background: "#0080FF" } : undefined}
+          style={!sent && hasAnswer ? { background: "#0080FF" } : undefined}
         >
-          {isLast ? "Submit" : "Next"}
+          {sent ? "Next" : isLast ? "Submit" : "Next"}
         </button>
       </div>
     </div>
