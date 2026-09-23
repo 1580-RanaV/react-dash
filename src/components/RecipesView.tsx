@@ -5,7 +5,7 @@ import {
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
   Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
-  Lock, Plug, ArrowRight, History,
+  Lock, Plug, History,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
@@ -412,6 +412,14 @@ function toSlashCommand(title: string) {
   return "/" + title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");
 }
 
+function formatRunTimestamp(at: number) {
+  const d = new Date(at);
+  const isToday = d.toDateString() === new Date().toDateString();
+  return isToday
+    ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-4 py-2.5 border-b" style={{ borderColor: "var(--border)" }}>
@@ -567,14 +575,15 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
       addRunRecord(recipe.id, {
         id: `run-${Date.now()}`,
         at: Date.now(),
-        createdLabel: `${recipe.title} — run output`,
+        createdLabel: "output",
+        by: "Rana V",
       });
     }, 300 + stepTitles.length * 1050 + 200);
   }
 
   function openRunItemInChat(label: string) {
     window.dispatchEvent(new Event("open-blu-chat"));
-    window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt: `Show me "${label}" from this run` } }));
+    window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt: `Show me the ${label} from this "${recipe.title}" run` } }));
   }
 
   function handleCopyCmd() {
@@ -660,8 +669,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
               onClick={handleConnect}
               disabled={connecting}
               title={`Connect ${recipe.requiresIntegration} to run this recipe`}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-50 dark:hover:bg-blue-500/10 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ border: "1px solid #3b82f6" }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 transition-colors hover:bg-amber-100 dark:hover:bg-amber-500/15 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {connecting
                 ? <Loader2 size={12} className="animate-spin" />
@@ -860,16 +868,17 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ background: "#10b981" }}>
                         <Check size={11} className="text-white" strokeWidth={3} />
                       </span>
-                      <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">
-                        {new Date(run.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      <span className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                        <span className="font-medium text-stone-700 dark:text-stone-300">{run.by}</span>
+                        {" · "}
+                        {formatRunTimestamp(run.at)}
                       </span>
                     </div>
                     <button
                       onClick={() => openRunItemInChat(run.createdLabel)}
-                      className="inline-flex items-center gap-1 min-w-0 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      className="shrink-0 inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/15 transition-colors"
                     >
-                      <span className="truncate">{run.createdLabel}</span>
-                      <ArrowRight size={11} className="shrink-0" />
+                      {run.createdLabel}
                     </button>
                   </div>
                 ))}

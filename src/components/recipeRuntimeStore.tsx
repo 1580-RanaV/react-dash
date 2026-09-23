@@ -44,6 +44,7 @@ export type RunRecord = {
   id: string;
   at: number;
   createdLabel: string;
+  by: string;
 };
 
 type RecipeRuntimeContextValue = {
@@ -59,9 +60,30 @@ const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(nul
 // treated as already connected, so most recipes never show the lock.
 const INITIAL_LOCKED_INTEGRATIONS = new Set<string>(["Shopify", "HubSpot"]);
 
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+// Seeded run history so the "Recent runs" list isn't empty on first visit —
+// two plain recipes get a couple of past runs each (by teammates other than
+// the current user), and one restricted recipe gets a single past run
+// (someone who already had the permission ran it before it was locked down).
+const SEEDED_RUN_HISTORY: Record<string, RunRecord[]> = {
+  "3": [
+    { id: "seed-3-1", at: Date.now() - 2 * DAY, createdLabel: "output", by: "Maya Patel" },
+    { id: "seed-3-2", at: Date.now() - 6 * DAY, createdLabel: "output", by: "Sam Chen" },
+  ],
+  "14": [
+    { id: "seed-14-1", at: Date.now() - 1 * DAY, createdLabel: "output", by: "Sam Chen" },
+    { id: "seed-14-2", at: Date.now() - 4 * DAY, createdLabel: "output", by: "Tyler Brooks" },
+  ],
+  "11": [
+    { id: "seed-11-1", at: Date.now() - 9 * DAY, createdLabel: "output", by: "April Dunford" },
+  ],
+};
+
 export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState<Set<string>>(INITIAL_LOCKED_INTEGRATIONS);
-  const [runHistory, setRunHistory] = useState<Record<string, RunRecord[]>>({});
+  const [runHistory, setRunHistory] = useState<Record<string, RunRecord[]>>(SEEDED_RUN_HISTORY);
 
   function isConnected(integration: string) {
     return !locked.has(integration);
