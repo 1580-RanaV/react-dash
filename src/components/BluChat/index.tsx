@@ -26,6 +26,9 @@ import {
   Box,
   Rss,
   SlidersHorizontal,
+  Cpu,
+  Brain,
+  Globe,
   Route,
   Shuffle,
   UserCircle,
@@ -2505,13 +2508,14 @@ export default function BluChat({
             </div>
             <div className="space-y-4 pb-1">
               {[
-                { title: "Response depth", options: RESPONSE_DEPTH_OPTIONS, value: responseDepth, set: setResponseDepth },
-                { title: "Model tier", options: MODEL_TIER_OPTIONS, value: modelTier, set: setModelTier },
-                { title: "Knowledge scope", options: KNOWLEDGE_SCOPE_OPTIONS, value: contextScope, set: (v: string) => setContextScope(v as "Project" | "Thread") },
-                { title: "Web search", options: ["Off", "On"], value: webMode ? "On" : "Off", set: (v: string) => setWebMode(v === "On") },
+                { title: "Response depth", icon: <SlidersHorizontal size={12} />, options: RESPONSE_DEPTH_OPTIONS, value: responseDepth, set: setResponseDepth },
+                { title: "Model tier", icon: <Cpu size={12} />, options: MODEL_TIER_OPTIONS, value: modelTier, set: setModelTier },
+                { title: "Knowledge scope", icon: <Brain size={12} />, options: KNOWLEDGE_SCOPE_OPTIONS, value: contextScope, set: (v: string) => setContextScope(v as "Project" | "Thread") },
+                { title: "Web search", icon: <Globe size={12} />, options: ["Off", "On"], value: webMode ? "On" : "Off", set: (v: string) => setWebMode(v === "On") },
               ].map((group) => (
                 <div key={group.title}>
-                  <p className="mb-2 text-xs font-medium text-stone-500 dark:text-stone-400">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
+                    {group.icon}
                     {group.title}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
