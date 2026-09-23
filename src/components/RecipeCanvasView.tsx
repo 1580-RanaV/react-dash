@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   Loader2, Play, ShieldCheck, ChevronDown, Plus, GripVertical,
   Pencil, Trash2, X, AlertTriangle, Check, MousePointer2, Hand, Minus,
+  Link2, Search,
 } from "lucide-react";
 import BackButton from "./BackButton";
 import Toggle from "./Toggle";
+import { RECIPES } from "./RecipesView";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -17,6 +19,8 @@ type FlowNode = {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
+  // BC-RCP-AUTH-003: a step is either free-form, or a call to another recipe.
+  calledRecipeId?: string;
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -74,8 +78,11 @@ export default function RecipeCanvasView({
 
   // Add node
   const [addingAtIndex,   setAddingAtIndex]   = useState<number | null>(null);
+  const [addMode,         setAddMode]         = useState<"step" | "recipe">("step");
   const [newStepTitle,    setNewStepTitle]    = useState("");
   const [newStepSubtitle, setNewStepSubtitle] = useState("");
+  const [recipeSearch,    setRecipeSearch]    = useState("");
+  const [pickedRecipeId,  setPickedRecipeId]  = useState<string | null>(null);
 
   // Title + slash command
   const [title,        setTitle]        = useState(initialTitle ?? "Recipe Canvas");
@@ -292,24 +299,42 @@ export default function RecipeCanvasView({
   function handleOpenAddNode(index: number) {
     if (Object.values(nodeStates).some((s) => s === "validating")) return;
     setAddingAtIndex(index);
+    setAddMode("step");
     setNewStepTitle("");
     setNewStepSubtitle("");
+    setRecipeSearch("");
+    setPickedRecipeId(null);
     setSelectedId(null);
     setEditingId(null);
   }
 
   function handleConfirmAdd() {
-    if (!newStepTitle.trim() || !newStepSubtitle.trim() || addingAtIndex === null) return;
-    const newId = `n${Date.now()}`;
-    const title = newStepTitle.trim();
-    const subtitle = newStepSubtitle.trim();
-    const newNode: FlowNode = {
-      id: newId,
-      step: addingAtIndex + 1,
-      title,
-      subtitle,
-      icon: <Plus size={14} />,
-    };
+    if (addingAtIndex === null) return;
+
+    let newNode: FlowNode;
+    if (addMode === "recipe") {
+      const picked = RECIPES.find((r) => r.id === pickedRecipeId);
+      if (!picked) return;
+      newNode = {
+        id: `n${Date.now()}`,
+        step: addingAtIndex + 1,
+        title: picked.title,
+        subtitle: `Calls recipe — ${picked.description}`,
+        icon: <Plus size={14} />,
+        calledRecipeId: picked.id,
+      };
+    } else {
+      if (!newStepTitle.trim() || !newStepSubtitle.trim()) return;
+      newNode = {
+        id: `n${Date.now()}`,
+        step: addingAtIndex + 1,
+        title: newStepTitle.trim(),
+        subtitle: newStepSubtitle.trim(),
+        icon: <Plus size={14} />,
+      };
+    }
+
+    const newId = newNode.id;
     const unsupported = isUnsupportedNode(newNode);
     setNodes((prev) => [
       ...prev.slice(0, addingAtIndex),
@@ -706,7 +731,7 @@ export default function RecipeCanvasView({
         {/* ── Add step floating window ────────────────────────────────────── */}
         {addingAtIndex !== null && (
           <div
-            className="absolute top-1/2 -translate-y-1/2 z-20 w-72"
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-80"
             style={{ left: "calc(50% + 180px)", animation: "float-in 0.22s ease-out both" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -736,35 +761,103 @@ export default function RecipeCanvasView({
                   <X size={13} />
                 </button>
               </div>
-              <div className="px-4 pb-4 flex flex-col gap-2">
-                <input
-                  autoFocus
-                  value={newStepTitle}
-                  onChange={(e) => setNewStepTitle(e.target.value)}
-                  placeholder="Step name…"
-                  className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
-                  style={{ background: "var(--input)", borderColor: "var(--border)" }}
-                />
-                <input
-                  value={newStepSubtitle}
-                  onChange={(e) => setNewStepSubtitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleConfirmAdd(); }}
-                  placeholder="Description…"
-                  className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
-                  style={{ background: "var(--input)", borderColor: "var(--border)" }}
-                />
-                <div className="mt-0.5">
+
+              {/* Free-form step vs. call another recipe — BC-RCP-AUTH-003 */}
+              <div className="px-4 pb-2.5 flex items-center gap-1 rounded-lg" style={{}}>
+                <div className="flex w-full rounded-lg p-0.5" style={{ background: "var(--muted)" }}>
                   <button
-                    onClick={handleConfirmAdd}
-                    disabled={!newStepTitle.trim() || !newStepSubtitle.trim()}
-                    className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
-                    style={{ background: "#3b82f6" }}
+                    onClick={() => setAddMode("step")}
+                    className={`flex-1 inline-flex h-7 items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors ${
+                      addMode === "step" ? "bg-white dark:bg-white/12 shadow-sm text-stone-800 dark:text-stone-100" : "text-stone-500 dark:text-stone-400"
+                    }`}
                   >
-                    <Plus size={11} />
-                    Add step
+                    <Pencil size={11} />
+                    Free-form step
+                  </button>
+                  <button
+                    onClick={() => setAddMode("recipe")}
+                    className={`flex-1 inline-flex h-7 items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors ${
+                      addMode === "recipe" ? "bg-white dark:bg-white/12 shadow-sm text-stone-800 dark:text-stone-100" : "text-stone-500 dark:text-stone-400"
+                    }`}
+                  >
+                    <Link2 size={11} />
+                    Call a recipe
                   </button>
                 </div>
               </div>
+
+              {addMode === "step" ? (
+                <div className="px-4 pb-4 flex flex-col gap-2">
+                  <input
+                    autoFocus
+                    value={newStepTitle}
+                    onChange={(e) => setNewStepTitle(e.target.value)}
+                    placeholder="Step name…"
+                    className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                    style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                  />
+                  <input
+                    value={newStepSubtitle}
+                    onChange={(e) => setNewStepSubtitle(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleConfirmAdd(); }}
+                    placeholder="Description…"
+                    className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                    style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                  />
+                  <div className="mt-0.5">
+                    <button
+                      onClick={handleConfirmAdd}
+                      disabled={!newStepTitle.trim() || !newStepSubtitle.trim()}
+                      className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
+                      style={{ background: "#3b82f6" }}
+                    >
+                      <Plus size={11} />
+                      Add step
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-4 pb-4 flex flex-col gap-2">
+                  <div className="relative">
+                    <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+                    <input
+                      autoFocus
+                      value={recipeSearch}
+                      onChange={(e) => setRecipeSearch(e.target.value)}
+                      placeholder="Search recipes…"
+                      className="h-9 w-full rounded-lg border pl-8 pr-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                      style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                    />
+                  </div>
+                  <div className="max-h-40 overflow-y-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
+                    {RECIPES.filter((r) => !recipeSearch.trim() || r.title.toLowerCase().includes(recipeSearch.trim().toLowerCase())).map((r) => (
+                      <button
+                        key={r.id}
+                        onClick={() => setPickedRecipeId(r.id)}
+                        className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left transition-colors ${
+                          pickedRecipeId === r.id ? "bg-blue-50 dark:bg-blue-500/10" : "hover:bg-stone-50 dark:hover:bg-white/4"
+                        }`}
+                      >
+                        <span className={`text-xs font-semibold ${pickedRecipeId === r.id ? "text-blue-700 dark:text-blue-400" : "text-stone-800 dark:text-stone-100"}`}>
+                          {r.title}
+                        </span>
+                        <span className="text-[11px] text-stone-400 dark:text-stone-500 line-clamp-1">{r.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-0.5">
+                    <button
+                      onClick={handleConfirmAdd}
+                      disabled={!pickedRecipeId}
+                      className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
+                      style={{ background: "#3b82f6" }}
+                    >
+                      <Link2 size={11} />
+                      Add recipe call
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1010,6 +1103,12 @@ function FlowNodeCard({
             {node.step}
           </div>
           <div>
+            {node.calledRecipeId && (
+              <span className="mb-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10">
+                <Link2 size={9} />
+                Calls recipe
+              </span>
+            )}
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug">{node.title}</p>
             <p className="text-xs text-stone-500 dark:text-stone-400 mt-2 leading-snug">{node.subtitle}</p>
           </div>

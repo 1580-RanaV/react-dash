@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Wand2, Copy, FileUp, Search, ArrowLeft, FileText } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
+import { RECIPES } from "./RecipesView";
 
 const CREATE_OPTIONS = [
   { key: "scratch", label: "Start from scratch",    icon: Wand2  },
@@ -10,24 +11,6 @@ const CREATE_OPTIONS = [
 
 type RemixRecipe = { id: string; title: string; description: string; tags: string[] };
 
-const REMIX_RECIPES: RemixRecipe[] = [
-  { id: "1",  title: "Active Research Surge Accounts",   description: "Accounts with 3+ pricing-page visits in last 7 days — active buying-cycle signal.",       tags: [] },
-  { id: "2",  title: "Feature Paywall Conversion",       description: "Per-feature % of free users who view pricing and subsequently subscribe.",                  tags: ["data-analyst"] },
-  { id: "3",  title: "Hero Static vs Screenshot Test",   description: "Test landing page hero: illustration vs. product screenshot vs. customer photo.",           tags: ["experiments"] },
-  { id: "4",  title: "First Session Paths After Signup", description: "Forward path from user_created showing what new users do in their first session.",          tags: ["data-analyst"] },
-  { id: "5",  title: "Weekly Forecast Rollup",           description: "Every Monday, snapshot pipeline by stage, weighted forecast, and forecast vs. actual.",     tags: ["revops-automator"] },
-  { id: "6",  title: "B2B Nurture",                      description: "Score leads, segment by readiness, route hot leads to sales, nurture the rest.",            tags: ["journey-builder"] },
-  { id: "7",  title: "Churn Risk Early Warning",         description: "Flag accounts with 40%+ login drop over 14 days. Fire Slack alert to CSM.",                tags: ["revops-automator"] },
-  { id: "8",  title: "Trial-to-Paid Conversion Flow",    description: "Day 1 welcome → Day 3 feature nudge → Day 10 value recap → Day 13 urgency push.",          tags: ["journey-builder"] },
-  { id: "9",  title: "Re-engagement Campaign",           description: "Target users inactive 30+ days. Win-back sequence referencing last active feature.",         tags: ["email"] },
-  { id: "10", title: "Product Launch Creative Bundle",   description: "Generate hero banners, social square, and email header for a product launch.",              tags: ["content"] },
-  { id: "11", title: "Event-Triggered Upsell",           description: "When a user hits plan limits, trigger in-app nudge and email sequence for the next tier.", tags: ["journey-builder"] },
-  { id: "12", title: "Subject Line Optimiser",           description: "Generate 10 subject line variants scored by predicted open rate.",                           tags: ["email", "content"] },
-  { id: "13", title: "ICP Fit Scoring",                  description: "Score every account against your ICP and auto-route high-fit accounts to AEs.",             tags: ["revops-automator"] },
-  { id: "14", title: "Product-Led Growth Funnel",        description: "Track free → activated → engaged → expansion across your user base.",                       tags: ["data-analyst"] },
-  { id: "15", title: "SMS Winback",                      description: "Three-touch SMS sequence for lapsed subscribers with personalised offers.",                  tags: ["email"] },
-];
-
 export default function CreateRecipeDrawer({ onClose }: { onClose: () => void }) {
   const [selected, setSelected]           = useState("scratch");
   const [step, setStep]                   = useState<"choose" | "remix" | "upload">("choose");
@@ -36,6 +19,16 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
   const [uploadedContent,  setUploadedContent]  = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Derived from the same seed data the list/detail views use, rather than a
+  // separately hand-maintained copy — keeps this list from drifting out of
+  // sync with RECIPES whenever a recipe is added, removed, or renamed.
+  const REMIX_RECIPES: RemixRecipe[] = RECIPES.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    tags: r.spec.areas,
+  }));
 
   const filteredRemix = REMIX_RECIPES.filter(r => {
     const q = remixSearch.toLowerCase();
