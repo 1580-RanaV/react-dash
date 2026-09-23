@@ -1,7 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Users2, BarChart3, Zap, GitBranch, CheckCircle2, XCircle,
   Loader2, Play, ShieldCheck, ChevronDown, Plus, GripVertical,
   Pencil, Trash2, X, AlertTriangle, Check, MousePointer2, Hand, Minus,
 } from "lucide-react";
@@ -22,21 +21,37 @@ type FlowNode = {
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
-const INITIAL_NODES: FlowNode[] = [
-  { id: "n1", step: 1, title: "Define Audience",   subtitle: "Set segment filters and targeting criteria",      icon: <Users2 size={14} />      },
-  { id: "n2", step: 2, title: "Configure Sources", subtitle: "Connect events and attribute streams",            icon: <BarChart3 size={14} />   },
-  { id: "n3", step: 3, title: "Set Trigger",       subtitle: "Real-time, scheduled, or threshold-based",        icon: <Zap size={14} />         },
-  { id: "n4", step: 4, title: "Build Action",      subtitle: "Journey, notification, report, or webhook",       icon: <GitBranch size={14} />   },
-  { id: "n5", step: 5, title: "Review & Launch",   subtitle: "Validate payload, set frequency, and activate",   icon: <CheckCircle2 size={14} /> },
-];
+// Mock "unsupported step" rule: any step whose title/description mentions
+// "cancel" fails validation — used to demo a failing pipeline.
+function isUnsupportedNode(node: FlowNode) {
+  return node.title.toLowerCase().includes("cancel") || node.subtitle.toLowerCase().includes("cancel");
+}
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack: () => void; readOnly?: boolean }) {
-  const [nodes,       setNodes]       = useState<FlowNode[]>(INITIAL_NODES);
-  const [nodeStates,  setNodeStates]  = useState<Record<string, NodeState>>(
-    () => Object.fromEntries(INITIAL_NODES.map((n) => [n.id, "idle" as NodeState]))
+export type InitialStep = { title: string; subtitle: string };
+
+export default function RecipeCanvasView({
+  onBack,
+  readOnly = false,
+  initialTitle,
+  initialSteps,
+}: {
+  onBack: () => void;
+  readOnly?: boolean;
+  initialTitle?: string;
+  initialSteps?: InitialStep[];
+}) {
+  const [nodes, setNodes] = useState<FlowNode[]>(() =>
+    (initialSteps ?? []).map((s, i) => ({
+      id: `seed-${i}`,
+      step: i + 1,
+      title: s.title,
+      subtitle: s.subtitle,
+      icon: <Plus size={14} />,
+    }))
   );
+  const [nodeStates,  setNodeStates]  = useState<Record<string, NodeState>>({});
 
   // Selection
   const [selectedId,      setSelectedId]      = useState<string | null>(null);
@@ -63,11 +78,11 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   const [newStepSubtitle, setNewStepSubtitle] = useState("");
 
   // Title + slash command
-  const [title,        setTitle]        = useState("Recipe Canvas");
+  const [title,        setTitle]        = useState(initialTitle ?? "Recipe Canvas");
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft,   setTitleDraft]   = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const [slashCmd,     setSlashCmd]     = useState("/recipe-canvas");
+  const [slashCmd,     setSlashCmd]     = useState(() => toSlashCmd(initialTitle ?? "recipe-canvas"));
   const [editingCmd,   setEditingCmd]   = useState(false);
   const [cmdDraft,     setCmdDraft]     = useState("");
   const cmdInputRef = useRef<HTMLInputElement>(null);
@@ -146,48 +161,56 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   function lockBlu()   { window.dispatchEvent(new CustomEvent("blu-set-locked", { detail: true })); }
   function unlockBlu() { window.dispatchEvent(new CustomEvent("blu-set-locked", { detail: false })); }
 
-  function validateMs() { return (nodes.length - 1) * 380 + 520; }
-  function runMs()      { return (nodes.length - 1) * 700 + 900; }
+  function validateMs(count: number = nodes.length) { return (count - 1) * 380 + 520; }
+  function runMs(count: number = nodes.length)      { return (count - 1) * 700 + 900; }
 
+  // Validates nodes in order and stops at the first unsupported node —
+  // steps after a failure are left untouched, matching a real pipeline
+  // that halts execution at the point it breaks.
   function runValidate(onComplete?: () => void) {
-    const incomplete = nodes.length < INITIAL_NODES.length;
-    nodes.forEach((n, i) => {
-      const passes = incomplete ? i < 2 : true;
+    const failIndex = nodes.findIndex(isUnsupportedNode);
+    const hasFailure = failIndex !== -1;
+    const validatedCount = hasFailure ? failIndex + 1 : nodes.length;
+    for (let i = 0; i < validatedCount; i++) {
+      const n = nodes[i];
+      const passes = !(hasFailure && i === failIndex);
       setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "validating" })), i * 380);
       setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: passes ? "valid" : "invalid" })), i * 380 + 520);
-    });
-    if (!incomplete && onComplete) {
-      setTimeout(onComplete, validateMs() + 350);
     }
+    if (!hasFailure && onComplete) {
+      setTimeout(onComplete, validateMs(validatedCount) + 350);
+    }
+    return { hasFailure, validatedCount };
   }
 
   function handleValidate() {
     if (isBusy) return;
     setBtnValidating(true);
     lockBlu();
-    runValidate();
-    setTimeout(() => { setBtnValidating(false); unlockBlu(); }, validateMs() + 120);
+    const { validatedCount } = runValidate();
+    setTimeout(() => { setBtnValidating(false); unlockBlu(); }, validateMs(validatedCount) + 120);
   }
 
   function handleRun() {
     if (isBusy) return;
-    const incomplete = nodes.length < INITIAL_NODES.length;
     setBtnRunning(true);
     lockBlu();
     const capturedTitles = nodes.map((n) => n.title);
-    runValidate(() => {
+    const { hasFailure, validatedCount } = runValidate(() => {
       nodes.forEach((n, i) => {
         setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "running" })), i * 700);
         setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "done" })),    i * 700 + 900);
       });
     });
-    const totalMs = incomplete
-      ? validateMs() + 120
-      : validateMs() + 350 + runMs() + 120;
+    const totalMs = hasFailure
+      ? validateMs(validatedCount) + 120
+      : validateMs(validatedCount) + 350 + runMs() + 120;
     setTimeout(() => {
       setBtnRunning(false);
       unlockBlu();
-      window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: capturedTitles } }));
+      if (!hasFailure) {
+        window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: capturedTitles } }));
+      }
     }, totalMs);
   }
 
@@ -196,13 +219,12 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   function handleReadyToUse() {
     if (isBusy) return;
     if (isReady) { setIsReady(false); return; }
-    const complete = nodes.length >= INITIAL_NODES.length;
     setBtnReady(true);
     lockBlu();
-    runValidate(() => {
+    const { hasFailure, validatedCount } = runValidate(() => {
       setTimeout(() => setIsReady(true), 200);
     });
-    setTimeout(() => { setBtnReady(false); unlockBlu(); }, validateMs() + (complete ? 600 : 120));
+    setTimeout(() => { setBtnReady(false); unlockBlu(); }, validateMs(validatedCount) + (hasFailure ? 120 : 600));
   }
 
   // ── Node interaction ──────────────────────────────────────────────────────
@@ -268,6 +290,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   function handleDragEnd() { setDraggingId(null); setDragOverId(null); }
 
   function handleOpenAddNode(index: number) {
+    if (Object.values(nodeStates).some((s) => s === "validating")) return;
     setAddingAtIndex(index);
     setNewStepTitle("");
     setNewStepSubtitle("");
@@ -276,33 +299,54 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   }
 
   function handleConfirmAdd() {
-    if (!newStepTitle.trim() || addingAtIndex === null) return;
+    if (!newStepTitle.trim() || !newStepSubtitle.trim() || addingAtIndex === null) return;
     const newId = `n${Date.now()}`;
+    const title = newStepTitle.trim();
+    const subtitle = newStepSubtitle.trim();
     const newNode: FlowNode = {
       id: newId,
       step: addingAtIndex + 1,
-      title: newStepTitle.trim(),
-      subtitle: newStepSubtitle.trim() || "New step",
+      title,
+      subtitle,
       icon: <Plus size={14} />,
     };
+    const unsupported = isUnsupportedNode(newNode);
     setNodes((prev) => [
       ...prev.slice(0, addingAtIndex),
       newNode,
       ...prev.slice(addingAtIndex),
     ].map((n, i) => ({ ...n, step: i + 1 })));
-    setNodeStates((prev) => ({ ...prev, [newId]: "idle" }));
+    setNodeStates((prev) => ({ ...prev, [newId]: "validating" }));
+    setTimeout(() => {
+      setNodeStates((prev) => ({ ...prev, [newId]: unsupported ? "invalid" : "valid" }));
+    }, 3000);
     setAddingAtIndex(null);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  const anyNodeValidatingForConnectors = Object.values(nodeStates).some((s) => s === "validating");
 
   const flatItems: React.ReactNode[] = [];
   nodes.forEach((node, i) => {
     if (i > 0) {
       const prevFading = fadingIds.has(nodes[i - 1].id);
       const thisFading = fadingIds.has(node.id);
+      const prevState = nodeStates[nodes[i - 1].id] ?? "idle";
+      const connectorBlockedReason = prevState === "invalid"
+        ? "Fix the previous step to execute accurately"
+        : anyNodeValidatingForConnectors
+        ? "Wait for the current step to finish verifying"
+        : undefined;
       flatItems.push(
-        <Connector key={`c-${nodes[i - 1].id}-${node.id}`} fading={prevFading || thisFading} onAdd={() => handleOpenAddNode(i)} fromState={nodeStates[nodes[i - 1].id] ?? "idle"} isAnimating={isBusy} />
+        <Connector
+          key={`c-${nodes[i - 1].id}-${node.id}`}
+          fading={prevFading || thisFading}
+          onAdd={() => handleOpenAddNode(i)}
+          fromState={prevState}
+          isAnimating={isBusy}
+          addBlockedReason={connectorBlockedReason}
+        />
       );
     }
     flatItems.push(
@@ -331,13 +375,43 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   const editNode = nodes.find((n) => n.id === editingId);
   const deleteNode = nodes.find((n) => n.id === confirmDeleteId);
 
-  const addAtEndButton = !isBusy ? (
+  const emptyState = nodes.length === 0 ? (
+    <button
+      onClick={(e) => { e.stopPropagation(); handleOpenAddNode(0); }}
+      className="w-80 flex flex-col items-center gap-2 rounded-xl px-6 py-9 text-center transition-all duration-150 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 dark:hover:text-blue-400"
+      style={{ border: "2px dashed var(--border)", color: "var(--stone-400, #a8a29e)", background: "transparent" }}
+    >
+      <Plus size={20} />
+      <span className="text-sm font-semibold">Add your first step</span>
+      <span className="text-xs opacity-80">Click to describe what this recipe should do</span>
+    </button>
+  ) : null;
+
+  const lastNodeInvalid  = nodes.length > 0 && nodeStates[nodes[nodes.length - 1].id] === "invalid";
+  const anyNodeValidating = Object.values(nodeStates).some((s) => s === "validating");
+  const addBlocked = lastNodeInvalid || anyNodeValidating;
+  const addBlockedReason = lastNodeInvalid
+    ? "Fix the previous step to execute accurately"
+    : anyNodeValidating
+    ? "Wait for the current step to finish verifying"
+    : undefined;
+
+  const addAtEndButton = !isBusy && nodes.length > 0 ? (
     <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
       <div className="w-px h-4" style={{ background: "var(--border)" }} />
       <button
-        onClick={(e) => { e.stopPropagation(); handleOpenAddNode(nodes.length); }}
-        className="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-150 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 dark:hover:text-blue-400 hover:scale-110"
-        style={{ border: "2px dashed var(--border)", color: "var(--stone-400, #a8a29e)", background: "transparent" }}
+        onClick={(e) => { e.stopPropagation(); if (!addBlocked) handleOpenAddNode(nodes.length); }}
+        disabled={addBlocked}
+        title={addBlockedReason}
+        className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-150 ${
+          addBlocked ? "cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 dark:hover:text-blue-400 hover:scale-110"
+        }`}
+        style={{
+          border: `2px dashed var(--border)`,
+          color: "var(--stone-400, #a8a29e)",
+          background: "transparent",
+          opacity: addBlocked ? 0.4 : 1,
+        }}
       >
         <Plus size={15} />
       </button>
@@ -347,13 +421,8 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
   return (
     <div className="relative flex h-full flex-col overflow-hidden animate-fade-up" style={{ background: "var(--main-bg)" }}>
       <style>{`
-        @keyframes glow-blue {
-          0%, 100% { box-shadow: 0 0 0 2.5px rgba(59,130,246,0.14), 0 4px 20px rgba(59,130,246,0.07); }
-          50%       { box-shadow: 0 0 0 5px   rgba(59,130,246,0.22), 0 8px 32px rgba(59,130,246,0.12); }
-        }
-        @keyframes glow-green {
-          0%, 100% { box-shadow: 0 0 0 2.5px rgba(16,185,129,0.14), 0 4px 20px rgba(16,185,129,0.07); }
-          50%       { box-shadow: 0 0 0 5px   rgba(16,185,129,0.22), 0 8px 32px rgba(16,185,129,0.12); }
+        @keyframes border-spin {
+          to { transform: rotate(1turn); }
         }
         @keyframes invalid-enter {
           0%   { box-shadow: 0 0 0 10px rgba(239,68,68,0.26), 0 0 28px rgba(239,68,68,0.18); transform: scale(0.985); }
@@ -416,6 +485,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
             <input
               ref={titleInputRef}
               autoFocus
+              maxLength={100}
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
               onBlur={commitTitle}
@@ -435,6 +505,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
             <input
               ref={cmdInputRef}
               autoFocus
+              maxLength={100}
               value={cmdDraft}
               onChange={(e) => setCmdDraft(e.target.value)}
               onBlur={commitCmd}
@@ -505,7 +576,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
           ref={containerRef}
           className="absolute inset-0 select-none"
           style={{
-            backgroundImage: "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
             backgroundSize: "24px 24px",
             cursor: dragging.current ? "grabbing" : "grab",
           }}
@@ -525,6 +596,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
             }}
           >
             <div className="flex flex-col items-center">
+              {emptyState}
               {flatItems}
               {addAtEndButton}
             </div>
@@ -533,7 +605,7 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
 
         {/* Zoom / tool controls */}
         <div
-          className={`absolute bottom-4 z-10 flex items-center gap-1.5 ${readOnly ? "left-1/2 -translate-x-1/2 rounded-xl p-1" : "left-4 rounded-full p-1.5"}`}
+          className={`absolute bottom-4 z-10 flex items-center gap-1.5 rounded-xl ${readOnly ? "left-1/2 -translate-x-1/2 p-1" : "left-4 p-1.5"}`}
           style={
             readOnly
               ? { background: "var(--content-bg)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }
@@ -617,19 +689,13 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
                   className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
                   style={{ background: "var(--input)", borderColor: "var(--border)" }}
                 />
-                <div className="flex items-center gap-2 mt-2.5">
+                <div className="mt-2.5">
                   <button
                     onClick={handleEditConfirm}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                     style={{ background: "#3b82f6" }}
                   >
                     Confirm
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="inline-flex h-8 items-center rounded-lg px-3 text-xs font-medium text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
-                  >
-                    Cancel
                   </button>
                 </div>
               </div>
@@ -658,7 +724,9 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
                     Add step
                   </p>
                   <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                    {addingAtIndex >= nodes.length ? "Append to pipeline" : `Insert before step ${addingAtIndex + 1}`}
+                    {nodes.length === 0
+                      ? "First step of the pipeline"
+                      : addingAtIndex! >= nodes.length ? "Append to pipeline" : `Insert before step ${addingAtIndex! + 1}`}
                   </p>
                 </div>
                 <button
@@ -681,25 +749,19 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
                   value={newStepSubtitle}
                   onChange={(e) => setNewStepSubtitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleConfirmAdd(); }}
-                  placeholder="Description (optional)…"
+                  placeholder="Description…"
                   className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
                   style={{ background: "var(--input)", borderColor: "var(--border)" }}
                 />
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="mt-0.5">
                   <button
                     onClick={handleConfirmAdd}
-                    disabled={!newStepTitle.trim()}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
+                    disabled={!newStepTitle.trim() || !newStepSubtitle.trim()}
+                    className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
                     style={{ background: "#3b82f6" }}
                   >
                     <Plus size={11} />
                     Add step
-                  </button>
-                  <button
-                    onClick={() => setAddingAtIndex(null)}
-                    className="inline-flex h-8 items-center rounded-lg px-3 text-xs font-medium text-stone-500 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
-                  >
-                    Cancel
                   </button>
                 </div>
               </div>
@@ -768,11 +830,12 @@ export default function RecipeCanvasView({ onBack, readOnly = false }: { onBack:
 
 // ── Connector ─────────────────────────────────────────────────────────────────
 
-function Connector({ fading, onAdd, fromState, isAnimating }: { fading: boolean; onAdd: () => void; fromState: NodeState; isAnimating: boolean }) {
+function Connector({ fading, onAdd, fromState, isAnimating, addBlockedReason }: { fading: boolean; onAdd: () => void; fromState: NodeState; isAnimating: boolean; addBlockedReason?: string }) {
   const [hovered, setHovered] = useState(false);
 
-  const isBlue  = fromState === "valid" || fromState === "validating";
-  const isGreen = fromState === "done"  || fromState === "running";
+  const isBlue   = fromState === "valid" || fromState === "validating";
+  const isGreen  = fromState === "done"  || fromState === "running";
+  const blocked  = !!addBlockedReason;
   const lineColor  = isGreen ? "#10b981" : isBlue ? "#3b82f6" : "var(--border)";
   const beadColor  = isGreen ? "#10b981" : "#3b82f6";
   const showBead   = isAnimating && (isBlue || isGreen);
@@ -810,14 +873,16 @@ function Connector({ fading, onAdd, fromState, isAnimating }: { fading: boolean;
       {/* + add button — hidden during validate / run */}
       {!isAnimating && (
         <button
-          onClick={(e) => { e.stopPropagation(); onAdd(); }}
-          className="flex h-5 w-5 items-center justify-center rounded-full transition-all duration-150"
+          onClick={(e) => { e.stopPropagation(); if (!blocked) onAdd(); }}
+          disabled={blocked}
+          title={addBlockedReason}
+          className={`flex h-5 w-5 items-center justify-center rounded-full transition-all duration-150 ${blocked ? "cursor-not-allowed" : ""}`}
           style={{
-            background: hovered ? "#3b82f6" : "var(--content-bg)",
-            border: `1.5px solid ${hovered ? "#3b82f6" : "var(--border)"}`,
-            color: hovered ? "white" : "#a8a29e",
-            opacity: hovered ? 1 : 0.4,
-            transform: hovered ? "scale(1.15)" : "scale(1)",
+            background: hovered && !blocked ? "#3b82f6" : "var(--content-bg)",
+            border: `1.5px solid ${hovered && !blocked ? "#3b82f6" : "var(--border)"}`,
+            color: hovered && !blocked ? "white" : "#a8a29e",
+            opacity: blocked ? 0.4 : hovered ? 1 : 0.4,
+            transform: hovered && !blocked ? "scale(1.15)" : "scale(1)",
           }}
         >
           <Plus size={9} />
@@ -889,32 +954,44 @@ function FlowNodeCard({
     isSelected    ? "#3b82f6" :
     "var(--border)";
 
+  const isSpinning = isValidating || isRunning;
+
   const cardAnimation =
     isFading      ? "fade-out-node 0.42s cubic-bezier(0.4,0,1,1) forwards"  :
-    isValidating  ? "glow-blue 1.6s cubic-bezier(0.45,0,0.55,1) infinite"   :
-    isRunning     ? "glow-green 1.4s cubic-bezier(0.45,0,0.55,1) infinite"   :
     isInvalid     ? "invalid-enter 0.55s cubic-bezier(0.22,1,0.36,1) both"  :
     isValid       ? "pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both"       :
     isDone        ? "pop-in-green 0.5s cubic-bezier(0.34,1.56,0.64,1) both" :
     undefined;
 
   return (
-    <div
-      className="w-80 rounded-xl overflow-hidden cursor-pointer"
-      draggable
-      onDragStart={(e) => { e.stopPropagation(); onDragStart(); }}
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(); }}
-      onDrop={(e) => { e.stopPropagation(); onDrop(); }}
-      onDragEnd={(e) => { e.stopPropagation(); onDragEnd(); }}
-      style={{
-        background: "var(--content-bg)",
-        border: `1.5px solid ${borderColor}`,
-        transition: "border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease",
-        animation: cardAnimation,
-        opacity: isDragging ? 0.4 : 1,
-      }}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-    >
+    <div className="relative w-80" style={{ opacity: isDragging ? 0.4 : 1 }}>
+      {/* Smooth rotating ring while a step is being verified or run */}
+      {isSpinning && (
+        <div className="pointer-events-none absolute inset-[-2.5px] rounded-[14px] overflow-hidden">
+          <div
+            className="absolute -inset-1/2"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0deg, ${isRunning ? "#10b981" : "#3b82f6"} 60deg, transparent 150deg)`,
+              animation: "border-spin 1.4s linear infinite",
+            }}
+          />
+        </div>
+      )}
+      <div
+        className="relative w-80 rounded-xl overflow-hidden cursor-pointer"
+        draggable
+        onDragStart={(e) => { e.stopPropagation(); onDragStart(); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(); }}
+        onDrop={(e) => { e.stopPropagation(); onDrop(); }}
+        onDragEnd={(e) => { e.stopPropagation(); onDragEnd(); }}
+        style={{
+          background: "var(--content-bg)",
+          border: `1.5px solid ${isSpinning ? "var(--content-bg)" : borderColor}`,
+          transition: "border-color 0.25s ease, box-shadow 0.25s ease",
+          animation: cardAnimation,
+        }}
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
+      >
       {/* Top-center drag handle */}
       <div
         className="flex justify-center pt-2 pb-0 cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:text-stone-400 dark:hover:text-stone-500 transition-colors"
@@ -938,41 +1015,42 @@ function FlowNodeCard({
           </div>
         </div>
         <div className="shrink-0 mt-1">
-          {(isValidating || isRunning) && (
-            <Loader2 size={14} className="animate-spin" style={{ color: isValidating ? "#3b82f6" : "#10b981" }} />
-          )}
           {(isValid || isDone) && (
-            <CheckCircle2 size={14} style={{ color: isValid ? "#3b82f6" : "#10b981" }} />
+            <div
+              className="flex h-6 w-6 items-center justify-center rounded-full"
+              style={{ background: isValid ? "#3b82f6" : "#10b981" }}
+            >
+              <Check size={14} className="text-white" strokeWidth={3} />
+            </div>
           )}
-          {isInvalid && <XCircle size={14} style={{ color: "#ef4444" }} />}
+          {isInvalid && (
+            <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "#ef4444" }}>
+              <X size={14} className="text-white" strokeWidth={3} />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Selected action row — right-aligned */}
+      {/* Selected action row — split 50/50, inset rounded hover fills */}
       {isSelected && !readOnly && (
-        <div
-          className="flex items-center justify-end gap-1 px-4 pb-3"
-          style={{ borderTop: "1px solid var(--border)" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="pt-2.5 flex gap-1">
-            <button
-              onClick={onStartEdit}
-              className="inline-flex h-7 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-            >
-              <Pencil size={11} />
-              Edit
-            </button>
-            <button
-              onClick={onStartDelete}
-              className="inline-flex h-7 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 size={11} />
-              Delete
-            </button>
-          </div>
+        <div className="flex items-stretch gap-1.5 px-2 pb-2 pt-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={onStartEdit}
+            className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+          >
+            <Pencil size={12} />
+            Edit
+          </button>
+          <button
+            onClick={onStartDelete}
+            className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={12} />
+            Delete
+          </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

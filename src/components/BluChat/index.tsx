@@ -14,7 +14,6 @@ import {
   Plus,
   ArrowUp,
   AtSign,
-  Brain,
   Paperclip,
   Terminal,
   ChevronLeft,
@@ -35,7 +34,6 @@ import {
   Package,
   Activity,
   Archive,
-  Globe,
   Library,
   Database,
   Users,
@@ -468,6 +466,12 @@ export default function BluChat({
   useEffect(() => {
     return () => { micStreamRef.current?.getTracks().forEach((t) => t.stop()); };
   }, []);
+  const [editorTopFade, setEditorTopFade] = useState(false);
+  function checkEditorTopFade() {
+    const el = editorRef.current;
+    if (!el) return;
+    setEditorTopFade(el.scrollTop > 4);
+  }
   const [placeholderVisible, setPlaceholderVisible] = useState(true);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionCategory, setMentionCategory] = useState<string | null>(null);
@@ -670,6 +674,7 @@ export default function BluChat({
   function handleEditorInput() {
     const sel = window.getSelection();
     updateEditorEmpty();
+    checkEditorTopFade();
     if (!sel?.rangeCount) { setMentionOpen(false); setSlashOpen(false); return; }
     const range = sel.getRangeAt(0);
     const container = range.startContainer;
@@ -2488,8 +2493,8 @@ export default function BluChat({
               animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
             }}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">Chat Settings</span>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">Chat Settings</span>
               <button
                 type="button"
                 onClick={() => setChatSettingsOpen(false)}
@@ -2503,9 +2508,10 @@ export default function BluChat({
                 { title: "Response depth", options: RESPONSE_DEPTH_OPTIONS, value: responseDepth, set: setResponseDepth },
                 { title: "Model tier", options: MODEL_TIER_OPTIONS, value: modelTier, set: setModelTier },
                 { title: "Knowledge scope", options: KNOWLEDGE_SCOPE_OPTIONS, value: contextScope, set: (v: string) => setContextScope(v as "Project" | "Thread") },
+                { title: "Web search", options: ["Off", "On"], value: webMode ? "On" : "Off", set: (v: string) => setWebMode(v === "On") },
               ].map((group) => (
                 <div key={group.title}>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                  <p className="mb-2 text-xs font-medium text-stone-500 dark:text-stone-400">
                     {group.title}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -2515,12 +2521,11 @@ export default function BluChat({
                         <button
                           key={option}
                           onClick={() => group.set(option)}
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                          className={`inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold transition-colors ${
                             isActive
-                              ? "text-white"
-                              : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                              : "bg-(--border) text-stone-500 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14"
                           }`}
-                          style={isActive ? { background: "#0080FF" } : undefined}
                         >
                           {option}
                         </button>
@@ -2786,6 +2791,10 @@ export default function BluChat({
             </div>
           )}
           <div className="relative">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 h-5 transition-opacity duration-300"
+              style={{ opacity: editorTopFade ? 1 : 0, background: "linear-gradient(to bottom, var(--content-bg) 0%, transparent 100%)" }}
+            />
             {editorEmpty && (() => {
               const ph = PLACEHOLDERS[placeholderIdx];
               return (
@@ -2802,6 +2811,7 @@ export default function BluChat({
               contentEditable
               suppressContentEditableWarning
               onInput={handleEditorInput}
+              onScroll={checkEditorTopFade}
               onPaste={(e) => {
                 const fromFiles = Array.from(e.clipboardData?.files ?? []);
                 const fromItems = Array.from(e.clipboardData?.items ?? [])
@@ -2841,42 +2851,8 @@ export default function BluChat({
                   sendMessage();
                 }
               }}
-              className="w-full min-h-5 max-h-32 overflow-y-auto bg-transparent pr-7 text-sm text-stone-700 dark:text-stone-200 outline-none leading-relaxed"
+              className="w-full min-h-5 max-h-32 overflow-y-auto bg-transparent text-sm text-stone-700 dark:text-stone-200 outline-none leading-relaxed"
             />
-            <button
-              type="button"
-              aria-label={
-                micState === "denied" ? "Microphone access denied — click to try again" : micState === "recording" ? "Stop recording" : "Voice input"
-              }
-              title={micState === "denied" ? "Microphone access denied — click to try again" : undefined}
-              onClick={toggleMic}
-              className={`absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-                micState === "recording"
-                  ? "text-white"
-                  : micState === "denied"
-                    ? "text-stone-300 hover:bg-stone-100 hover:text-stone-500 dark:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-400"
-                    : "text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-white/8 dark:hover:text-stone-300"
-              }`}
-              style={{
-                background: micState === "recording" ? "#ef4444" : undefined,
-                opacity: micState === "recording" ? 1 : editorEmpty ? 1 : 0,
-                pointerEvents: micState === "recording" ? "auto" : editorEmpty ? "auto" : "none",
-                transition: "opacity 200ms ease, background-color 150ms ease, color 150ms ease",
-              }}
-            >
-              {micState === "recording" && (
-                <span
-                  aria-hidden
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "#ef4444", animation: "mic-pulse-ring 1.4s ease-out infinite" }}
-                />
-              )}
-              {micState === "denied" ? (
-                <MicOff size={14} className="relative" />
-              ) : (
-                <Mic size={14} className="relative" />
-              )}
-            </button>
           </div>
           <div className="flex items-center justify-between mt-4">
             {/* + with dropup */}
@@ -2892,13 +2868,13 @@ export default function BluChat({
                     return !open;
                   });
                 }}
-                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   plusOpen
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                    : "text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-white/8 dark:hover:text-stone-200"
+                    : "bg-(--border) text-stone-500 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14"
                 }`}
               >
-                <Plus size={15} />
+                <Plus size={17} strokeWidth={2.25} />
               </button>
 
               {plusOpen && (
@@ -2945,47 +2921,78 @@ export default function BluChat({
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => setContextScope((s) => (s === "Project" ? "Thread" : "Project"))}
-                className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors"
-                style={{ background: "var(--raised)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
-              >
-                <Brain size={12} />
-                {contextScope}
-              </button>
-              <button
-                type="button"
                 onClick={() => setPlanMode((mode) => !mode)}
-                className={`inline-flex h-7 items-center rounded-full px-2.5 text-xs font-medium transition-colors ${
+                className={`inline-flex h-8 items-center rounded-full px-3 text-xs font-medium transition-colors ${
                   planMode
                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                    : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10"
+                    : "bg-(--border) text-stone-500 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14"
                 }`}
               >
                 Plan
               </button>
-              <button
-                type="button"
-                onClick={() => setWebMode((mode) => !mode)}
-                className={`inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors ${
-                  webMode
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                    : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/6 dark:text-stone-400 dark:hover:bg-white/10"
-                }`}
-              >
-                <Globe size={12} />
-                Web
-              </button>
-              <button
-                onClick={() => ((activeReportId || bluReplying) ? stopGeneration() : sendMessage())}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150"
-                style={{ background: activeReportId || bluReplying || !editorEmpty || attachments.length || filePreviews.length ? "#0080FF" : "var(--border)" }}
-              >
-                {activeReportId || bluReplying ? (
-                  <Square size={11} fill="white" className="text-white" />
-                ) : (
-                  <ArrowUp size={13} className={!editorEmpty || attachments.length || filePreviews.length ? "text-white" : "text-stone-400 dark:text-stone-500"} />
-                )}
-              </button>
+              {(() => {
+                const isGenerating = !!(activeReportId || bluReplying);
+                const showSend = !editorEmpty || attachments.length > 0 || filePreviews.length > 0;
+                const isRecording = micState === "recording";
+                return (
+                  <button
+                    type="button"
+                    aria-label={
+                      isGenerating ? "Stop generating" :
+                      isRecording ? "Stop recording" :
+                      showSend ? "Send message" :
+                      micState === "denied" ? "Microphone access denied — click to try again" :
+                      "Voice input"
+                    }
+                    title={!isGenerating && !showSend && micState === "denied" ? "Microphone access denied — click to try again" : undefined}
+                    onClick={() => {
+                      if (isGenerating) { stopGeneration(); return; }
+                      if (showSend) { sendMessage(); return; }
+                      toggleMic();
+                    }}
+                    className="relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ease-out"
+                    style={{
+                      background: isGenerating || showSend ? "#0080FF" : isRecording ? "#ef4444" : "var(--border)",
+                    }}
+                  >
+                    {isRecording && !showSend && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: "#ef4444", animation: "mic-pulse-ring 1.4s ease-out infinite" }}
+                      />
+                    )}
+                    {isGenerating ? (
+                      <Square size={12} fill="white" className="relative text-white" />
+                    ) : (
+                      <>
+                        <span
+                          className="absolute flex items-center justify-center transition-all duration-200 ease-out"
+                          style={{
+                            opacity: showSend ? 0 : 1,
+                            transform: showSend ? "scale(0.5) rotate(-25deg)" : "scale(1) rotate(0deg)",
+                          }}
+                        >
+                          {micState === "denied" ? (
+                            <MicOff size={15} strokeWidth={2.25} className="text-stone-500 dark:text-stone-300" />
+                          ) : (
+                            <Mic size={15} strokeWidth={2.25} className={isRecording ? "text-white" : "text-stone-500 dark:text-stone-300"} />
+                          )}
+                        </span>
+                        <span
+                          className="absolute flex items-center justify-center transition-all duration-200 ease-out"
+                          style={{
+                            opacity: showSend ? 1 : 0,
+                            transform: showSend ? "scale(1) rotate(0deg)" : "scale(0.5) rotate(25deg)",
+                          }}
+                        >
+                          <ArrowUp size={15} strokeWidth={2.25} className="text-white" />
+                        </span>
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>

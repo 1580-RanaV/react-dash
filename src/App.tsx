@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import { LocaleProvider } from "./lib/LocaleContext";
 import DashboardShell from "./components/DashboardShell";
 import DashboardView from "./components/DashboardView";
@@ -32,9 +32,15 @@ import LogoLoaderView from "./components/LogoLoaderView";
 
 function RecipeCanvasPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { title?: string; steps?: { title: string; subtitle: string }[] } | null;
   return (
     <DesktopOnlyGate>
-      <RecipeCanvasView onBack={() => navigate("/recipes")} />
+      <RecipeCanvasView
+        onBack={() => navigate("/recipes")}
+        initialTitle={state?.title}
+        initialSteps={state?.steps}
+      />
     </DesktopOnlyGate>
   );
 }

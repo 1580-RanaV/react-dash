@@ -4,7 +4,7 @@ import {
   Search, Plus, ArrowUpDown, SlidersHorizontal, ChevronDown,
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
-  Check, Copy, FileText, FileCode, Pencil, Shuffle,
+  Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
@@ -485,8 +485,8 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
       className="relative rounded-xl p-5 flex flex-col gap-3 cursor-pointer overflow-hidden"
       style={{ border: "1px solid var(--border)", background: "var(--content-bg)" }}
     >
-      <span className="pointer-events-none absolute -right-3 -bottom-3 select-none text-stone-900 dark:text-stone-100 opacity-[0.045] dark:opacity-[0.06]">
-        {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 88 })}
+      <span className="pointer-events-none absolute -right-4 -bottom-4 select-none text-stone-900 dark:text-stone-100 opacity-[0.02] dark:opacity-[0.03]">
+        {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 76 })}
       </span>
 
       {/* Creator + date + heart */}
@@ -585,9 +585,84 @@ const RECIPE_TABS = [
   { key: "md",      label: ".md file",  icon: <FileCode  size={13} /> },
 ];
 
+// Mock canvas preview for the Steps section — one generic node card repeated
+// once per real step count (so List and Canvas always agree on how many
+// steps there are), not wired to each step's actual title/content, same
+// dot-grid + node-card language as the full pipeline builder in
+// RecipeCanvasView.tsx. Pannable by dragging, like the real canvas.
+function StepsCanvasPreview({ count }: { count: number }) {
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const hasDragged = useRef(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
+
+  function handleMouseDown(e: React.MouseEvent) {
+    dragging.current = true;
+    hasDragged.current = false;
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  }
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!dragging.current) return;
+    const dx = e.clientX - lastMouse.current.x;
+    const dy = e.clientY - lastMouse.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true;
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+    setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+  }
+  function stopDrag() { dragging.current = false; }
+
+  return (
+    <div
+      className="relative h-[480px] select-none overflow-hidden rounded-xl"
+      style={{
+        border: "1px solid var(--border)",
+        backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
+        backgroundSize: "22px 22px",
+        cursor: dragging.current ? "grabbing" : "grab",
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+    >
+      <div
+        className="flex min-h-full items-center justify-center py-10"
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px)`, willChange: "transform" }}
+      >
+        <div className="flex flex-col items-center">
+          <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid var(--stone-400, #a8a29e)", background: "var(--content-bg)" }} />
+          {Array.from({ length: count }, (_, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className="w-px h-3.5" style={{ background: "var(--border)" }} />
+              <div
+                className="flex items-center gap-3 rounded-xl px-5 py-4"
+                style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}
+              >
+                <span
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300"
+                  style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
+                >
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug">Create a segment</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 leading-snug mt-0.5">segment &middot; &rarr; segment</p>
+                </div>
+              </div>
+              <div className="w-px h-3.5" style={{ background: "var(--border)" }} />
+            </div>
+          ))}
+          <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid var(--stone-400, #a8a29e)", background: "var(--content-bg)" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [cmdCopied,  setCmdCopied]  = useState(false);
+  const [stepsView,  setStepsView]  = useState<"list" | "canvas">("list");
   const [title,        setTitle]        = useState(recipe.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft,   setTitleDraft]   = useState("");
@@ -597,6 +672,20 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const [cmdDraft,       setCmdDraft]       = useState("");
   const cmdInputRef = useRef<HTMLInputElement>(null);
   const mdOpen = activeTab === "md";
+  const [btnRunning, setBtnRunning] = useState(false);
+
+  function handleRun() {
+    if (btnRunning) return;
+    setBtnRunning(true);
+    window.dispatchEvent(new Event("open-blu-chat"));
+    const stepTitles = MOCK_STEPS.map((s) => s.title);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: stepTitles } }));
+    }, 300);
+    setTimeout(() => {
+      setBtnRunning(false);
+    }, 300 + stepTitles.length * 1050 + 200);
+  }
 
   function handleCopyCmd() {
     navigator.clipboard.writeText(slashCmd);
@@ -652,6 +741,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
               <input
                 ref={titleInputRef}
                 autoFocus
+                maxLength={100}
                 value={titleDraft}
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={commitTitle}
@@ -675,13 +765,28 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
           <HeartButton
             widget={{ id: `recipe-${recipe.id}`, type: "recipe", label: recipe.title, size: "sm", meta: { recipeId: recipe.id } }}
           />
+          <button
+            onClick={handleRun}
+            disabled={btnRunning}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{ background: "#10b981" }}
+          >
+            {btnRunning
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Play size={11} className="fill-current" />}
+            Run
+          </button>
           <SubTabCorner
             tabs={RECIPE_TABS}
             active={activeTab}
             onChange={(key) => {
               if (key === "remix") {
-                window.dispatchEvent(new Event("open-blu-chat"));
-                window.dispatchEvent(new CustomEvent("blu-suggested-prompt", { detail: { prompt: `Remix the "${title}" recipe — keep the structure but adapt it for a different use case` } }));
+                window.dispatchEvent(new CustomEvent("open-recipe-canvas", {
+                  detail: {
+                    title: `${title} (Remix)`,
+                    steps: MOCK_STEPS.map((s) => ({ title: s.title, subtitle: s.body })),
+                  },
+                }));
                 return;
               }
               setActiveTab(key);
@@ -707,6 +812,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                 <input
                   ref={cmdInputRef}
                   autoFocus
+                  maxLength={100}
                   value={cmdDraft}
                   onChange={(e) => setCmdDraft(e.target.value)}
                   onBlur={commitCmd}
@@ -784,29 +890,41 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
 
           {/* Steps */}
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-5">
-              Steps
-            </p>
-            <div className="flex flex-col">
-              {MOCK_STEPS.map((s, i) => (
-                <div key={i} className="flex gap-4">
-                  {/* Number + connector */}
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-                      {i + 1}
-                    </div>
-                    {i < MOCK_STEPS.length - 1 && (
-                      <div className="w-px flex-1 my-1.5" style={{ background: "var(--border)" }} />
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className={i < MOCK_STEPS.length - 1 ? "pb-6" : "pb-0"}>
-                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1">{s.title}</p>
-                    <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                Steps ({MOCK_STEPS.length})
+              </p>
+              <SubTabCorner
+                tabs={[{ key: "list", label: "List" }, { key: "canvas", label: "Canvas" }]}
+                active={stepsView}
+                onChange={(key) => setStepsView(key as "list" | "canvas")}
+              />
             </div>
+
+            {stepsView === "canvas" ? (
+              <StepsCanvasPreview count={MOCK_STEPS.length} />
+            ) : (
+              <div className="flex flex-col">
+                {MOCK_STEPS.map((s, i) => (
+                  <div key={i} className="flex gap-4">
+                    {/* Number + connector */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+                        {i + 1}
+                      </div>
+                      {i < MOCK_STEPS.length - 1 && (
+                        <div className="w-px flex-1 my-1.5" style={{ background: "var(--border)" }} />
+                      )}
+                    </div>
+                    {/* Content */}
+                    <div className={i < MOCK_STEPS.length - 1 ? "pb-6" : "pb-0"}>
+                      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1">{s.title}</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
         </div>

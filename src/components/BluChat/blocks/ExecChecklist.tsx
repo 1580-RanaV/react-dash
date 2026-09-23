@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { LiveRunProgressCircle } from "./LiveRun";
 
 /* Recipe execution — fired via the "blu-recipe-run" window event after create-recipe */
 
@@ -15,9 +15,9 @@ export function ExecChecklist({ steps }: { steps: string[] }) {
   }, [current, allDone]);
 
   return (
-    <div className="mt-1 rounded-xl overflow-hidden" style={{ background: "var(--content-bg)" }}>
+    <div className="mt-1 flex w-full max-w-64 flex-col gap-2">
       {/* Header */}
-      <div className="flex items-center gap-2 px-1 pt-2 pb-2">
+      <div className="flex items-center gap-2 px-0.5">
         <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">Running recipe</span>
         <div className="flex-1" />
         <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
@@ -25,37 +25,34 @@ export function ExecChecklist({ steps }: { steps: string[] }) {
         </span>
       </div>
 
-      {/* Step rows */}
-      <div className="px-1 pb-2 flex flex-col gap-2">
-        {steps.map((step, i) => {
-          const isDone   = i < current;
-          const isActive = i === current && !allDone;
-          return (
-            <div key={i} className="flex items-center gap-2.5">
-              {isDone ? (
-                <div className="w-3.75 h-3.75 shrink-0 rounded-full bg-blue-500 flex items-center justify-center">
-                  <Check size={9} className="text-white" strokeWidth={3} />
-                </div>
-              ) : isActive ? (
-                <Loader2 size={15} className="shrink-0 animate-spin text-blue-500" />
-              ) : (
-                <div className="w-3.75 h-3.75 shrink-0 rounded-full border-[1.5px] border-stone-200 dark:border-stone-700" />
-              )}
+      {/* One run card per step, same as a single-task run */}
+      {steps.map((step, i) => {
+        const isDone = i < current;
+        const isActive = i === current && !allDone;
+        return (
+          <div
+            key={i}
+            className="overflow-hidden rounded-xl"
+            style={{
+              background: "var(--content-bg)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              animation: `fade-up 420ms cubic-bezier(0.23,1,0.32,1) ${i * 80}ms both`,
+            }}
+          >
+            <div className="flex h-13 w-full items-center gap-3 px-3 text-left">
+              <LiveRunProgressCircle progress={isDone ? 1 : 0} done={isDone} indeterminate={isActive} />
               <span
-                className={`text-sm leading-snug ${
-                  isDone
-                    ? "text-stone-400 dark:text-stone-500"
-                    : isActive
-                    ? "font-semibold text-stone-800 dark:text-stone-100"
-                    : "text-stone-500 dark:text-stone-400"
+                className={`min-w-0 flex-1 truncate text-[13px] font-semibold ${
+                  isDone ? "text-stone-400 dark:text-stone-500" : "text-stone-900 dark:text-stone-100"
                 }`}
               >
                 {step}
               </span>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

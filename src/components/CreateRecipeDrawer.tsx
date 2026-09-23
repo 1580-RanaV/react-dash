@@ -149,7 +149,11 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
               return (
                 <button
                   key={key}
-                  onClick={() => setSelected(key)}
+                  onClick={() => {
+                    setSelected(key);
+                    if (key === "remix") setStep("remix");
+                    if (key === "upload") fileRef.current?.click();
+                  }}
                   className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors duration-100 ${
                     isSelected
                       ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"

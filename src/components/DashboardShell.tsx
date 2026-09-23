@@ -241,7 +241,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   useEffect(() => {
     const open              = () => setBluOpen(true);
     const toggle            = () => setBluOpen((o) => !o);
-    const openRecipeCanvas  = () => navigate("/recipe-canvas");
+    const openRecipeCanvas  = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      navigate("/recipe-canvas", detail ? { state: detail } : undefined);
+    };
     const openPanel         = () => { setBluOpen(true); setBluMode("panel"); };
     const forceClose        = () => { setBluOpen(false); setBluMode("panel"); };
     const onKeyDown = (e: KeyboardEvent) => {
