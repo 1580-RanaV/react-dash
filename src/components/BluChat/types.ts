@@ -53,7 +53,10 @@ export type ChatMessage = {
   extraEvent?: boolean;
   noEmbed?: boolean;
   followUps?: string[];
+  citations?: Citation[];
 };
+
+export type Citation = { label: string };
 
 export type SlashRecipe = { key: string; icon: ReactNode; label: string; desc: string };
 

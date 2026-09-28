@@ -24,7 +24,7 @@ import {
   Zap,
   SlidersHorizontal,
 } from "lucide-react";
-import type { HistoryItem, RunTask, ChatMessage, SlashRecipe, Placeholder } from "./types";
+import type { HistoryItem, RunTask, ChatMessage, SlashRecipe, Placeholder, Citation } from "./types";
 
 export const MENTION_CATEGORIES = [
   { key: "journeys", label: "Journeys" },
@@ -159,6 +159,12 @@ export const GENERAL_FOLLOW_UPS = [
   "Make it more concise",
   "Try a bolder headline",
   "Show me another variation",
+];
+
+export const MOCK_CITATIONS: Citation[] = [
+  { label: "Name" },
+  { label: "First name" },
+  { label: "Last name" },
 ];
 
 export const CUSTOM_REPORT_FOLLOW_UPS = [

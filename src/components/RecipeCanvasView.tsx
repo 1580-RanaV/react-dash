@@ -1,13 +1,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Loader2, Play, ShieldCheck, ChevronDown, Plus, GripVertical,
+  Loader2, ShieldCheck, ChevronDown, Plus, GripVertical,
   Pencil, Trash2, X, AlertTriangle, Check, MousePointer2, Hand, Minus,
-  Link2, Search,
+  Link2, Search, Rocket,
 } from "lucide-react";
 import BackButton from "./BackButton";
-import Toggle from "./Toggle";
-import { RECIPES } from "./RecipesView";
+import { RECIPES, type Recipe } from "./RecipesView";
+import { useRecipeRuntime } from "./recipeRuntimeStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -71,10 +71,13 @@ export default function RecipeCanvasView({
   const [dragOverId,      setDragOverId]      = useState<string | null>(null);
   // Button loading states
   const [btnValidating,   setBtnValidating]   = useState(false);
-  const [btnRunning,      setBtnRunning]      = useState(false);
-  const [btnReady,        setBtnReady]        = useState(false);
-  const [isReady,         setIsReady]         = useState(false);
-  const isBusy = btnValidating || btnRunning || btnReady;
+  // Whether the current pipeline has passed a Validate pass since it was
+  // last changed — Publish stays locked until it has. Reset to false on any
+  // structural change (add/delete/reorder a step). Running only ever
+  // happens later, from the published recipe's own detail page — the
+  // canvas itself no longer has a Run action.
+  const [validated, setValidated] = useState(false);
+  const isBusy = btnValidating;
 
   // Add node
   const [addingAtIndex,   setAddingAtIndex]   = useState<number | null>(null);
@@ -131,6 +134,21 @@ export default function RecipeCanvasView({
     return () => clearTimeout(t);
   }, []);
 
+  // Every Validate/Run/Ready-to-use/Add-step timer is tracked here and
+  // cancelled on unmount — otherwise navigating away mid-run (e.g. to build
+  // a different recipe) lets a stale timer fire later and dispatch
+  // `blu-recipe-run` / open Blu Chat for a recipe you're no longer looking
+  // at, which looked like an unrelated recipe randomly "running itself."
+  const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+  function schedule(fn: () => void, ms: number) {
+    const id = setTimeout(fn, ms);
+    pendingTimeouts.current.push(id);
+    return id;
+  }
+  useEffect(() => {
+    return () => { pendingTimeouts.current.forEach(clearTimeout); };
+  }, []);
+
   // ── Canvas interaction ────────────────────────────────────────────────────
 
   function handleWheel(e: React.WheelEvent) {
@@ -169,7 +187,6 @@ export default function RecipeCanvasView({
   function unlockBlu() { window.dispatchEvent(new CustomEvent("blu-set-locked", { detail: false })); }
 
   function validateMs(count: number = nodes.length) { return (count - 1) * 380 + 520; }
-  function runMs(count: number = nodes.length)      { return (count - 1) * 700 + 900; }
 
   // Validates nodes in order and stops at the first unsupported node —
   // steps after a failure are left untouched, matching a real pipeline
@@ -181,57 +198,54 @@ export default function RecipeCanvasView({
     for (let i = 0; i < validatedCount; i++) {
       const n = nodes[i];
       const passes = !(hasFailure && i === failIndex);
-      setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "validating" })), i * 380);
-      setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: passes ? "valid" : "invalid" })), i * 380 + 520);
+      schedule(() => setNodeStates((s) => ({ ...s, [n.id]: "validating" })), i * 380);
+      schedule(() => setNodeStates((s) => ({ ...s, [n.id]: passes ? "valid" : "invalid" })), i * 380 + 520);
     }
     if (!hasFailure && onComplete) {
-      setTimeout(onComplete, validateMs(validatedCount) + 350);
+      schedule(onComplete, validateMs(validatedCount) + 350);
     }
     return { hasFailure, validatedCount };
   }
 
   function handleValidate() {
-    if (isBusy) return;
+    if (isBusy || nodes.length === 0) return;
     setBtnValidating(true);
     lockBlu();
-    const { validatedCount } = runValidate();
-    setTimeout(() => { setBtnValidating(false); unlockBlu(); }, validateMs(validatedCount) + 120);
-  }
-
-  function handleRun() {
-    if (isBusy) return;
-    setBtnRunning(true);
-    lockBlu();
-    const capturedTitles = nodes.map((n) => n.title);
-    const { hasFailure, validatedCount } = runValidate(() => {
-      nodes.forEach((n, i) => {
-        setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "running" })), i * 700);
-        setTimeout(() => setNodeStates((s) => ({ ...s, [n.id]: "done" })),    i * 700 + 900);
-      });
-    });
-    const totalMs = hasFailure
-      ? validateMs(validatedCount) + 120
-      : validateMs(validatedCount) + 350 + runMs() + 120;
-    setTimeout(() => {
-      setBtnRunning(false);
+    const { hasFailure, validatedCount } = runValidate();
+    schedule(() => {
+      setBtnValidating(false);
       unlockBlu();
-      if (!hasFailure) {
-        window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: capturedTitles } }));
-      }
-    }, totalMs);
+      setValidated(!hasFailure);
+    }, validateMs(validatedCount) + 120);
   }
 
-  // ── Ready to use ──────────────────────────────────────────────────────────
+  // ── Publish ───────────────────────────────────────────────────────────────
 
-  function handleReadyToUse() {
-    if (isBusy) return;
-    if (isReady) { setIsReady(false); return; }
-    setBtnReady(true);
-    lockBlu();
-    const { hasFailure, validatedCount } = runValidate(() => {
-      setTimeout(() => setIsReady(true), 200);
-    });
-    setTimeout(() => { setBtnReady(false); unlockBlu(); }, validateMs(validatedCount) + (hasFailure ? 120 : 600));
+  const { addDraftRecipe } = useRecipeRuntime();
+
+  function handlePublish() {
+    if (nodes.length === 0 || !validated) return;
+    const newRecipe: Recipe = {
+      id: `draft-${Date.now()}`,
+      icon: <Rocket size={16} />,
+      title: title.trim() || "Untitled recipe",
+      description: nodes[0].subtitle,
+      tags: [],
+      author: "Rana V",
+      steps: nodes.length,
+      uses: 0,
+      why: "Published from the recipe canvas.",
+      spec: { complexity: "Custom", execution: "Live", agent: "you", products: [], mode: "custom", areas: [] },
+      stepDetails: nodes.map((n) => `${n.title}\n\n${n.subtitle}`),
+      // Publish only ever fires once the pipeline has passed Validate, so
+      // this is a real, validated recipe from the moment it's created —
+      // not a "Draft" the way the seeded incomplete examples are.
+      draft: false,
+      draftSteps: nodes.map((n) => ({ title: n.title, subtitle: n.subtitle })),
+      validated: true,
+    };
+    addDraftRecipe(newRecipe);
+    onBack();
   }
 
   // ── Node interaction ──────────────────────────────────────────────────────
@@ -253,7 +267,7 @@ export default function RecipeCanvasView({
     const id = editingId;
     setEditingId(null);
     setNodeStates((s) => ({ ...s, [id]: "validating" }));
-    setTimeout(() => setNodeStates((s) => ({ ...s, [id]: "idle" })), 2000);
+    schedule(() => setNodeStates((s) => ({ ...s, [id]: "idle" })), 2000);
   }
 
   function handleStartDelete(id: string) {
@@ -265,7 +279,8 @@ export default function RecipeCanvasView({
   function handleConfirmDelete(id: string) {
     setFadingIds((prev) => new Set(prev).add(id));
     setConfirmDeleteId(null);
-    setTimeout(() => {
+    setValidated(false);
+    schedule(() => {
       setNodes((prev) => prev.filter((n) => n.id !== id).map((n, i) => ({ ...n, step: i + 1 })));
       setFadingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
       setNodeStates((prev) => { const next = { ...prev }; delete next[id]; return next; });
@@ -290,6 +305,7 @@ export default function RecipeCanvasView({
       [next[fromIdx], next[toIdx]] = [next[toIdx], next[fromIdx]];
       return next.map((n, i) => ({ ...n, step: i + 1 }));
     });
+    setValidated(false);
     setDraggingId(null);
     setDragOverId(null);
   }
@@ -342,7 +358,8 @@ export default function RecipeCanvasView({
       ...prev.slice(addingAtIndex),
     ].map((n, i) => ({ ...n, step: i + 1 })));
     setNodeStates((prev) => ({ ...prev, [newId]: "validating" }));
-    setTimeout(() => {
+    setValidated(false);
+    schedule(() => {
       setNodeStates((prev) => ({ ...prev, [newId]: unsupported ? "invalid" : "valid" }));
     }, 3000);
     setAddingAtIndex(null);
@@ -551,44 +568,26 @@ export default function RecipeCanvasView({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Ready to use toggle */}
-          <button
-            onClick={handleReadyToUse}
-            disabled={btnReady || btnValidating || btnRunning}
-            className="inline-flex h-8 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              color: isReady ? "#3b82f6" : "var(--stone-600, #57534e)",
-            }}
-          >
-            {btnReady
-              ? <Loader2 size={13} className="animate-spin" style={{ color: "#3b82f6" }} />
-              : <Toggle on={isReady} onClick={() => {}} />}
-            Ready to use
-          </button>
-
-
           <button
             onClick={handleValidate}
-            disabled={isBusy}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ background: "#3b82f6" }}
+            disabled={isBusy || nodes.length === 0}
+            title={nodes.length === 0 ? "Add at least one step before validating" : undefined}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold bg-(--border) text-stone-600 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {btnValidating
               ? <Loader2 size={13} className="animate-spin" />
               : <ShieldCheck size={13} />}
             Validate
           </button>
-          <button
-            onClick={handleRun}
-            disabled={isBusy}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ background: "#10b981" }}
-          >
-            {btnRunning
-              ? <Loader2 size={13} className="animate-spin" />
-              : <Play size={11} className="fill-current" />}
-            Run
-          </button>
+          {validated && (
+            <button
+              onClick={handlePublish}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] animate-fade-up"
+              style={{ background: "#3b82f6" }}
+            >
+              Publish
+            </button>
+          )}
         </div>
       </div>
       )}
@@ -800,7 +799,7 @@ export default function RecipeCanvasView({
                     value={newStepSubtitle}
                     onChange={(e) => setNewStepSubtitle(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleConfirmAdd(); }}
-                    placeholder="Description…"
+                    placeholder="Action…"
                     className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
                     style={{ background: "var(--input)", borderColor: "var(--border)" }}
                   />

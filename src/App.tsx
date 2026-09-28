@@ -24,6 +24,7 @@ import PublicRecipeView from "./components/public-view/PublicRecipeView";
 import PublicWorkflowView from "./components/public-view/PublicWorkflowView";
 import { RecipeDetailView, RECIPES } from "./components/RecipesView";
 import RecipeCanvasView from "./components/RecipeCanvasView";
+import { useRecipeRuntime } from "./components/recipeRuntimeStore";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
 import HomeView from "./components/HomeView";
 import HomeOnboardingView from "./components/HomeOnboardingView";
@@ -48,7 +49,8 @@ function RecipeCanvasPage() {
 function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const recipe = RECIPES.find(r => r.id === id);
+  const { draftRecipes } = useRecipeRuntime();
+  const recipe = RECIPES.find(r => r.id === id) ?? draftRecipes.find(r => r.id === id);
   if (!recipe) return <Navigate to="/recipes" replace />;
   return <RecipeDetailView recipe={recipe} onBack={() => navigate("/recipes")} />;
 }

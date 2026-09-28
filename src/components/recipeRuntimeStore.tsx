@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import type { Recipe } from "./RecipesView";
 
 // Same brand-icon CDN pattern as AddIntegrationDrawer.tsx's `BF` helper —
 // duplicated rather than imported since that file keeps it private, and a
@@ -30,7 +31,7 @@ export function IntegrationLogo({ name, size = 12, fallback = null }: { name: st
 /* ─────────────────────────────────────────────────────────
  * RECIPE RUNTIME STORE — ephemeral, in-memory only, same
  * Context pattern as BoardsProvider/HomeWidgetsProvider,
- * mounted in DashboardShell. Backs two mock behaviors from
+ * mounted in DashboardShell. Backs four mock behaviors from
  * the recipes spec:
  *   - BC-RCP-010–017: a recipe that needs an integration shows
  *     a locked Run + "Connect X" affordance, and unlocks
@@ -38,6 +39,12 @@ export function IntegrationLogo({ name, size = 12, fallback = null }: { name: st
  *     integration) once connected.
  *   - BC-RCP-GEN-*: every completed run is kept as a generation
  *     record per recipe, with a clickable "created" item.
+ *   - Deleting a seeded recipe from its detail page hides it
+ *     from the list for the rest of the session (no backend to
+ *     actually delete it from).
+ *   - Publishing a canvas build adds it to the list as a draft
+ *     recipe, and its Remix tab reopens the canvas with its real
+ *     nodes (not the generic MOCK_STEPS every seeded recipe uses).
  * ───────────────────────────────────────────────────────── */
 
 export type RunRecord = {
@@ -52,6 +59,10 @@ type RecipeRuntimeContextValue = {
   connectIntegration: (integration: string) => void;
   runHistory: Record<string, RunRecord[]>;
   addRunRecord: (recipeId: string, record: RunRecord) => void;
+  isDeleted: (recipeId: string) => boolean;
+  deleteRecipe: (recipeId: string) => void;
+  draftRecipes: Recipe[];
+  addDraftRecipe: (recipe: Recipe) => void;
 };
 
 const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(null);
@@ -84,6 +95,20 @@ const SEEDED_RUN_HISTORY: Record<string, RunRecord[]> = {
 export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState<Set<string>>(INITIAL_LOCKED_INTEGRATIONS);
   const [runHistory, setRunHistory] = useState<Record<string, RunRecord[]>>(SEEDED_RUN_HISTORY);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [draftRecipes, setDraftRecipes] = useState<Recipe[]>([]);
+
+  function addDraftRecipe(recipe: Recipe) {
+    setDraftRecipes((prev) => [recipe, ...prev]);
+  }
+
+  function isDeleted(recipeId: string) {
+    return deletedIds.has(recipeId);
+  }
+
+  function deleteRecipe(recipeId: string) {
+    setDeletedIds((prev) => new Set(prev).add(recipeId));
+  }
 
   function isConnected(integration: string) {
     return !locked.has(integration);
@@ -103,7 +128,7 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord }}>
+    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe }}>
       {children}
     </RecipeRuntimeContext.Provider>
   );

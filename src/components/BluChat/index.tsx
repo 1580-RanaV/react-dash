@@ -89,6 +89,7 @@ import {
   BLU_REPLIES,
   GENERAL_FOLLOW_UPS,
   CUSTOM_REPORT_FOLLOW_UPS,
+  MOCK_CITATIONS,
   PLACEHOLDERS,
   LANDING_PROMPTS,
   CONTEXT_RECIPE_KEYS,
@@ -113,6 +114,7 @@ import { CustomReportBlock } from "./blocks/CustomReport";
 import { ExecChecklist } from "./blocks/ExecChecklist";
 import { PlanCard } from "./blocks/PlanCard";
 import { StreamingReply } from "./blocks/StreamingReply";
+import { Citations } from "./blocks/Citations";
 import { RecipeRow } from "./blocks/RecipeRow";
 import { NotificationIcon, NotificationStrip } from "./blocks/Notification";
 
@@ -1194,6 +1196,7 @@ export default function BluChat({
             text: BLU_REPLIES[generalReplyIndex % BLU_REPLIES.length],
             isStreaming: true,
             followUps: GENERAL_FOLLOW_UPS,
+            citations: MOCK_CITATIONS,
           };
           return next;
         });
@@ -2226,6 +2229,7 @@ export default function BluChat({
                   </div>
                 </div>
               )}
+              {msg.citations && !msg.isStreaming && <Citations items={msg.citations} />}
             </div>
           </div>
           </div>

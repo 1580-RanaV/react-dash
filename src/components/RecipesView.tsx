@@ -5,13 +5,12 @@ import {
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
   Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
-  Lock, Plug, History,
+  Lock, Plug, History, Trash2, AlertTriangle,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import SlidingSidebar from "./SlidingSidebar";
-import HeartButton from "./HeartButton";
 import { useRecipeRuntime, IntegrationLogo } from "./recipeRuntimeStore";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,6 +43,14 @@ export type Recipe = {
   // BC-RCP-021: recipe is locked by permission, not by a missing connection —
   // no self-serve unlock, just an explanation.
   requiresPermission?: string;
+  // Real step nodes from a Publish in the canvas — when set, the Remix tab
+  // reopens the canvas with these instead of the generic MOCK_STEPS every
+  // seeded recipe otherwise falls back to.
+  draftSteps?: { title: string; subtitle: string }[];
+  // Whether this draft's pipeline passed validation ("Ready to use" was on)
+  // at the moment it was published — a draft can't be Run until it has.
+  // Irrelevant for seeded recipes, which are treated as already validated.
+  validated?: boolean;
 };
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -329,6 +336,7 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
   const overflow = allChips.length - MAX_VISIBLE_CHIPS;
   const needsConnection = !!recipe.requiresIntegration && !isConnected(recipe.requiresIntegration);
   const permissionLocked = !!recipe.requiresPermission;
+  const notValidated = !!recipe.draftSteps && !recipe.validated;
 
   return (
     <div
@@ -340,14 +348,20 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
         {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 76 })}
       </span>
 
-      {/* Creator + date + heart */}
+      {/* Creator + date + (canvas-backed recipes only) a direct edit shortcut */}
       <div className="flex items-center justify-between">
         <CreatorChip id={recipe.id} />
-        <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-          <span className="text-xs text-stone-400 dark:text-stone-500">{RECIPE_DATES[recipe.id]}</span>
-          <HeartButton
-            widget={{ id: `recipe-${recipe.id}`, type: "recipe", label: recipe.title, size: "sm", meta: { recipeId: recipe.id } }}
-          />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-xs text-stone-400 dark:text-stone-500">{RECIPE_DATES[recipe.id] ?? "Just now"}</span>
+          {recipe.draftSteps && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openRecipeInCanvas(recipe, recipe.title); }}
+              title="Edit in canvas"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-white/8 dark:hover:text-stone-200 transition-colors"
+            >
+              <Pencil size={12} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -381,12 +395,18 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
       )}
 
       {/* Draft / lock badges */}
-      {(recipe.draft || needsConnection || permissionLocked) && (
+      {(recipe.draft || needsConnection || permissionLocked || notValidated) && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
           {permissionLocked && (
             <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
               <Lock size={10} />
               Restricted
+            </span>
+          )}
+          {notValidated && (
+            <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10">
+              <AlertTriangle size={10} />
+              Needs validation
             </span>
           )}
           {needsConnection && (
@@ -458,12 +478,34 @@ const RECIPE_TABS = [
   { key: "md",      label: ".md file",  icon: <FileCode  size={13} /> },
 ];
 
+// A canvas-published draft doesn't get Remix (nothing to clone — it's your
+// own draft) or .md file (there's no static content to export, the canvas
+// itself is the source of truth) — just Details and a way back into the
+// canvas to keep editing it.
+const DRAFT_RECIPE_TABS = [
+  { key: "details", label: "Details",         icon: <FileText size={13} /> },
+  { key: "remix",   label: "Open in canvas",  icon: <Pencil   size={13} /> },
+];
+
+// Shared by the list card's shortcut button and the detail view's own
+// Open-in-canvas action — a canvas-backed recipe (has draftSteps) reopens
+// with its real nodes under its own name; anything else falls back to the
+// generic MOCK_STEPS walkthrough under a "(Remix)" name.
+function openRecipeInCanvas(recipe: Recipe, title: string) {
+  window.dispatchEvent(new CustomEvent("open-recipe-canvas", {
+    detail: {
+      title: recipe.draftSteps ? title : `${title} (Remix)`,
+      steps: recipe.draftSteps ?? MOCK_STEPS.map((s) => ({ title: s.title, subtitle: s.body })),
+    },
+  }));
+}
+
 // Mock canvas preview for the Steps section — one generic node card repeated
 // once per real step count (so List and Canvas always agree on how many
 // steps there are), not wired to each step's actual title/content, same
 // dot-grid + node-card language as the full pipeline builder in
 // RecipeCanvasView.tsx. Pannable by dragging, like the real canvas.
-function StepsCanvasPreview({ count }: { count: number }) {
+function StepsCanvasPreview({ count, onEdit }: { count: number; onEdit: () => void }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
   const hasDragged = useRef(false);
@@ -528,6 +570,13 @@ function StepsCanvasPreview({ count }: { count: number }) {
           <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid var(--stone-400, #a8a29e)", background: "var(--content-bg)" }} />
         </div>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+        className="absolute bottom-3 right-3 inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-stone-600 dark:text-stone-300 transition-colors hover:bg-stone-300 dark:hover:bg-white/14 bg-(--border)"
+      >
+        <Pencil size={12} />
+        Edit
+      </button>
     </div>
   );
 }
@@ -547,19 +596,44 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const mdOpen = activeTab === "md";
   const [btnRunning, setBtnRunning] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const { isConnected, connectIntegration, runHistory, addRunRecord } = useRecipeRuntime();
+  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe } = useRecipeRuntime();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Tracked so navigating away mid-run (e.g. to build a different recipe)
+  // cancels any pending dispatch instead of it firing later on whatever
+  // page you've since moved to — see RecipeCanvasView's `schedule` for the
+  // same fix on the canvas side.
+  const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+  function schedule(fn: () => void, ms: number) {
+    const id = setTimeout(fn, ms);
+    pendingTimeouts.current.push(id);
+    return id;
+  }
+  useEffect(() => {
+    return () => { pendingTimeouts.current.forEach(clearTimeout); };
+  }, []);
+
+  function handleDeleteRecipe() {
+    deleteRecipe(recipe.id);
+    onBack();
+  }
   const needsConnection = !!recipe.requiresIntegration && !isConnected(recipe.requiresIntegration);
   const permissionLocked = !!recipe.requiresPermission;
-  const runLocked = needsConnection || permissionLocked;
+  const notValidated = !!recipe.draftSteps && !recipe.validated;
+  const runLocked = needsConnection || permissionLocked || notValidated;
   const history = runHistory[recipe.id] ?? [];
 
   function handleConnect() {
     if (!recipe.requiresIntegration || connecting) return;
     setConnecting(true);
-    setTimeout(() => {
+    schedule(() => {
       connectIntegration(recipe.requiresIntegration!);
       setConnecting(false);
     }, 900);
+  }
+
+  function openInCanvas() {
+    openRecipeInCanvas(recipe, title);
   }
 
   function handleRun() {
@@ -567,10 +641,10 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
     setBtnRunning(true);
     window.dispatchEvent(new Event("open-blu-chat"));
     const stepTitles = MOCK_STEPS.map((s) => s.title);
-    setTimeout(() => {
+    schedule(() => {
       window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: stepTitles } }));
     }, 300);
-    setTimeout(() => {
+    schedule(() => {
       setBtnRunning(false);
       addRunRecord(recipe.id, {
         id: `run-${Date.now()}`,
@@ -635,6 +709,11 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
       >
         <div className="flex items-center gap-3 min-w-0">
           <BackButton onClick={onBack} />
+          {recipe.draft && (
+            <span className="shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
+              Draft
+            </span>
+          )}
           <div className="flex items-center gap-2 min-w-0">
             {editingTitle ? (
               <input
@@ -661,9 +740,6 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-2">
-          <HeartButton
-            widget={{ id: `recipe-${recipe.id}`, type: "recipe", label: recipe.title, size: "sm", meta: { recipeId: recipe.id } }}
-          />
           {needsConnection && (
             <button
               onClick={handleConnect}
@@ -677,37 +753,34 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
               {connecting ? `Connecting ${recipe.requiresIntegration}…` : `Connect ${recipe.requiresIntegration}`}
             </button>
           )}
-          <button
-            onClick={handleRun}
-            disabled={btnRunning || runLocked}
-            title={
-              permissionLocked ? `You don't have permission to ${recipe.requiresPermission}` :
-              needsConnection  ? `Connect ${recipe.requiresIntegration} to run this recipe` :
-              undefined
-            }
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ background: runLocked ? "var(--stone-400, #a8a29e)" : "#10b981" }}
-          >
-            {btnRunning ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : runLocked ? (
-              <Lock size={11} />
-            ) : (
-              <Play size={11} className="fill-current" />
-            )}
-            Run
-          </button>
+          {!recipe.draft && (
+            <button
+              onClick={handleRun}
+              disabled={btnRunning || runLocked}
+              title={
+                permissionLocked ? `You don't have permission to ${recipe.requiresPermission}` :
+                needsConnection  ? `Connect ${recipe.requiresIntegration} to run this recipe` :
+                undefined
+              }
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ background: runLocked ? "var(--stone-400, #a8a29e)" : "#10b981" }}
+            >
+              {btnRunning ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : runLocked ? (
+                <Lock size={11} />
+              ) : (
+                <Play size={11} className="fill-current" />
+              )}
+              Run
+            </button>
+          )}
           <SubTabCorner
-            tabs={RECIPE_TABS}
+            tabs={(recipe.draft || recipe.draftSteps) ? DRAFT_RECIPE_TABS : RECIPE_TABS}
             active={activeTab}
             onChange={(key) => {
               if (key === "remix") {
-                window.dispatchEvent(new CustomEvent("open-recipe-canvas", {
-                  detail: {
-                    title: `${title} (Remix)`,
-                    steps: MOCK_STEPS.map((s) => ({ title: s.title, subtitle: s.body })),
-                  },
-                }));
+                openInCanvas();
                 return;
               }
               setActiveTab(key);
@@ -823,7 +896,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
             </div>
 
             {stepsView === "canvas" ? (
-              <StepsCanvasPreview count={MOCK_STEPS.length} />
+              <StepsCanvasPreview count={MOCK_STEPS.length} onEdit={openInCanvas} />
             ) : (
               <div className="flex flex-col">
                 {MOCK_STEPS.map((s, i) => (
@@ -886,8 +959,69 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
             )}
           </section>
 
+          {/* Delete recipe */}
+          <section>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 size={12} />
+              Delete recipe
+            </button>
+          </section>
+
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="absolute inset-0 z-30">
+          <div
+            className="absolute inset-0"
+            style={{ backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.18)" }}
+            onClick={() => setConfirmDelete(false)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="relative w-80 rounded-xl shadow-2xl overflow-hidden animate-fade-up"
+              style={{
+                background: "var(--content-bg)",
+                border: "1.5px solid var(--border)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 pt-5 pb-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">
+                    <AlertTriangle size={16} className="text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Delete "{title}"?</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
+                      This removes it from your recipes list. This can't be undone.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="inline-flex h-8 items-center rounded-lg px-3.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteRecipe}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#ef4444" }}
+                  >
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {mdOpen && (
         <SlidingSidebar
@@ -991,6 +1125,7 @@ const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rou
 
 export default function RecipesView() {
   const navigate = useNavigate();
+  const { isDeleted, draftRecipes } = useRecipeRuntime();
   const [search,       setSearch]       = useState("");
   const [drawerOpen,   setDrawerOpen]   = useState(false);
   const [filterOpen,   setFilterOpen]   = useState(false);
@@ -1026,8 +1161,9 @@ export default function RecipesView() {
     setFilterAreas(prev => { const n = new Set(prev); n.has(a) ? n.delete(a) : n.add(a); return n; });
   }
 
-  // Filter
-  let result = RECIPES.filter(r => {
+  // Filter — seeded recipes plus anything published from the canvas
+  let result = [...draftRecipes, ...RECIPES].filter(r => {
+    if (isDeleted(r.id)) return false;
     const q = search.toLowerCase();
     if (q && !r.title.toLowerCase().includes(q) && !r.description.toLowerCase().includes(q) && !r.tags.some(t => t.toLowerCase().includes(q))) return false;
     if (filterAgents.size > 0 && !filterAgents.has(normalizeAgent(r.spec.agent))) return false;
