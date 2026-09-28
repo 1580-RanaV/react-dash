@@ -162,10 +162,20 @@ export const GENERAL_FOLLOW_UPS = [
 ];
 
 export const MOCK_CITATIONS: Citation[] = [
-  { label: "Name" },
+  { label: "Email" },
+  { label: "Phone number" },
   { label: "First name" },
-  { label: "Last name" },
+  { label: "Job title" },
+  { label: "Company name" },
+  { label: "Country" },
+  { label: "Account size" },
+  { label: "Seniority level" },
+  { label: "Pricing page visits" },
+  { label: "Demo requests" },
 ];
+
+export const GENERAL_REPLY_WITH_CITATIONS =
+  "Good question — it depends on what you're building. Running a journey with email or SMS? You'll need at least Email [[1]] or Phone number [[2]]. Personalizing outreach? First name [[3]], Job title [[4]], and Company name [[5]] are the essentials. Segmenting by geography, Country [[6]] does the job. And if you're building a lead-scoring model, focus on Job title [[4]], Seniority level [[8]], Account size [[7]], and Buying intent signals [[9,10]] — that combination catches both fit and timing.\n\nTell me what you're building and I can narrow it down further.";
 
 export const CUSTOM_REPORT_FOLLOW_UPS = [
   "Which day had the strongest cart-to-view ratio",

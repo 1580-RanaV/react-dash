@@ -86,10 +86,10 @@ import {
   PLUS_ITEMS,
   REFERENCE_ITEMS,
   REFERENCE_TILES,
-  BLU_REPLIES,
   GENERAL_FOLLOW_UPS,
   CUSTOM_REPORT_FOLLOW_UPS,
   MOCK_CITATIONS,
+  GENERAL_REPLY_WITH_CITATIONS,
   PLACEHOLDERS,
   LANDING_PROMPTS,
   CONTEXT_RECIPE_KEYS,
@@ -114,7 +114,7 @@ import { CustomReportBlock } from "./blocks/CustomReport";
 import { ExecChecklist } from "./blocks/ExecChecklist";
 import { PlanCard } from "./blocks/PlanCard";
 import { StreamingReply } from "./blocks/StreamingReply";
-import { Citations } from "./blocks/Citations";
+import { Citations, renderWithCitations } from "./blocks/Citations";
 import { RecipeRow } from "./blocks/RecipeRow";
 import { NotificationIcon, NotificationStrip } from "./blocks/Notification";
 
@@ -1050,7 +1050,6 @@ export default function BluChat({
     const isCreateJourney = /create (a )?journey/i.test(text);
     const journeyName = isCreateJourney ? "Demo" : null;
     const isOutOfCredits = !overrideText && credits <= 0;
-    let generalReplyIndex = 0;
 
     setMessages((current) => {
       const ts = Date.now();
@@ -1146,7 +1145,6 @@ export default function BluChat({
       } else if (isUpgrade) {
         // no Blu reply — this just opens the upgrade strip above the composer
       } else {
-        generalReplyIndex = current.length;
         next.push({ id: `blu-typing-${ts}`, role: "blu", text: "", isTyping: true });
       }
       return next;
@@ -1193,7 +1191,7 @@ export default function BluChat({
           next[typingIdx] = {
             id: `blu-${ts}`,
             role: "blu",
-            text: BLU_REPLIES[generalReplyIndex % BLU_REPLIES.length],
+            text: GENERAL_REPLY_WITH_CITATIONS,
             isStreaming: true,
             followUps: GENERAL_FOLLOW_UPS,
             citations: MOCK_CITATIONS,
@@ -1993,7 +1991,7 @@ export default function BluChat({
                 </p>
               ) : (
                 <p className="max-w-full text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap wrap-break-word">
-                  {msg.text}
+                  {renderWithCitations(msg.text, msg.id)}
                 </p>
               )}
               {msg.journeyChip && !msg.isStreaming && (

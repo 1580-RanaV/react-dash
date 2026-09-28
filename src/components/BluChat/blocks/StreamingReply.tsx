@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { renderWithCitations } from "./Citations";
 
 /* General streamed Blu replies (default reply + create-journey reply) */
 
@@ -28,7 +29,7 @@ export function StreamingReply({ text, onDone }: { text: string; onDone: () => v
             className="inline-block"
             style={{ animation: "blu-stream-in 360ms cubic-bezier(0.22,0.61,0.25,1) both" }}
           >
-            {token}
+            {renderWithCitations(token, `tok-${index}`)}
           </span>
         ) : token
       ))}
