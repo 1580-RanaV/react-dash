@@ -5,7 +5,7 @@ import {
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
   Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
-  Lock, Plug, History, Trash2, AlertTriangle,
+  Lock, Plug, History, Trash2, AlertTriangle, Clock,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
@@ -51,6 +51,9 @@ export type Recipe = {
   // at the moment it was published — a draft can't be Run until it has.
   // Irrelevant for seeded recipes, which are treated as already validated.
   validated?: boolean;
+  // Set once a user-created recipe's "Make it global" button has been
+  // clicked — mocks submitting it for review before it'd be shared org-wide.
+  globalStatus?: "submitted";
 };
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -306,8 +309,15 @@ export const RECIPE_CREATORS: Record<string, Creator> = {
   "14": { name: "Sam Chen",      initials: "SC", color: "#16a34a" },
 };
 
-function CreatorChip({ id }: { id: string }) {
-  const c = RECIPE_CREATORS[id];
+// Canvas-published recipes aren't in the seeded RECIPE_CREATORS table (they
+// get a fresh `draft-${Date.now()}` id), so fall back to their own `author`
+// field rather than showing a blank creator row.
+function CreatorChip({ id, author }: { id: string; author?: string }) {
+  const c = RECIPE_CREATORS[id] ?? (author ? {
+    name: author,
+    initials: author.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2),
+    color: "#0080FF",
+  } : null);
   if (!c) return null;
   return (
     <div className="flex items-center gap-1.5 min-w-0">
@@ -330,13 +340,16 @@ function CreatorChip({ id }: { id: string }) {
 const MAX_VISIBLE_CHIPS = 2;
 
 function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
-  const { isConnected } = useRecipeRuntime();
+  const { runningRecipes } = useRecipeRuntime();
   const allChips = Array.from(new Set([...recipe.spec.areas, ...recipe.spec.products]));
   const visibleChips = allChips.slice(0, MAX_VISIBLE_CHIPS);
   const overflow = allChips.length - MAX_VISIBLE_CHIPS;
-  const needsConnection = !!recipe.requiresIntegration && !isConnected(recipe.requiresIntegration);
   const permissionLocked = !!recipe.requiresPermission;
   const notValidated = !!recipe.draftSteps && !recipe.validated;
+  const runningStep = runningRecipes[recipe.id];
+  const isRunning = runningStep !== undefined;
+  const totalSteps = MOCK_STEPS.length;
+  const isRunDone = isRunning && runningStep >= totalSteps;
 
   return (
     <div
@@ -350,7 +363,7 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
 
       {/* Creator + date + (canvas-backed recipes only) a direct edit shortcut */}
       <div className="flex items-center justify-between">
-        <CreatorChip id={recipe.id} />
+        <CreatorChip id={recipe.id} author={recipe.author} />
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-xs text-stone-400 dark:text-stone-500">{RECIPE_DATES[recipe.id] ?? "Just now"}</span>
           {recipe.draftSteps && (
@@ -365,14 +378,40 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
         </div>
       </div>
 
-      {/* Title + description */}
+      {/* Title + description, or a live step-by-step run animation in place of the description */}
       <div className="flex-1">
         <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1.5">
           {recipe.title}
         </p>
-        <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3">
-          {recipe.description}
-        </p>
+        {isRunning ? (
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              {isRunDone ? (
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: "#10b981" }}>
+                  <Check size={10} className="text-white" strokeWidth={3} />
+                </span>
+              ) : (
+                <Loader2 size={13} className="shrink-0 animate-spin" style={{ color: "#10b981" }} />
+              )}
+              <span className="text-xs font-medium text-stone-600 dark:text-stone-300 truncate">
+                {isRunDone ? "Run complete" : MOCK_STEPS[runningStep].title}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalSteps }, (_, i) => (
+                <span
+                  key={i}
+                  className="h-1 flex-1 rounded-full transition-colors duration-300"
+                  style={{ background: i <= runningStep ? "#10b981" : "var(--border)" }}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed line-clamp-3">
+            {recipe.description}
+          </p>
+        )}
       </div>
 
       {/* Chips + overflow */}
@@ -395,7 +434,7 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
       )}
 
       {/* Draft / lock badges */}
-      {(recipe.draft || needsConnection || permissionLocked || notValidated) && (
+      {(recipe.draft || permissionLocked || notValidated) && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
           {permissionLocked && (
             <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
@@ -407,12 +446,6 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
             <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10">
               <AlertTriangle size={10} />
               Needs validation
-            </span>
-          )}
-          {needsConnection && (
-            <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10">
-              <IntegrationLogo name={recipe.requiresIntegration!} size={10} fallback={<Plug size={10} />} />
-              Needs {recipe.requiresIntegration}
             </span>
           )}
           {recipe.draft && (
@@ -596,7 +629,9 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const mdOpen = activeTab === "md";
   const [btnRunning, setBtnRunning] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe } = useRecipeRuntime();
+  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal } = useRecipeRuntime();
+  const runningStep = runningRecipes[recipe.id];
+  const isRunningThis = runningStep !== undefined;
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Tracked so navigating away mid-run (e.g. to build a different recipe)
@@ -617,11 +652,21 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
     deleteRecipe(recipe.id);
     onBack();
   }
+
+  function handleMakeGlobal() {
+    requestGlobal(recipe.id);
+  }
   const needsConnection = !!recipe.requiresIntegration && !isConnected(recipe.requiresIntegration);
   const permissionLocked = !!recipe.requiresPermission;
   const notValidated = !!recipe.draftSteps && !recipe.validated;
   const runLocked = needsConnection || permissionLocked || notValidated;
   const history = runHistory[recipe.id] ?? [];
+
+  // Only a user's own published (non-draft) canvas recipe can be offered up
+  // to the wider org — seeded recipes are already global, a raw draft isn't
+  // ready for review yet, and it must have been run at least once so there's
+  // something to actually show for it.
+  const canGoGlobal = !!recipe.draftSteps && !recipe.draft && history.length > 0;
 
   function handleConnect() {
     if (!recipe.requiresIntegration || connecting) return;
@@ -641,6 +686,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
     setBtnRunning(true);
     window.dispatchEvent(new Event("open-blu-chat"));
     const stepTitles = MOCK_STEPS.map((s) => s.title);
+    startRun(recipe.id, stepTitles.length);
     schedule(() => {
       window.dispatchEvent(new CustomEvent("blu-recipe-run", { detail: { steps: stepTitles } }));
     }, 300);
@@ -752,6 +798,23 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                 : <IntegrationLogo name={recipe.requiresIntegration!} size={12} fallback={<Plug size={12} />} />}
               {connecting ? `Connecting ${recipe.requiresIntegration}…` : `Connect ${recipe.requiresIntegration}`}
             </button>
+          )}
+          {canGoGlobal && (
+            recipe.globalStatus === "submitted" ? (
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10">
+                <Clock size={12} />
+                Submitted for review
+              </span>
+            ) : (
+              <button
+                onClick={handleMakeGlobal}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+                style={{ background: "#3b82f6" }}
+              >
+                <Globe size={12} />
+                Make it global
+              </button>
+            )
           )}
           {!recipe.draft && (
             <button
@@ -899,15 +962,27 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
               <StepsCanvasPreview count={MOCK_STEPS.length} onEdit={openInCanvas} />
             ) : (
               <div className="flex flex-col">
-                {MOCK_STEPS.map((s, i) => (
+                {MOCK_STEPS.map((s, i) => {
+                  const stepDone = isRunningThis && i < runningStep;
+                  const stepActive = isRunningThis && i === runningStep;
+                  return (
                   <div key={i} className="flex gap-4">
                     {/* Number + connector */}
                     <div className="flex flex-col items-center shrink-0">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-                        {i + 1}
+                      <div
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300"
+                        style={
+                          stepDone
+                            ? { background: "#3b82f6", border: "1px solid #3b82f6", color: "#fff" }
+                            : stepActive
+                            ? { background: "var(--muted)", border: "2px solid #3b82f6", color: "#3b82f6" }
+                            : { background: "var(--muted)", border: "1px solid var(--border)", color: "var(--stone-600, #57534e)" }
+                        }
+                      >
+                        {stepDone ? <Check size={12} strokeWidth={3} /> : i + 1}
                       </div>
                       {i < MOCK_STEPS.length - 1 && (
-                        <div className="w-px flex-1 my-1.5" style={{ background: "var(--border)" }} />
+                        <div className="w-px flex-1 my-1.5 transition-colors duration-300" style={{ background: stepDone ? "#3b82f6" : "var(--border)" }} />
                       )}
                     </div>
                     {/* Content */}
@@ -916,7 +991,8 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                       <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1162,20 +1238,28 @@ export default function RecipesView() {
   }
 
   // Filter — seeded recipes plus anything published from the canvas
-  let result = [...draftRecipes, ...RECIPES].filter(r => {
+  const matchesFilters = (r: Recipe) => {
     if (isDeleted(r.id)) return false;
     const q = search.toLowerCase();
     if (q && !r.title.toLowerCase().includes(q) && !r.description.toLowerCase().includes(q) && !r.tags.some(t => t.toLowerCase().includes(q))) return false;
     if (filterAgents.size > 0 && !filterAgents.has(normalizeAgent(r.spec.agent))) return false;
     if (filterAreas.size > 0 && !r.spec.areas.some(a => filterAreas.has(a))) return false;
     return true;
-  });
+  };
 
-  // Sort
-  if (sortBy === "most-used")        result = [...result].sort((a, b) => b.uses - a.uses);
-  else if (sortBy === "recently-added")   result = [...result].sort((a, b) => parseDateMs(RECIPE_DATES[b.id]) - parseDateMs(RECIPE_DATES[a.id]));
-  else if (sortBy === "az")               result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-  else if (sortBy === "recently-updated") result = [...result].sort((a, b) => parseDateMs(RECIPE_UPDATED_DATES[b.id]) - parseDateMs(RECIPE_UPDATED_DATES[a.id]));
+  const drafts = draftRecipes.filter(matchesFilters);
+  let seeded   = RECIPES.filter(matchesFilters);
+
+  // Sort — only applies within the seeded catalog. A just-published canvas
+  // recipe has 0 uses and no seeded date, so it would otherwise sink under
+  // "Most used"/"Recently added" — instead, drafts always lead the list
+  // (newest first) since publishing is itself the most recent activity.
+  if (sortBy === "most-used")        seeded = [...seeded].sort((a, b) => b.uses - a.uses);
+  else if (sortBy === "recently-added")   seeded = [...seeded].sort((a, b) => parseDateMs(RECIPE_DATES[b.id]) - parseDateMs(RECIPE_DATES[a.id]));
+  else if (sortBy === "az")               seeded = [...seeded].sort((a, b) => a.title.localeCompare(b.title));
+  else if (sortBy === "recently-updated") seeded = [...seeded].sort((a, b) => parseDateMs(RECIPE_UPDATED_DATES[b.id]) - parseDateMs(RECIPE_UPDATED_DATES[a.id]));
+
+  const result = [...drafts, ...seeded];
 
   const activeFilterCount = filterAgents.size + filterAreas.size;
   const activeSortLabel   = SORT_OPTIONS.find(o => o.key === sortBy)?.label ?? "Sort";

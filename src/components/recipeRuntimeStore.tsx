@@ -63,6 +63,15 @@ type RecipeRuntimeContextValue = {
   deleteRecipe: (recipeId: string) => void;
   draftRecipes: Recipe[];
   addDraftRecipe: (recipe: Recipe) => void;
+  // Mocks the "Make it global" flow — flips a user-created recipe to a
+  // submitted-for-review state, with no real approval backend behind it.
+  requestGlobal: (recipeId: string) => void;
+  // Current step index (0-based) per recipe id while it's mid-run — absent
+  // once it's done or hasn't been run. Lives here (not local component
+  // state) specifically so the list-grid card can animate step-by-step
+  // progress too, not just whichever page triggered the Run.
+  runningRecipes: Record<string, number>;
+  startRun: (recipeId: string, totalSteps: number) => void;
 };
 
 const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(null);
@@ -97,9 +106,39 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   const [runHistory, setRunHistory] = useState<Record<string, RunRecord[]>>(SEEDED_RUN_HISTORY);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [draftRecipes, setDraftRecipes] = useState<Recipe[]>([]);
+  const [runningRecipes, setRunningRecipes] = useState<Record<string, number>>({});
+
+  function startRun(recipeId: string, totalSteps: number, stepMs = 1050) {
+    if (totalSteps <= 0) return;
+    setRunningRecipes((prev) => ({ ...prev, [recipeId]: 0 }));
+    function tick(step: number) {
+      setTimeout(() => {
+        if (step + 1 >= totalSteps) {
+          // Hold on the last, fully-done step briefly before clearing so the
+          // "all steps complete" state is actually visible, not skipped.
+          setRunningRecipes((prev) => ({ ...prev, [recipeId]: totalSteps }));
+          setTimeout(() => {
+            setRunningRecipes((prev) => {
+              const next = { ...prev };
+              delete next[recipeId];
+              return next;
+            });
+          }, 700);
+          return;
+        }
+        setRunningRecipes((prev) => ({ ...prev, [recipeId]: step + 1 }));
+        tick(step + 1);
+      }, stepMs);
+    }
+    tick(0);
+  }
 
   function addDraftRecipe(recipe: Recipe) {
     setDraftRecipes((prev) => [recipe, ...prev]);
+  }
+
+  function requestGlobal(recipeId: string) {
+    setDraftRecipes((prev) => prev.map((r) => (r.id === recipeId ? { ...r, globalStatus: "submitted" } : r)));
   }
 
   function isDeleted(recipeId: string) {
@@ -128,7 +167,7 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe }}>
+    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun }}>
       {children}
     </RecipeRuntimeContext.Provider>
   );

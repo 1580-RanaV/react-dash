@@ -1,8 +1,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Loader2, ShieldCheck, ChevronDown, Plus, GripVertical,
-  Pencil, Trash2, X, AlertTriangle, Check, MousePointer2, Hand, Minus,
+  Loader2, ShieldCheck, ChevronDown, ChevronLeft, Plus, GripVertical,
+  Pencil, Trash2, X, AlertTriangle, CircleAlert, Check, MousePointer2, Hand, Minus,
   Link2, Search, Rocket,
 } from "lucide-react";
 import BackButton from "./BackButton";
@@ -21,6 +21,8 @@ type FlowNode = {
   icon: React.ReactNode;
   // BC-RCP-AUTH-003: a step is either free-form, or a call to another recipe.
   calledRecipeId?: string;
+  // Mocked freeform key:value params, edited on the step's own "Params" page.
+  params?: string;
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -29,6 +31,28 @@ type FlowNode = {
 // "cancel" fails validation — used to demo a failing pipeline.
 function isUnsupportedNode(node: FlowNode) {
   return node.title.toLowerCase().includes("cancel") || node.subtitle.toLowerCase().includes("cancel");
+}
+
+// The detailed messages shown in the red "issues" panel once Validate has
+// flagged a step as invalid.
+function getNodeIssues(node: FlowNode): string[] {
+  if (!isUnsupportedNode(node)) return [];
+  return [
+    "This step doesn't match anything Blu can do yet. Describe it differently.",
+    "This step doesn't describe a marketing automation task — could you clarify what action you'd like to automate?",
+  ];
+}
+
+// Mock "unresolved argument" rule: typing "arg" as both the title and the
+// description marks a step as having a parameter that still needs a real
+// value — shown independently of Validate, since it's about missing
+// configuration rather than pipeline validity.
+function hasUnresolvedArg(node: FlowNode) {
+  return node.title.trim().toLowerCase() === "arg" && node.subtitle.trim().toLowerCase() === "arg";
+}
+function getNodeArgWarnings(node: FlowNode): string[] {
+  if (!hasUnresolvedArg(node)) return [];
+  return ["This step has an argument that isn't set yet. Provide a value before this recipe can run."];
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -62,6 +86,9 @@ export default function RecipeCanvasView({
   // Floating edit
   const [editingId,       setEditingId]       = useState<string | null>(null);
   const [editValue,       setEditValue]       = useState("");
+  const [editParams,      setEditParams]      = useState("");
+  // The edit panel is a small two-page wizard: Description, then Params.
+  const [editPage,        setEditPage]        = useState<0 | 1>(0);
   // Delete modal
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // Fading-out nodes
@@ -84,6 +111,7 @@ export default function RecipeCanvasView({
   const [addMode,         setAddMode]         = useState<"step" | "recipe">("step");
   const [newStepTitle,    setNewStepTitle]    = useState("");
   const [newStepSubtitle, setNewStepSubtitle] = useState("");
+  const [newStepParams,   setNewStepParams]   = useState("");
   const [recipeSearch,    setRecipeSearch]    = useState("");
   const [pickedRecipeId,  setPickedRecipeId]  = useState<string | null>(null);
 
@@ -188,34 +216,40 @@ export default function RecipeCanvasView({
 
   function validateMs(count: number = nodes.length) { return (count - 1) * 380 + 520; }
 
-  // Validates nodes in order and stops at the first unsupported node —
-  // steps after a failure are left untouched, matching a real pipeline
-  // that halts execution at the point it breaks.
+  // Validates nodes in order and stops at the first blocker — either an
+  // unsupported step (hard failure, marked invalid) or an unresolved
+  // argument (soft block: the step itself still passes and shows its own
+  // amber warning, but nothing after it is checked yet). Per product call:
+  // you can keep adding steps past an unresolved argument, they just won't
+  // be validated — and can't ship — until it's filled in.
   function runValidate(onComplete?: () => void) {
     const failIndex = nodes.findIndex(isUnsupportedNode);
-    const hasFailure = failIndex !== -1;
-    const validatedCount = hasFailure ? failIndex + 1 : nodes.length;
+    const argIndex  = nodes.findIndex(hasUnresolvedArg);
+    const stopIndex = [failIndex, argIndex].filter((i) => i !== -1).sort((a, b) => a - b)[0] ?? -1;
+    const hasFailure = stopIndex !== -1 && stopIndex === failIndex;
+    const hasArgBlock = stopIndex !== -1 && stopIndex === argIndex && !hasFailure;
+    const validatedCount = stopIndex !== -1 ? stopIndex + 1 : nodes.length;
     for (let i = 0; i < validatedCount; i++) {
       const n = nodes[i];
-      const passes = !(hasFailure && i === failIndex);
+      const passes = !(hasFailure && i === stopIndex);
       schedule(() => setNodeStates((s) => ({ ...s, [n.id]: "validating" })), i * 380);
       schedule(() => setNodeStates((s) => ({ ...s, [n.id]: passes ? "valid" : "invalid" })), i * 380 + 520);
     }
-    if (!hasFailure && onComplete) {
+    if (!hasFailure && !hasArgBlock && onComplete) {
       schedule(onComplete, validateMs(validatedCount) + 350);
     }
-    return { hasFailure, validatedCount };
+    return { hasFailure, hasArgBlock, validatedCount };
   }
 
   function handleValidate() {
     if (isBusy || nodes.length === 0) return;
     setBtnValidating(true);
     lockBlu();
-    const { hasFailure, validatedCount } = runValidate();
+    const { hasFailure, hasArgBlock, validatedCount } = runValidate();
     schedule(() => {
       setBtnValidating(false);
       unlockBlu();
-      setValidated(!hasFailure);
+      setValidated(!hasFailure && !hasArgBlock);
     }, validateMs(validatedCount) + 120);
   }
 
@@ -258,6 +292,8 @@ export default function RecipeCanvasView({
 
   function handleStartEdit(node: FlowNode) {
     setEditValue(node.subtitle);
+    setEditParams(node.params ?? "");
+    setEditPage(0);
     setEditingId(node.id);
     setSelectedId(null);
   }
@@ -265,9 +301,23 @@ export default function RecipeCanvasView({
   function handleEditConfirm() {
     if (!editingId) return;
     const id = editingId;
+    const newSubtitle = editValue.trim();
+    const newParams = editParams.trim();
     setEditingId(null);
+    let updatedNode: FlowNode | undefined;
+    setNodes((prev) => prev.map((n) => {
+      if (n.id !== id) return n;
+      updatedNode = { ...n, subtitle: newSubtitle || n.subtitle, params: newParams || undefined };
+      return updatedNode;
+    }));
+    setValidated(false);
     setNodeStates((s) => ({ ...s, [id]: "validating" }));
-    schedule(() => setNodeStates((s) => ({ ...s, [id]: "idle" })), 2000);
+    // Re-runs the same check any other mutation goes through — this is also
+    // how an unresolved argument actually gets resolved, since editing the
+    // step's own content is what the amber panel's Edit button hands off to.
+    schedule(() => {
+      setNodeStates((s) => ({ ...s, [id]: updatedNode && isUnsupportedNode(updatedNode) ? "invalid" : "valid" }));
+    }, 1100);
   }
 
   function handleStartDelete(id: string) {
@@ -318,6 +368,7 @@ export default function RecipeCanvasView({
     setAddMode("step");
     setNewStepTitle("");
     setNewStepSubtitle("");
+    setNewStepParams("");
     setRecipeSearch("");
     setPickedRecipeId(null);
     setSelectedId(null);
@@ -347,6 +398,7 @@ export default function RecipeCanvasView({
         title: newStepTitle.trim(),
         subtitle: newStepSubtitle.trim(),
         icon: <Plus size={14} />,
+        params: newStepParams.trim() || undefined,
       };
     }
 
@@ -377,6 +429,8 @@ export default function RecipeCanvasView({
       const prevState = nodeStates[nodes[i - 1].id] ?? "idle";
       const connectorBlockedReason = prevState === "invalid"
         ? "Fix the previous step to execute accurately"
+        : hasUnresolvedArg(nodes[i - 1])
+        ? "Resolve the previous step's argument first"
         : anyNodeValidatingForConnectors
         ? "Wait for the current step to finish verifying"
         : undefined;
@@ -429,11 +483,15 @@ export default function RecipeCanvasView({
     </button>
   ) : null;
 
-  const lastNodeInvalid  = nodes.length > 0 && nodeStates[nodes[nodes.length - 1].id] === "invalid";
+  const lastNode = nodes.length > 0 ? nodes[nodes.length - 1] : undefined;
+  const lastNodeInvalid  = !!lastNode && nodeStates[lastNode.id] === "invalid";
+  const lastNodeNeedsArg = !!lastNode && hasUnresolvedArg(lastNode);
   const anyNodeValidating = Object.values(nodeStates).some((s) => s === "validating");
-  const addBlocked = lastNodeInvalid || anyNodeValidating;
+  const addBlocked = lastNodeInvalid || lastNodeNeedsArg || anyNodeValidating;
   const addBlockedReason = lastNodeInvalid
     ? "Fix the previous step to execute accurately"
+    : lastNodeNeedsArg
+    ? "Resolve the previous step's argument first"
     : anyNodeValidating
     ? "Wait for the current step to finish verifying"
     : undefined;
@@ -703,24 +761,63 @@ export default function RecipeCanvasView({
                 </button>
               </div>
               <div className="px-4 pb-4">
-                <textarea
-                  autoFocus
-                  rows={3}
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEditConfirm(); } }}
-                  placeholder="Describe the change for this step…"
-                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
-                  style={{ background: "var(--input)", borderColor: "var(--border)" }}
-                />
-                <div className="mt-2.5">
-                  <button
-                    onClick={handleEditConfirm}
-                    className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ background: "#3b82f6" }}
-                  >
-                    Confirm
-                  </button>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5">
+                  {editPage === 0 ? "Description" : "Params"}
+                </p>
+                {editPage === 0 ? (
+                  <textarea
+                    autoFocus
+                    rows={3}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); setEditPage(1); } }}
+                    placeholder="Describe the change for this step…"
+                    className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                    style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                  />
+                ) : (
+                  <textarea
+                    autoFocus
+                    rows={3}
+                    value={editParams}
+                    onChange={(e) => setEditParams(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEditConfirm(); } }}
+                    placeholder="Params (optional) — e.g. count: 10, source: crm"
+                    className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                    style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                  />
+                )}
+                <div className="mt-2.5 flex items-center gap-2">
+                  {editPage === 1 ? (
+                    <button
+                      onClick={() => setEditPage(0)}
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg px-3 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
+                    >
+                      <ChevronLeft size={12} />
+                      Back
+                    </button>
+                  ) : <div />}
+                  <div className="flex flex-1 items-center justify-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full transition-colors" style={{ background: editPage === 0 ? "#3b82f6" : "var(--border)" }} />
+                    <span className="h-1.5 w-1.5 rounded-full transition-colors" style={{ background: editPage === 1 ? "#3b82f6" : "var(--border)" }} />
+                  </div>
+                  {editPage === 0 ? (
+                    <button
+                      onClick={() => setEditPage(1)}
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                      style={{ background: "#3b82f6" }}
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleEditConfirm}
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                      style={{ background: "#3b82f6" }}
+                    >
+                      Confirm
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -798,9 +895,17 @@ export default function RecipeCanvasView({
                   <input
                     value={newStepSubtitle}
                     onChange={(e) => setNewStepSubtitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleConfirmAdd(); }}
                     placeholder="Action…"
                     className="h-9 w-full rounded-lg border px-3 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                    style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                  />
+                  <textarea
+                    value={newStepParams}
+                    onChange={(e) => setNewStepParams(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleConfirmAdd(); } }}
+                    rows={2}
+                    placeholder="Params (optional) — e.g. count: 10, source: crm"
+                    className="w-full resize-none rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-stone-400 dark:placeholder:text-stone-500"
                     style={{ background: "var(--input)", borderColor: "var(--border)" }}
                   />
                   <div className="mt-0.5">
@@ -1003,6 +1108,111 @@ function Connector({ fading, onAdd, fromState, isAnimating, addBlockedReason }: 
   );
 }
 
+// ── Issue panel ──────────────────────────────────────────────────────────────────
+// Collapsible accordion for the red "N issues" panel shown once Validate
+// flags a step as invalid.
+
+function IssuePanel({ messages, label, expanded, onToggle }: {
+  messages: string[];
+  label: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (messages.length === 0) return null;
+
+  return (
+    <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={onToggle}
+        className="inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-red-500 dark:text-red-400 transition-colors"
+        style={expanded ? undefined : { border: "1px solid #ef4444" }}
+      >
+        <AlertTriangle size={12} />
+        {label}
+        <ChevronDown
+          size={11}
+          style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.25s" }}
+        />
+      </button>
+      <div
+        className="grid transition-[grid-template-rows,opacity] duration-300"
+        style={{ gridTemplateRows: expanded ? "1fr" : "0fr", opacity: expanded ? 1 : 0 }}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-col gap-1.5 pt-2">
+            {messages.map((m, i) => (
+              <p key={i} className="text-xs leading-relaxed text-red-500/90 dark:text-red-400/90">{m}</p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Same collapsible pill as the amber IssuePanel — but an argument isn't
+// resolved through a bespoke input here, it's resolved the same way any
+// other step content changes: the step's own Edit drawer (or Delete, if the
+// step shouldn't exist at all). A single generic "value" field doesn't scale
+// once a step can carry several distinctly-named arguments, so this just
+// hands off to the real editing flow instead of re-inventing a form.
+function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDelete }: {
+  messages: string[];
+  expanded: boolean;
+  onToggle: () => void;
+  onStartEdit: () => void;
+  onStartDelete: () => void;
+}) {
+  if (messages.length === 0) return null;
+
+  return (
+    <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
+      <div className="flex justify-center">
+        <button
+          onClick={onToggle}
+          className="inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-amber-600 dark:text-amber-400 transition-colors"
+          style={expanded ? undefined : { border: "1px solid #f59e0b", background: "rgba(245,158,11,0.16)" }}
+        >
+          <AlertTriangle size={12} />
+          {messages.length} argument{messages.length > 1 ? "s" : ""} to resolve
+          <ChevronDown
+            size={11}
+            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.25s" }}
+          />
+        </button>
+      </div>
+      <div
+        className="grid transition-[grid-template-rows,opacity] duration-300"
+        style={{ gridTemplateRows: expanded ? "1fr" : "0fr", opacity: expanded ? 1 : 0 }}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-col gap-2 pt-2">
+            {messages.map((m, i) => (
+              <p key={i} className="text-xs leading-relaxed text-amber-600/90 dark:text-amber-400/90">{m}</p>
+            ))}
+            <div className="flex items-stretch gap-1.5">
+              <button
+                onClick={onStartEdit}
+                className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+              <button
+                onClick={onStartDelete}
+                className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 size={12} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Node card ─────────────────────────────────────────────────────────────────
 
 function FlowNodeCard({
@@ -1034,11 +1244,22 @@ function FlowNodeCard({
   const isRunning    = state === "running";
   const isDone       = state === "done";
 
+  const [issuesExpanded, setIssuesExpanded] = useState(false);
+  const [argsExpanded,   setArgsExpanded]   = useState(false);
+  // Both panels only ever surface once Validate's checking animation has
+  // actually finished on this step — a step that passes but still has an
+  // unresolved argument shows the amber exclamation mark instead of the
+  // usual blue check, in place of (not in addition to) it.
+  const issues       = isInvalid ? getNodeIssues(node) : [];
+  const needsArgs    = isValid && hasUnresolvedArg(node);
+  const argWarnings  = needsArgs ? getNodeArgWarnings(node) : [];
+
   const borderColor =
     isDragOver    ? "#3b82f6" :
     isConfirming  ? "#ef4444" :
     isEditing     ? "#3b82f6" :
     isInvalid     ? "#ef4444" :
+    needsArgs     ? "#f59e0b" :
     isValid       ? "#3b82f6" :
     isValidating  ? "#3b82f6" :
     isDone        ? "#10b981" :
@@ -1113,7 +1334,9 @@ function FlowNodeCard({
           </div>
         </div>
         <div className="shrink-0 mt-1">
-          {(isValid || isDone) && (
+          {needsArgs ? (
+            <CircleAlert size={20} style={{ color: "#f59e0b" }} strokeWidth={2} />
+          ) : (isValid || isDone) && (
             <div
               className="flex h-6 w-6 items-center justify-center rounded-full"
               style={{ background: isValid ? "#3b82f6" : "#10b981" }}
@@ -1128,6 +1351,24 @@ function FlowNodeCard({
           )}
         </div>
       </div>
+
+      {issues.length > 0 && (
+        <IssuePanel
+          label={`${issues.length} issue${issues.length > 1 ? "s" : ""}`}
+          messages={issues}
+          expanded={issuesExpanded}
+          onToggle={() => setIssuesExpanded((e) => !e)}
+        />
+      )}
+      {argWarnings.length > 0 && (
+        <ArgResolvePanel
+          messages={argWarnings}
+          expanded={argsExpanded}
+          onToggle={() => setArgsExpanded((e) => !e)}
+          onStartEdit={onStartEdit}
+          onStartDelete={onStartDelete}
+        />
+      )}
 
       {/* Selected action row — split 50/50, inset rounded hover fills */}
       {isSelected && !readOnly && (
