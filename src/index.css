@@ -25,8 +25,8 @@
  *  --foreground            14.6:1 light · 19.3:1 dark  ✅ AAA
  *  --muted-foreground       5.8:1 light ·  6.3:1 dark  ✅ AA
  *  --secondary-foreground   8.5:1 light · 12.4:1 dark  ✅ AAA
- *  --primary on white       3.1:1 — for large text / UI components only
- *  --primary-foreground on primary: white on #0080FF = 4.6:1  ✅ AA
+ *  --primary on white       4.9:1 light · 3.4:1 dark (dark: large text / UI components only)
+ *  --primary-foreground on primary: white on #006EE0 = 4.9:1 light ✅ AA · white on #0077CC = 4.7:1 dark ✅ AA
  *
  *  ALIASES (backwards-compat for existing components)
  *  ─────────────────────────────────────────────────────────────────────────
@@ -45,11 +45,15 @@
   --brand-pop:   #C37EE5;
   --brand-white: #FFFFFF;
 
-  /* ─── Primary action ───────────────────────────────────────────────────── */
-  --primary:            #0080FF;
-  --primary-hover:      #006EE0;
-  --primary-active:     #005EC8;
-  --primary-foreground: #ffffff;  /* white on #0080FF = 4.6:1 ✅ AA */
+  /* ─── Primary action ─────────────────────────────────────────────────────
+   *  Darkened from the #0080FF brand blue so white button text clears
+   *  4.5:1 AA — #0080FF only measured 3.8:1. Use --brand-blue directly
+   *  (via --ring) wherever the brighter brand hue is wanted without text
+   *  sitting on top of it.                                               */
+  --primary:            #006EE0;  /* white text on this = 4.88:1 ✅ AA */
+  --primary-hover:      #005EC8;
+  --primary-active:     #004FA8;
+  --primary-foreground: #ffffff;
 
   /* ─── Surfaces (light) ─────────────────────────────────────────────────── */
   --background: #ffffff;
@@ -85,8 +89,10 @@
   --warning-foreground: #ffffff;
   --warning-background: #fff8e5;
 
-  /* ─── Semantic: error / destructive ────────────────────────────────────── */
-  --destructive:            #eb5757;
+  /* ─── Semantic: error / destructive ──────────────────────────────────────
+   *  Darkened from #eb5757 (white text on it only measured 3.5:1) so a
+   *  filled destructive button clears 4.5:1 AA.                          */
+  --destructive:            #cc3a3a;  /* white text on this = 4.96:1 ✅ AA */
   --destructive-foreground: #ffffff;
   --destructive-background: #fdecec;
 
@@ -125,14 +131,27 @@
   --sidebar-bottom-fade: linear-gradient(to top, var(--sidebar-background) 0%, transparent 100%);
   --content-bg:         var(--card);
   --main-bg:            var(--page);
+
+  /* ─── shadcn/ui Sidebar + primitive tokens (light) ─────────────────────── */
+  --sidebar:                     var(--page);
+  --sidebar-foreground:          var(--foreground);
+  --sidebar-accent:              var(--muted);
+  --sidebar-accent-foreground:   var(--foreground);
+  --sidebar-border:              var(--border);
+  /* Static brand blue, not --primary — --primary now darkens for text
+     contrast and shifts between themes, but a focus ring isn't text, and
+     should stay the same brand hue as the app's existing
+     `ring-blue-500/20` focus-ring convention in both light and dark. */
+  --sidebar-ring:                var(--brand-blue);
+  --ring:                        var(--brand-blue);
 }
 
 /* ─── Dark mode ──────────────────────────────────────────────────────────── */
 .dark {
-  /* ─── Primary action ─────────────────────────────────────────────────── */
-  --primary:            #00AAFF;
-  --primary-hover:      #0099EE;
-  --primary-active:     #0088DD;
+  /* ─── Primary action — darkened from #00AAFF (2.6:1 with white text) ──── */
+  --primary:            #0077CC;  /* white text on this = 4.66:1 ✅ AA */
+  --primary-hover:      #0068B3;
+  --primary-active:     #005999;
   --primary-foreground: #ffffff;
 
   /* ─── Surfaces (dark) — pure neutral grays, zero color cast ────────────── */
@@ -203,6 +222,15 @@
   --chart-12: #88CCCC;  /* muted teal    */
 
   --sidebar-bottom-fade: transparent;
+
+  /* ─── shadcn/ui Sidebar + primitive tokens (dark) ──────────────────────── */
+  --sidebar:                     var(--page);
+  --sidebar-foreground:          var(--foreground);
+  --sidebar-accent:              var(--muted);
+  --sidebar-accent-foreground:   var(--foreground);
+  --sidebar-border:              var(--border);
+  --sidebar-ring:                var(--brand-blue);
+  --ring:                        var(--brand-blue);
 }
 
 /* ─── Tailwind theme ─────────────────────────────────────────── */
@@ -222,6 +250,50 @@
   --color-warning:     var(--warning);
   --color-destructive: var(--destructive);
   --color-info:        var(--info);
+
+  /* shadcn/ui primitive tokens — aliased onto the design-system vars above,
+     not a separate palette, so shadcn components (button/dropdown/sheet/
+     sidebar/etc.) blend into the existing surface hierarchy instead of
+     introducing shadcn's own default zinc theme. */
+  --color-primary:                    var(--primary);
+  --color-primary-foreground:         var(--primary-foreground);
+  --color-secondary:                  var(--secondary);
+  --color-secondary-foreground:       var(--secondary-foreground);
+  --color-muted:                      var(--muted);
+  --color-muted-foreground:           var(--muted-foreground);
+  /* shadcn's "accent" role means a generic hover/focus tint (menu items,
+     ghost buttons) — that maps to this app's neutral --muted, not its
+     brand-tinted --accent (reserved for selected-state/banner surfaces
+     per the doc block above), so hovering a new dropdown/button doesn't
+     flash brand blue while an adjacent sidebar row hovers neutral gray. */
+  --color-accent:                     var(--muted);
+  --color-accent-foreground:          var(--foreground);
+  --color-destructive-foreground:     var(--destructive-foreground);
+  --color-border:                     var(--border);
+  --color-input:                      var(--input);
+  --color-ring:                       var(--ring);
+  --color-popover:                    var(--popover);
+  --color-popover-foreground:         var(--foreground);
+  --color-card:                       var(--card);
+  --color-card-foreground:            var(--card-foreground);
+
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
+}
+
+/* shadcn/ui components rely on this base-layer reset: any bare `border`/
+   `border-l`/`border-r`/etc. utility (no explicit color) otherwise falls
+   back to `currentColor`, which reads as a stray white line against this
+   app's light dark-mode text wherever a shadcn primitive (sidebar, sheet,
+   dropdown, input, …) uses an unprefixed border class. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 /* ── Console Typography Scale ──────────────────────────────────────────────
@@ -570,6 +642,26 @@ input, select, textarea {
   border-radius: 999px;
 }
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.42);
+}
+
+/* shadcn Sidebar's own scrollable content area — same subdued treatment as
+   .sidebar-nav above, instead of the louder global scrollbar default. */
+[data-sidebar="content"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.18) transparent;
+}
+[data-sidebar="content"]::-webkit-scrollbar {
+  width: 3px;
+}
+[data-sidebar="content"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-sidebar="content"]::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+}
+[data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.42);
 }
 

@@ -2,124 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Menu, Workflow, Waypoints, Coins } from "lucide-react";
 import BluChat, { type BluMode } from "./BluChat";
-import { BluMessagesProvider, useBluMessages, MAX_CREDITS } from "./BluMessagesContext";
+import { BluMessagesProvider } from "./BluMessagesContext";
 import { BoardsProvider } from "./boards/boardsStore";
 import { HomeWidgetsProvider } from "./homeWidgets/homeWidgetsStore";
 import { RecipeRuntimeProvider } from "./recipeRuntimeStore";
-import NotificationsMenu from "./NotificationsMenu";
-import ProfileMenu from "./ProfileMenu";
-import Sidebar from "./Sidebar";
-import UpgradeButton from "./UpgradeButton";
-import LanguageSwitcher from "./LanguageSwitcher";
-
-const SIDEBAR_DEFAULT      = 196;
-const SIDEBAR_MIN          = 52;
-const SIDEBAR_MAX          = Math.round(SIDEBAR_DEFAULT * 1.5); // 294px — max user can stretch
-const SIDEBAR_ICON_THR     = 110; // below this → icon-only display
-const SNAP_COLLAPSE_BELOW  = 140; // on drag release below → snap to SIDEBAR_MIN
-const SIDEBAR_EXPANDED_MIN = 160; // minimum readable expanded width
-
-// ── Drag / click handle ───────────────────────────────────────────────────────
-
-function SidebarHandle({
-  sidebarWidth,
-  onWidthChange,
-  onResizingChange,
-  onToggleCollapse,
-}: {
-  sidebarWidth: number;
-  onWidthChange: (w: number) => void;
-  onResizingChange: (v: boolean) => void;
-  onToggleCollapse: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startW: number; moved: boolean; currentW: number } | null>(null);
-
-  function onMouseDown(e: React.MouseEvent) {
-    e.preventDefault();
-    dragRef.current = { startX: e.clientX, startW: sidebarWidth, moved: false, currentW: sidebarWidth };
-    setDragging(true);
-    onResizingChange(true);
-
-    function onMouseMove(ev: MouseEvent) {
-      if (!dragRef.current) return;
-      const delta = ev.clientX - dragRef.current.startX;
-      if (Math.abs(delta) > 3) dragRef.current.moved = true;
-      const rawW = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, dragRef.current.startW + delta));
-      dragRef.current.currentW = rawW;
-      onWidthChange(rawW);
-    }
-
-    function onMouseUp() {
-      // Re-enable transitions before snapping so the snap animates
-      setDragging(false);
-      onResizingChange(false);
-
-      if (dragRef.current?.moved) {
-        const w = dragRef.current.currentW;
-        if (w < SNAP_COLLAPSE_BELOW) {
-          onWidthChange(SIDEBAR_MIN);
-        } else if (w < SIDEBAR_EXPANDED_MIN) {
-          onWidthChange(SIDEBAR_EXPANDED_MIN);
-        }
-        // else: keep current dragged width
-      } else if (dragRef.current && !dragRef.current.moved) {
-        onToggleCollapse();
-      }
-
-      dragRef.current = null;
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  }
-
-  const active = hovered || dragging;
-
-  return (
-    <div
-      className="fixed top-0 bottom-0 z-60 hidden md:flex items-start justify-center select-none"
-      style={{ left: sidebarWidth - 3, width: 8, cursor: "col-resize" }}
-      onMouseDown={onMouseDown}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Visual line */}
-      <div
-        className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 transition-opacity duration-150 rounded-full"
-        style={{ background: "#0080FF", opacity: active ? 1 : 0 }}
-      />
-
-      {/* Tooltip */}
-      {hovered && !dragging && (
-        <div
-          className="absolute top-18 left-3.5 rounded-lg overflow-hidden text-xs"
-          style={{
-            background: "var(--content-bg)",
-            border: "1px solid var(--border)",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.13)",
-          }}
-        >
-          <div className="px-3 py-2 text-stone-600 dark:text-stone-300">
-            Drag to resize
-          </div>
-          <div
-            className="flex items-center justify-between gap-6 px-3 py-2 text-stone-600 dark:text-stone-300"
-            style={{ borderTop: "1px solid var(--border)" }}
-          >
-            <span>Click to {sidebarWidth < SNAP_COLLAPSE_BELOW ? "expand" : "collapse"}</span>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 dark:bg-white/8 text-stone-500 dark:text-stone-400 leading-none">[</kbd>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import AppSidebar from "./AppSidebar";
+import { SidebarProvider, SidebarInset } from "./ui/sidebar";
 
 // ── Floating Blu window ───────────────────────────────────────────────────────
 
@@ -190,49 +79,11 @@ function FloatingBluWindow({
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
-function CreditsMeter() {
-  const { credits } = useBluMessages();
-  const navigate = useNavigate();
-
-  if (credits <= 0) {
-    return (
-      <button
-        onClick={() => navigate("/settings/billing")}
-        className="mr-1 flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-red-600 transition-colors hover:opacity-90 dark:text-red-400"
-        style={{ background: "rgba(239,68,68,0.1)" }}
-      >
-        Out of credits
-      </button>
-    );
-  }
-
-  const pct = (credits / MAX_CREDITS) * 100;
-  return (
-    <div className="group/tip relative mr-1">
-      <button
-        onClick={() => navigate("/settings/billing")}
-        className="flex h-8 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-stone-100 dark:hover:bg-white/6"
-      >
-        <Coins size={14} className="shrink-0 text-stone-500 dark:text-stone-400" />
-        <span className="h-1.5 w-14 overflow-hidden rounded-full" style={{ background: "var(--muted)" }}>
-          <span className="block h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#0080FF" }} />
-        </span>
-      </button>
-      <span className="pointer-events-none absolute top-full right-0 z-50 mt-1.5 whitespace-nowrap rounded bg-stone-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
-        {credits}/{MAX_CREDITS} credits
-      </span>
-    </div>
-  );
-}
-
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   const [bluOpen, setBluOpen] = useState(false);
   const [bluMode, setBluMode] = useState<BluMode>("panel");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
-  const [isResizing, setIsResizing] = useState(false);
 
   function closeBlu() { setBluOpen(false); setBluMode("panel"); }
   function floatBlu() { setBluMode("float"); }
@@ -270,17 +121,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     };
   }, [navigate]);
 
-  function handleToggleCollapse() {
-    if (sidebarWidth < SIDEBAR_ICON_THR) {
-      setSidebarWidth(SIDEBAR_DEFAULT);
-    } else {
-      setSidebarWidth(SIDEBAR_MIN);
-    }
-  }
-
-  const collapsed       = sidebarWidth < SIDEBAR_ICON_THR;
-  const widthTransition = isResizing ? "none" : "width 0.25s cubic-bezier(0.22,1,0.36,1)";
-
   const panelOpen = bluOpen && bluMode === "panel";
 
   return (
@@ -295,72 +135,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       )}
 
 
-    <div className="console-shell flex h-full" style={{ background: "var(--sidebar-background)" }}>
-      {/* Desktop sidebar spacer */}
-      <div
-        className="hidden md:block shrink-0"
-        style={{ width: sidebarWidth, transition: widthTransition }}
-      />
-
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        bluOpen={bluOpen}
-        sidebarWidth={sidebarWidth}
-        collapsed={collapsed}
-        isResizing={isResizing}
-        onToggleCollapse={handleToggleCollapse}
-      />
-
-      <SidebarHandle
-        sidebarWidth={sidebarWidth}
-        onWidthChange={setSidebarWidth}
-        onResizingChange={setIsResizing}
-        onToggleCollapse={handleToggleCollapse}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 animate-fade-up">
-        <div className="flex items-center gap-2 px-4 py-3 md:gap-3 md:px-5">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open navigation"
-            className="md:hidden w-7 h-7 rounded-md flex items-center justify-center hover:bg-stone-200/70 dark:hover:bg-white/8 transition-colors shrink-0"
-          >
-            <Menu size={16} className="text-stone-500 dark:text-stone-400" />
-          </button>
-
-          <div className="flex-1" />
-
-          <button aria-label="Search" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-stone-200/70 dark:hover:bg-white/8 cursor-pointer transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-stone-500 dark:text-stone-400">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-            </svg>
-          </button>
-
-          <NotificationsMenu />
-          <button
-            onClick={() => window.open("/public-recipe", "_blank")}
-            aria-label="Public recipe"
-            title="Public recipe"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
-          >
-            <Workflow size={15} className="shrink-0" />
-          </button>
-          <button
-            onClick={() => window.open("/public-workflow", "_blank")}
-            aria-label="Public workflow"
-            title="Public workflow"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/6"
-          >
-            <Waypoints size={15} className="shrink-0" />
-          </button>
-          {/* <UpgradeButton /> */}
-          {/* <LanguageSwitcher /> */}
-          <CreditsMeter />
-          <ProfileMenu />
-        </div>
-
-        <main className="flex-1 flex min-h-0 gap-2 mx-2 mb-2 md:ml-0 md:mr-3">
+    <SidebarProvider>
+      <AppSidebar bluOpen={bluOpen} />
+      <SidebarInset className="animate-fade-up">
+        <div className="flex-1 flex min-h-0 gap-2 m-2 md:ml-0 md:mr-3">
           <div
             className="hidden md:block shrink-0 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0 }}
@@ -385,9 +163,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           >
             {children}
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
     </BluMessagesProvider>
     </RecipeRuntimeProvider>
     </HomeWidgetsProvider>
