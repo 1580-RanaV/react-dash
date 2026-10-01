@@ -135,13 +135,29 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       )}
 
 
-    <SidebarProvider>
+    <SidebarProvider
+      // The base primitive only sets min-h-svh (a floor, not a fixed
+      // height) — fine as long as content fits the viewport, but anything
+      // that actually needs an internal scroll area (like Blu chat's
+      // message list) had no definite height to shrink against, so it grew
+      // the whole page instead of scrolling internally. h-full plugs into
+      // this app's existing height:100% chain (html/body/#root) to give
+      // every flex-1/min-h-0 descendant a real height to constrain to.
+      className="h-full"
+    >
       <AppSidebar bluOpen={bluOpen} />
       <SidebarInset className="animate-fade-up">
-        <div className="flex-1 flex min-h-0 gap-2 m-2 md:ml-0 md:mr-3">
+        <div
+          className="flex-1 flex min-h-0 transition-[gap] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          // Otherwise this falls through to SidebarInset's own bg-background
+          // (the darker page/sidebar tone) — visible in the margins around
+          // the Blu panel once it's open, looking inconsistent right next
+          // to the content area's own (lighter) background.
+          style={{ gap: panelOpen ? 8 : 0, background: "var(--content-bg)" }}
+        >
           <div
-            className="hidden md:block shrink-0 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0 }}
+            className="hidden md:block shrink-0 overflow-hidden my-2 transition-[width,opacity,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0, marginLeft: panelOpen ? 8 : 0 }}
           >
             {panelOpen && (
               <BluChat
@@ -154,12 +170,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </div>
 
           <div
-            className="flex-1 flex flex-col rounded-xl overflow-hidden min-w-0 relative"
-            style={{
-              background: "var(--content-bg)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04)",
-            }}
+            className="flex-1 flex flex-col overflow-hidden min-w-0 relative"
+            style={{ background: "var(--content-bg)" }}
           >
             {children}
           </div>

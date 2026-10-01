@@ -1,5 +1,4 @@
-
-import { useLayoutEffect, useRef, useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
 export type ViewTab = {
   key: string;
@@ -9,71 +8,47 @@ export type ViewTab = {
   dot?: boolean;
 };
 
-type Indicator = { left: number; top: number; width: number; height: number };
-
 export default function ViewTabs<K extends string = string>({
   tabs,
   activeTab,
   onChange,
-  className = "flex items-center gap-1 px-4 pt-3 shrink-0",
+  className = "px-4 pt-3 shrink-0",
 }: {
   tabs: readonly (Omit<ViewTab, "key"> & { key: K })[];
   activeTab: string;
   onChange?: (key: K) => void;
   className?: string;
 }) {
-  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const [indicator, setIndicator] = useState<Indicator | null>(null);
-
-  useLayoutEffect(() => {
-    function measure() {
-      const btn = buttonRefs.current.get(activeTab);
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, top: btn.offsetTop, width: btn.offsetWidth, height: btn.offsetHeight });
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [activeTab, tabs]);
-
   return (
-    <div className={`relative ${className}`}>
-      {indicator && (
-        <span
-          aria-hidden
-          className="absolute rounded-lg bg-blue-50 dark:bg-blue-500/10 transition-[left,top,width,height] duration-300 ease-out"
-          style={{ left: indicator.left, top: indicator.top, width: indicator.width, height: indicator.height }}
-        />
-      )}
-      {tabs.map((t) => (
-        <button
-          key={t.key}
-          ref={(el) => { if (el) buttonRefs.current.set(t.key, el); else buttonRefs.current.delete(t.key); }}
-          onClick={() => onChange?.(t.key)}
-          className={`relative z-10 flex h-9 items-center gap-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200
-            ${activeTab === t.key
-              ? "text-blue-700 dark:text-blue-400"
-              : "text-stone-500 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/6"
-            }`}
-        >
-          {t.icon}
-          {t.dot ? (
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" />
-              {t.label}
-            </span>
-          ) : (
-            <>
-              {t.label}
-              {t.count != null && (
-                <span className={`text-xs font-medium ${activeTab === t.key ? "text-blue-700 dark:text-blue-400" : "text-stone-500 dark:text-stone-400"}`}>
-                  ({t.count})
+    <Tabs value={activeTab} onValueChange={(key) => onChange?.(key as K)} className={className}>
+      {/* When there are more tabs than fit, this scrolls instead of being
+          clipped by an ancestor's overflow-hidden (TabsList itself is
+          `w-fit` and never wraps or shrinks). scrollbar-none because a
+          visible bar shows up even for a few px of slack in tight rows
+          (e.g. Home's tabs next to its settings button) — the cut-off
+          trailing tab is cue enough that there's more to scroll to. */}
+      <div className="scrollbar-none overflow-x-auto">
+        <TabsList>
+          {tabs.map((t) => (
+            <TabsTrigger key={t.key} value={t.key} className="gap-1.5 shrink-0">
+              {t.icon}
+              {t.dot ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" />
+                  {t.label}
                 </span>
+              ) : (
+                <>
+                  {t.label}
+                  {t.count != null && (
+                    <span className="text-xs font-medium opacity-70">({t.count})</span>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </button>
-      ))}
-    </div>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+    </Tabs>
   );
 }

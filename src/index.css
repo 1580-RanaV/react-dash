@@ -135,7 +135,12 @@
   /* ─── shadcn/ui Sidebar + primitive tokens (light) ─────────────────────── */
   --sidebar:                     var(--page);
   --sidebar-foreground:          var(--foreground);
-  --sidebar-accent:              var(--muted);
+  /* NOT var(--muted) (#f4f5f8) — that's barely a shade off --sidebar's own
+     #f7f8f8 page bg, so the active/hovered nav row was nearly invisible in
+     light mode. Dark mode doesn't have this problem (#0d0d0d page vs
+     #1f1f1f muted is already a clear step), so only light needs its own
+     more distinct tone here. */
+  --sidebar-accent:              #dcdee2;
   --sidebar-accent-foreground:   var(--foreground);
   --sidebar-border:              var(--border);
   /* Static brand blue, not --primary — --primary now darkens for text
@@ -157,7 +162,12 @@
   /* ─── Surfaces (dark) — pure neutral grays, zero color cast ────────────── */
   --background: #0d0d0d;   /* body base                                     */
   --page:       #0d0d0d;   /* outer shell / sidebar                         */
-  --card:       #1a1a1a;   /* content panel                                 */
+  --card:       #171717;   /* content panel (and Blu chat's panel/float —  */
+                            /* both read var(--content-bg), so they always  */
+                            /* share this one value and stay consistent).   */
+                            /* Was #1a1a1a (too light next to the near-     */
+                            /* black sidebar), then #131313 (too close to   */
+                            /* the sidebar) — this sits between the two.    */
   --raised:     #222222;   /* elevated: modals, drawers, floating panels    */
   --sunken:     #080808;   /* recessed: code blocks, empty states           */
   --popover:    #222222;   /* tooltips, hover cards                         */
@@ -270,7 +280,16 @@
   --color-accent-foreground:          var(--foreground);
   --color-destructive-foreground:     var(--destructive-foreground);
   --color-border:                     var(--border);
-  --color-input:                      var(--input);
+  /* NOT var(--input) — that raw variable is this app's own long-standing
+     "form field fill" token (#fff light / #1e1e1e dark), read directly by
+     many legacy inputs via inline var(--input)/bg-(--input)). shadcn's
+     Input/Button-outline/Checkbox instead expect --color-input to be a
+     BORDER tone (their own docs: "border color for inputs"), and in light
+     mode that fill token is pure white — an invisible border on a white
+     page. Point the shadcn-facing token at --border (the same grey used
+     for every other border in the app) instead, leaving the raw --input
+     variable and its many existing consumers untouched. */
+  --color-input:                      var(--border);
   --color-ring:                       var(--ring);
   --color-popover:                    var(--popover);
   --color-popover-foreground:         var(--foreground);
@@ -317,6 +336,14 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root { height: 100%; margin: 0; padding: 0; }
+
+/* vaul's scroll-lock adds `padding-right` directly to <html> (to compensate
+   for the scrollbar it hides) while a drawer is open — without a background
+   here, that padding strip shows the browser's unstyled default instead of
+   the app's theme. */
+html {
+  background: var(--background);
+}
 
 body {
   background: var(--background);
@@ -627,9 +654,32 @@ input, select, textarea {
   background-clip: padding-box;
 }
 
+/* Horizontal — ViewTabs and DashboardTable's scroll regions. A visible-but-
+   subtle scrollbar doubles as the "more content" affordance when a tab row
+   or table is wider than its container. */
+.tabs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.32) transparent;
+}
+.tabs-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.tabs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tabs-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+.tabs-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.46);
+  background-clip: padding-box;
+}
+
 .sidebar-nav {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.18) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.10) transparent;
 }
 .sidebar-nav::-webkit-scrollbar {
   width: 3px;
@@ -638,18 +688,18 @@ input, select, textarea {
   background: transparent;
 }
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.14);
   border-radius: 999px;
 }
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.42);
+  background: rgba(148, 163, 184, 0.30);
 }
 
 /* shadcn Sidebar's own scrollable content area — same subdued treatment as
    .sidebar-nav above, instead of the louder global scrollbar default. */
 [data-sidebar="content"] {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.18) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.10) transparent;
 }
 [data-sidebar="content"]::-webkit-scrollbar {
   width: 3px;
@@ -658,11 +708,11 @@ input, select, textarea {
   background: transparent;
 }
 [data-sidebar="content"]::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.14);
   border-radius: 999px;
 }
 [data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.42);
+  background: rgba(148, 163, 184, 0.30);
 }
 
 .console-shell {

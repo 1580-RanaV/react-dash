@@ -1308,7 +1308,7 @@ export default function BluChat({
 
   return (
     <div
-      className={`relative flex flex-col h-full ${mode === "fullscreen" ? "" : "rounded-xl overflow-hidden"}`}
+      className={`relative flex flex-col h-full overflow-hidden ${mode === "fullscreen" ? "" : "rounded-xl"}`}
       onDragEnter={(e) => {
         if (!e.dataTransfer.types.includes("Files")) return;
         e.preventDefault();
@@ -1336,11 +1336,7 @@ export default function BluChat({
       style={
         mode === "fullscreen"
           ? { background: "var(--content-bg)" }
-          : {
-              background: "var(--content-bg)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04)",
-            }
+          : { background: "var(--content-bg)" }
       }
     >
       {/* Header */}
@@ -1824,23 +1820,14 @@ export default function BluChat({
           <div className={`group flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} ${isFullWidthBlock ? "w-full" : "max-w-[85%]"}`}>
             {!msg.isTyping && (
               <div className={`flex items-center gap-1.5 ${isUser ? "justify-end" : "justify-start"}`}>
-                {/* Avatar */}
                 {msg.role === "user" ? (
-                  <div className="h-6 w-6 rounded-full overflow-hidden shrink-0">
-                    <img src="/dp.png" alt="You" width={24} height={24} className="w-full h-full object-cover" />
-                  </div>
+                  <img src="/dp.png" alt="You" width={24} height={24} className="h-6 w-6 rounded-full object-cover" />
                 ) : (
                   <span
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    className="flex h-7 w-7 items-center justify-center rounded-full"
                     style={{ background: "rgba(0,128,255,0.12)" }}
                   >
-                    <img
-                      src="/mascot.png"
-                      alt="Blu"
-                      width={24}
-                      height={24}
-                      className="h-6 w-6 object-contain"
-                    />
+                    <img src="/mascot.png" alt="Blu" width={24} height={24} className="h-6 w-6 object-contain" />
                   </span>
                 )}
                 <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
@@ -1983,16 +1970,16 @@ export default function BluChat({
                   </div>
                 </div>
               ) : msg.role === "user" ? (
-                <p
-                  className="inline-block max-w-full whitespace-pre-wrap wrap-break-word rounded-2xl px-3.5 py-2.5 text-sm leading-[1.55] text-stone-800 dark:text-stone-100"
+                <div
+                  className="w-fit max-w-full rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap wrap-break-word leading-[1.55] text-stone-800 dark:text-stone-100"
                   style={{ background: "var(--muted)", borderTopRightRadius: 4 }}
                 >
                   {msg.text}
-                </p>
+                </div>
               ) : (
-                <p className="max-w-full text-sm text-stone-600 dark:text-stone-300 leading-[1.55] whitespace-pre-wrap wrap-break-word">
+                <div className="text-sm leading-[1.55] text-stone-600 dark:text-stone-300">
                   {renderWithCitations(msg.text, msg.id)}
-                </p>
+                </div>
               )}
               {msg.journeyChip && !msg.isStreaming && (
                 <div className="mt-2.5">

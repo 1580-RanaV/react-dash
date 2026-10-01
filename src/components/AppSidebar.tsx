@@ -201,7 +201,7 @@ function WorkspaceAvatar({ initials, color, size = 28 }: { initials: string; col
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center rounded-lg font-semibold text-white"
-      style={{ width: size, height: size, background: color, fontSize: size * 0.38 }}
+      style={{ width: size, height: size, background: color, fontSize: Math.max(10, size * 0.38) }}
     >
       {initials}
     </span>
@@ -220,7 +220,7 @@ function TeamSwitcher() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="active:scale-[0.96] data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <WorkspaceAvatar initials={selectedProject.initials} color={selectedProject.color} />
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -238,7 +238,7 @@ function TeamSwitcher() {
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">Organizations</DropdownMenuLabel>
             {organizations.map((o) => (
-              <DropdownMenuItem key={o.name} onClick={() => setSelectedOrg(o)} className="gap-2.5 p-2">
+              <DropdownMenuItem key={o.name} onClick={() => setSelectedOrg(o)} className="gap-2.5 p-2 active:scale-[0.96]">
                 <WorkspaceAvatar initials={o.initials} color={o.color} size={22} />
                 <span className="flex-1 truncate">{o.name}</span>
                 {selectedOrg.name === o.name && <Check className="size-3.5 shrink-0 text-blue-500" />}
@@ -247,7 +247,7 @@ function TeamSwitcher() {
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
             {projects.map((p) => (
-              <DropdownMenuItem key={p.name} onClick={() => setSelectedProject(p)} className="gap-2.5 p-2">
+              <DropdownMenuItem key={p.name} onClick={() => setSelectedProject(p)} className="gap-2.5 p-2 active:scale-[0.96]">
                 <WorkspaceAvatar initials={p.initials} color={p.color} size={22} />
                 <span className="flex-1 truncate">{p.name}</span>
                 {selectedProject.name === p.name && <Check className="size-3.5 shrink-0 text-blue-500" />}
@@ -329,7 +329,7 @@ function NotificationsSubmenu() {
 
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger>
+      <DropdownMenuSubTrigger className="active:scale-[0.96]">
         <Bell />
         Notifications
         {unreadCount > 0 && (
@@ -357,7 +357,7 @@ function NotificationsSubmenu() {
               <button
                 key={n.id}
                 onClick={(e) => { e.stopPropagation(); setRead((r) => [...r, n.id]); }}
-                className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors active:scale-[0.96] hover:bg-accent"
               >
                 <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${n.iconBg}`}>
                   {n.icon}
@@ -410,7 +410,7 @@ function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="active:scale-[0.96] data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src="/dp.png" alt="Rana V" />
@@ -449,7 +449,7 @@ function NavUser() {
               <div className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
                 <button
                   onClick={() => toggleTheme(false)}
-                  className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded text-xs font-medium transition-all ${
+                  className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded text-xs font-medium transition-[background-color,color,box-shadow] active:scale-[0.96] ${
                     !dark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -458,7 +458,7 @@ function NavUser() {
                 </button>
                 <button
                   onClick={() => toggleTheme(true)}
-                  className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded text-xs font-medium transition-all ${
+                  className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded text-xs font-medium transition-[background-color,color,box-shadow] active:scale-[0.96] ${
                     dark ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -479,7 +479,7 @@ function NavUser() {
                     <button
                       key={item.key}
                       onClick={() => navigate(`/home?tab=${homeTab}/${item.key}`, { replace: true })}
-                      className={`h-7 flex-1 rounded text-xs font-medium transition-all ${
+                      className={`h-7 flex-1 rounded text-xs font-medium transition-[background-color,color,box-shadow] active:scale-[0.96] ${
                         homeState === item.key
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
@@ -494,18 +494,18 @@ function NavUser() {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate("/settings/billing")}>
+              <DropdownMenuItem className="active:scale-[0.96]" onClick={() => navigate("/settings/billing")}>
                 <Sparkles />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate("/settings/about")}>
+              <DropdownMenuItem className="active:scale-[0.96]" onClick={() => navigate("/settings/about")}>
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings/billing")}>
+              <DropdownMenuItem className="active:scale-[0.96]" onClick={() => navigate("/settings/billing")}>
                 <CreditCard />
                 Billing
                 <span className="ml-auto text-xs tabular-nums text-muted-foreground">
@@ -516,21 +516,21 @@ function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="active:scale-[0.96]">
                 <Search />
                 Search
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open("/public-recipe", "_blank")}>
+              <DropdownMenuItem className="active:scale-[0.96]" onClick={() => window.open("/public-recipe", "_blank")}>
                 <Workflow />
                 Public recipe
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open("/public-workflow", "_blank")}>
+              <DropdownMenuItem className="active:scale-[0.96]" onClick={() => window.open("/public-workflow", "_blank")}>
                 <Waypoints />
                 Public workflow
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem className="active:scale-[0.96]">
               <LogOut />
               Log out
             </DropdownMenuItem>
@@ -554,7 +554,7 @@ function NavItemRow({ item, currentView }: { item: NavItem; currentView: string 
   if (!hasChildren) {
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)} data-row className="hover:bg-transparent">
+        <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)} data-row className="hover:bg-transparent active:scale-[0.96]">
           <Link to={href}>
             {item.icon}
             <span>{t(item.label)}</span>
@@ -567,14 +567,14 @@ function NavItemRow({ item, currentView }: { item: NavItem; currentView: string 
   return (
     <Collapsible defaultOpen={isActive || childActive} className="group/collapsible">
       <SidebarMenuItem>
-        <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)} data-row className="hover:bg-transparent">
+        <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)} data-row className="hover:bg-transparent active:scale-[0.96]">
           <Link to={href}>
             {item.icon}
             <span>{t(item.label)}</span>
           </Link>
         </SidebarMenuButton>
         <CollapsibleTrigger asChild>
-          <SidebarMenuAction className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90">
+          <SidebarMenuAction className="active:scale-[0.96] transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90">
             <ChevronRight />
           </SidebarMenuAction>
         </CollapsibleTrigger>
@@ -585,7 +585,7 @@ function NavItemRow({ item, currentView }: { item: NavItem; currentView: string 
               const childHref = childView ? `/${childView}` : "#";
               return (
                 <SidebarMenuSubItem key={child.label}>
-                  <SidebarMenuSubButton asChild isActive={currentView === child.label}>
+                  <SidebarMenuSubButton asChild isActive={currentView === child.label} className="active:scale-[0.96]">
                     <Link to={childHref}>
                       {child.icon}
                       <span>{t(child.label)}</span>
