@@ -8,6 +8,7 @@ import {
 import BackButton from "./BackButton";
 import { RECIPES, type Recipe } from "./RecipesView";
 import { useRecipeRuntime } from "./recipeRuntimeStore";
+import ValidateConfirmModal, { type ValidateModalStage } from "./ValidateConfirmModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -115,19 +116,12 @@ export default function RecipeCanvasView({
   const [recipeSearch,    setRecipeSearch]    = useState("");
   const [pickedRecipeId,  setPickedRecipeId]  = useState<string | null>(null);
 
-  // Title + slash command
+  // Title
   const [title,        setTitle]        = useState(initialTitle ?? "Recipe Canvas");
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft,   setTitleDraft]   = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const [slashCmd,     setSlashCmd]     = useState(() => toSlashCmd(initialTitle ?? "recipe-canvas"));
-  const [editingCmd,   setEditingCmd]   = useState(false);
-  const [cmdDraft,     setCmdDraft]     = useState("");
-  const cmdInputRef = useRef<HTMLInputElement>(null);
 
-  function toSlashCmd(t: string) {
-    return "/" + t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");
-  }
   function startEditTitle() {
     setTitleDraft(title);
     setEditingTitle(true);
@@ -135,18 +129,8 @@ export default function RecipeCanvasView({
   }
   function commitTitle() {
     const t = titleDraft.trim();
-    if (t) { setTitle(t); setSlashCmd(toSlashCmd(t)); }
+    if (t) setTitle(t);
     setEditingTitle(false);
-  }
-  function startEditCmd() {
-    setCmdDraft(slashCmd);
-    setEditingCmd(true);
-    setTimeout(() => cmdInputRef.current?.select(), 0);
-  }
-  function commitCmd() {
-    const t = cmdDraft.trim();
-    if (t) setSlashCmd(t.startsWith("/") ? t : "/" + t);
-    setEditingCmd(false);
   }
   // Canvas pan / zoom
   const [zoom, setZoom] = useState(1);
@@ -253,9 +237,33 @@ export default function RecipeCanvasView({
     }, validateMs(validatedCount) + 120);
   }
 
-  // ── Publish ───────────────────────────────────────────────────────────────
+  // ── Validate confirm / credits modal ──────────────────────────────────────
 
-  const { addDraftRecipe } = useRecipeRuntime();
+  const { addDraftRecipe, creditsErrorShown, markCreditsErrorShown } = useRecipeRuntime();
+  const [validateStage, setValidateStage] = useState<ValidateModalStage | null>(null);
+
+  function openValidateConfirm() {
+    if (isBusy || nodes.length === 0) return;
+    setValidateStage("confirm");
+  }
+  function handleValidateCancel() {
+    setValidateStage(null);
+  }
+  function handleValidateContinue() {
+    if (!creditsErrorShown) {
+      markCreditsErrorShown();
+      setValidateStage("insufficient");
+      return;
+    }
+    setValidateStage(null);
+    handleValidate();
+  }
+  function handleValidateTryAgain() {
+    setValidateStage(null);
+    handleValidate();
+  }
+
+  // ── Publish ───────────────────────────────────────────────────────────────
 
   function handlePublish() {
     if (nodes.length === 0 || !validated) return;
@@ -599,35 +607,10 @@ export default function RecipeCanvasView({
               <Pencil size={11} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-stone-400" />
             </button>
           )}
-
-          {/* Editable slash command */}
-          {editingCmd ? (
-            <input
-              ref={cmdInputRef}
-              autoFocus
-              maxLength={100}
-              value={cmdDraft}
-              onChange={(e) => setCmdDraft(e.target.value)}
-              onBlur={commitCmd}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCmd(); } if (e.key === "Escape") setEditingCmd(false); }}
-              className="font-mono text-xs font-medium rounded-md px-2 py-0.5 outline-none"
-              style={{ background: "var(--input)", border: "1px solid #3b82f6", color: "#3b82f6", width: `${Math.max(cmdDraft.length, 8)}ch` }}
-            />
-          ) : (
-            <button
-              onClick={startEditCmd}
-              className="group/cmd flex items-center gap-1 shrink-0 font-mono text-xs font-medium rounded-md px-2 py-0.5 transition-colors"
-              style={{ background: "var(--muted)", color: "#3b82f6", border: "1px solid var(--border)" }}
-              title="Click to rename"
-            >
-              {slashCmd}
-              <Pencil size={10} className="opacity-0 group-hover/cmd:opacity-60 transition-opacity" />
-            </button>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleValidate}
+            onClick={openValidateConfirm}
             disabled={isBusy || nodes.length === 0}
             title={nodes.length === 0 ? "Add at least one step before validating" : undefined}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold bg-(--border) text-stone-600 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
@@ -1020,6 +1003,15 @@ export default function RecipeCanvasView({
           </div>
         )}
 
+        {validateStage && (
+          <ValidateConfirmModal
+            stage={validateStage}
+            onCancel={handleValidateCancel}
+            onContinue={handleValidateContinue}
+            onTryAgain={handleValidateTryAgain}
+          />
+        )}
+
       </div>
     </div>
   );
@@ -1150,7 +1142,7 @@ function IssuePanel({ messages, label, expanded, onToggle }: {
   );
 }
 
-// Same collapsible pill as the amber IssuePanel — but an argument isn't
+// Same collapsible pill as the red IssuePanel — but an argument isn't
 // resolved through a bespoke input here, it's resolved the same way any
 // other step content changes: the step's own Edit drawer (or Delete, if the
 // step shouldn't exist at all). A single generic "value" field doesn't scale
@@ -1167,20 +1159,18 @@ function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDel
 
   return (
     <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
-      <div className="flex justify-center">
-        <button
-          onClick={onToggle}
-          className="inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-amber-600 dark:text-amber-400 transition-colors"
-          style={expanded ? undefined : { border: "1px solid #f59e0b", background: "rgba(245,158,11,0.16)" }}
-        >
-          <AlertTriangle size={12} />
-          {messages.length} argument{messages.length > 1 ? "s" : ""} to resolve
-          <ChevronDown
-            size={11}
-            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.25s" }}
-          />
-        </button>
-      </div>
+      <button
+        onClick={onToggle}
+        className="inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-red-500 dark:text-red-400 transition-colors"
+        style={expanded ? undefined : { border: "1px solid #ef4444" }}
+      >
+        <AlertTriangle size={12} />
+        {messages.length} argument{messages.length > 1 ? "s" : ""} to resolve
+        <ChevronDown
+          size={11}
+          style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.25s" }}
+        />
+      </button>
       <div
         className="grid transition-[grid-template-rows,opacity] duration-300"
         style={{ gridTemplateRows: expanded ? "1fr" : "0fr", opacity: expanded ? 1 : 0 }}
@@ -1188,7 +1178,7 @@ function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDel
         <div className="overflow-hidden">
           <div className="flex flex-col gap-2 pt-2">
             {messages.map((m, i) => (
-              <p key={i} className="text-xs leading-relaxed text-amber-600/90 dark:text-amber-400/90">{m}</p>
+              <p key={i} className="text-xs leading-relaxed text-red-500/90 dark:text-red-400/90">{m}</p>
             ))}
             <div className="flex items-stretch gap-1.5">
               <button
@@ -1259,7 +1249,7 @@ function FlowNodeCard({
     isConfirming  ? "#ef4444" :
     isEditing     ? "#3b82f6" :
     isInvalid     ? "#ef4444" :
-    needsArgs     ? "#f59e0b" :
+    needsArgs     ? "#ef4444" :
     isValid       ? "#3b82f6" :
     isValidating  ? "#3b82f6" :
     isDone        ? "#10b981" :
@@ -1335,7 +1325,7 @@ function FlowNodeCard({
         </div>
         <div className="shrink-0 mt-1">
           {needsArgs ? (
-            <CircleAlert size={20} style={{ color: "#f59e0b" }} strokeWidth={2} />
+            <CircleAlert size={20} style={{ color: "#ef4444" }} strokeWidth={2} />
           ) : (isValid || isDone) && (
             <div
               className="flex h-6 w-6 items-center justify-center rounded-full"

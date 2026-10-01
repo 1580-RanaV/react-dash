@@ -1,51 +1,63 @@
 import { useState, useRef } from "react";
-import { Wand2, Copy, FileUp, Search, ArrowLeft, FileText } from "lucide-react";
+import { Wand2, FileUp, ArrowLeft, FileText, Download } from "lucide-react";
 import SlidingSidebar from "./SlidingSidebar";
-import { RECIPES } from "./RecipesView";
 
 const CREATE_OPTIONS = [
-  { key: "scratch", label: "Start from scratch",    icon: Wand2  },
-  { key: "remix",   label: "Remix existing recipe", icon: Copy   },
-  { key: "upload",  label: "Upload RECIPE.md",      icon: FileUp },
+  { key: "scratch", label: "Start from scratch", icon: Wand2  },
+  { key: "upload",  label: "Upload RECIPE.md",   icon: FileUp },
 ];
 
-type RemixRecipe = { id: string; title: string; description: string; tags: string[] };
+// A worked example for anyone who picks "Upload RECIPE.md" but isn't sure
+// what one is supposed to look like — downloaded as a real .md file so they
+// can open it, see the shape of a well-specified recipe, and adapt it.
+const RECIPE_TEMPLATE_MD = `# Cart Win-Back Campaign
+
+## Step 1: Create Cart Value Attribute
+
+Create a numeric attribute called "Cart Value." It is not a research attribute, so no research is needed. It does not depend on a segment, and there are no profile-fit conditions. The event it is based on is "Added to Cart." The activity that counts is every "Added to Cart" event for that user. The product field the filter should use is "price." The event that marks recency is "Added to Cart." The event that marks frequency is also "Added to Cart." The event that carries the amount is "Added to Cart," using its "price" field. The sum attribute it should add up is the running total of the "price" field across every "Added to Cart" event for that user that has not yet been followed by a "Purchase Completed" or "Removed from Cart" event for the same item. The event field used is "price."
+
+## Step 2: Create Cart Abandoned Event
+
+Create an event called "Cart Abandoned." The event it is based on is "Added to Cart." It fires when a user triggers "Added to Cart" and no matching "Purchase Completed" event for the same user follows within the next 24 hours.
+
+## Step 3: Create Cart Abandoners – High Value Segment
+
+Create a segment called "Cart Abandoners – High Value." It is based on the "Cart Abandoned" event created in Step 2 and the "Cart Value" attribute created in Step 1 — not on an existing attribute, existing segment, or consent record. The condition they must match: triggered the "Cart Abandoned" event within the last 7 days, AND their "Cart Value" attribute is greater than $50.
+
+## Step 4: Generate Promotional Banner Image
+
+Generate a promotional banner image for a "Complete Your Purchase" email — clean, modern style, showing a shopping bag with a subtle 10% off badge, in our brand colors (blue and white).
+
+## Step 5: Generate Win-Back Email
+
+Write a short, friendly win-back email for the Cart Abandoners – High Value segment created in Step 3, using the banner image generated in Step 4. Remind them what's waiting in their cart, offer 10% off if they check out in the next 48 hours, and include the banner image. Subject line should create urgency without sounding pushy.
+`;
+
+function downloadRecipeTemplate() {
+  const blob = new Blob([RECIPE_TEMPLATE_MD], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "cart-win-back-recipe.md";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function CreateRecipeDrawer({ onClose }: { onClose: () => void }) {
-  const [selected, setSelected]           = useState("scratch");
-  const [step, setStep]                   = useState<"choose" | "remix" | "upload">("choose");
-  const [remixSearch, setRemixSearch]     = useState("");
-  const [remixSelected, setRemixSelected] = useState<string | null>(null);
-  const [uploadedContent,  setUploadedContent]  = useState("");
-  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [selected, setSelected]                 = useState("scratch");
+  const [step, setStep]                         = useState<"choose" | "upload">("choose");
+  const [uploadedContent,  setUploadedContent]   = useState("");
+  const [uploadedFileName, setUploadedFileName]  = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Derived from the same seed data the list/detail views use, rather than a
-  // separately hand-maintained copy — keeps this list from drifting out of
-  // sync with RECIPES whenever a recipe is added, removed, or renamed.
-  const REMIX_RECIPES: RemixRecipe[] = RECIPES.map((r) => ({
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    tags: r.spec.areas,
-  }));
-
-  const filteredRemix = REMIX_RECIPES.filter(r => {
-    const q = remixSearch.toLowerCase();
-    return !q || r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.tags.some(t => t.includes(q));
-  });
 
   function handleContinue(close: () => void) {
     if (step === "choose") {
-      if (selected === "remix")  { setStep("remix"); return; }
       if (selected === "upload") { fileRef.current?.click(); return; }
-      close();
-      window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
-    } else if (step === "upload") {
       close();
       window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
     } else {
       close();
+      window.dispatchEvent(new CustomEvent("open-recipe-canvas"));
     }
   }
 
@@ -71,17 +83,16 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
       />
 
       <SlidingSidebar
-        title={step === "remix" ? "Remix existing recipe" : step === "upload" ? "Review RECIPE.md" : "Create recipe"}
+        title={step === "upload" ? "Review RECIPE.md" : "Create recipe"}
         description={
-          step === "remix"  ? "Pick a recipe to clone. The copy lands in My recipes as a draft you can edit." :
           step === "upload" ? "Edit the imported content below, then continue to the canvas." :
           "Choose how you want to get started."
         }
         onClose={onClose}
-        contentClassName={step === "remix" ? "pb-5" : step === "upload" ? "p-0 flex flex-col" : "px-5 pb-5"}
+        contentClassName={step === "upload" ? "p-0 flex flex-col" : "px-5 pb-5"}
         footer={(close) => (
           <>
-            {step === "remix" || step === "upload" ? (
+            {step === "upload" ? (
               <button
                 onClick={() => setStep("choose")}
                 className="mr-auto inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/8"
@@ -99,11 +110,10 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
             )}
             <button
               onClick={() => handleContinue(close)}
-              disabled={step === "remix" && !remixSelected}
               className="inline-flex h-9 items-center rounded-lg px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               style={{ background: "#0080FF" }}
             >
-              {step === "remix" ? "Clone" : step === "upload" ? "Continue" : selected === "remix" ? "Next" : "Continue"}
+              Continue
             </button>
           </>
         )}
@@ -135,89 +145,48 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
               />
             </div>
           </div>
-        ) : step === "choose" ? (
-          <div className="flex flex-col gap-0.5">
-            {CREATE_OPTIONS.map(({ key, label, icon: Icon }) => {
-              const isSelected = selected === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => {
-                    setSelected(key);
-                    if (key === "remix") setStep("remix");
-                    if (key === "upload") fileRef.current?.click();
-                  }}
-                  className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors duration-100 ${
-                    isSelected
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
-                      : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-white/6 hover:text-stone-800 dark:hover:text-stone-200"
-                  }`}
-                >
-                  <Icon size={17} className={isSelected ? "text-blue-500 shrink-0" : "shrink-0 text-stone-400 dark:text-stone-500"} />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
         ) : (
-          <>
-            {/* Sticky search bar */}
-            <div
-              className="sticky top-0 z-10 px-5 pb-0"
-              style={{ background: "var(--content-bg)" }}
-            >
-              <div className="relative pb-3">
-                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
-                <input
-                  autoFocus
-                  value={remixSearch}
-                  onChange={e => setRemixSearch(e.target.value)}
-                  placeholder="Search recipes by name, agent, or description…"
-                  className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 outline-none placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
-                />
-              </div>
-              <div className="h-px" style={{ background: "var(--border)" }} />
-            </div>
-
-            {/* Recipe list */}
-            <div className="px-5 flex flex-col">
-              {filteredRemix.length === 0 ? (
-                <p className="py-8 text-center text-sm text-stone-400 dark:text-stone-500">No recipes match your search</p>
-              ) : filteredRemix.map(r => {
-                const isSelected = remixSelected === r.id;
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-0.5">
+              {CREATE_OPTIONS.map(({ key, label, icon: Icon }) => {
+                const isSelected = selected === key;
                 return (
                   <button
-                    key={r.id}
-                    onClick={() => setRemixSelected(r.id)}
-                    className={`flex w-full flex-col items-start gap-1 rounded-xl px-4 py-3 text-left transition-colors duration-100 ${
+                    key={key}
+                    onClick={() => {
+                      setSelected(key);
+                      if (key === "upload") fileRef.current?.click();
+                    }}
+                    className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors duration-100 ${
                       isSelected
-                        ? "bg-blue-50 dark:bg-blue-500/10"
-                        : "hover:bg-stone-50 dark:hover:bg-white/4"
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
+                        : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-white/6 hover:text-stone-800 dark:hover:text-stone-200"
                     }`}
                   >
-                    <span className={`text-sm font-medium leading-snug ${isSelected ? "text-blue-700 dark:text-blue-400" : "text-stone-800 dark:text-stone-200"}`}>
-                      {r.title}
-                    </span>
-                    <span className="text-xs text-stone-500 dark:text-stone-400 leading-snug line-clamp-2">
-                      {r.description}
-                    </span>
-                    {r.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {r.tags.map(tag => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <Icon size={17} className={isSelected ? "text-blue-500 shrink-0" : "shrink-0 text-stone-400 dark:text-stone-500"} />
+                    {label}
                   </button>
                 );
               })}
             </div>
-          </>
+
+            <div
+              className="flex items-center justify-between gap-3 rounded-xl px-4 py-3.5"
+              style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
+            >
+              <div>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Don't know how to create one?</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Use this template to create your own.</p>
+              </div>
+              <button
+                onClick={downloadRecipeTemplate}
+                className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-stone-600 dark:text-stone-300 bg-(--border) hover:bg-stone-300 dark:hover:bg-white/14 transition-colors"
+              >
+                <Download size={12} />
+                Template
+              </button>
+            </div>
+          </div>
         )}
       </SlidingSidebar>
     </>

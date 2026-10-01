@@ -12,6 +12,8 @@ import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import SlidingSidebar from "./SlidingSidebar";
 import { useRecipeRuntime, IntegrationLogo, withSeedOverrides } from "./recipeRuntimeStore";
+import ValidateConfirmModal, { type ValidateModalStage } from "./ValidateConfirmModal";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -548,7 +550,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const mdOpen = activeTab === "md";
   const [btnRunning, setBtnRunning] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal, validateSeed, publishSeed } = useRecipeRuntime();
+  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown } = useRecipeRuntime();
   const runningStep = runningRecipes[recipe.id];
   const isRunningThis = runningStep !== undefined;
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -649,6 +651,31 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
     publishSeed(recipe.id);
     setJustPublished(true);
     schedule(() => setJustPublished(false), 5000);
+  }
+
+  // ── Validate confirm / credits modal ──────────────────────────────────────
+
+  const [validateStage, setValidateStage] = useState<ValidateModalStage | null>(null);
+
+  function openValidateConfirm() {
+    if (draftBtnValidating) return;
+    setValidateStage("confirm");
+  }
+  function handleValidateCancel() {
+    setValidateStage(null);
+  }
+  function handleValidateContinue() {
+    if (!creditsErrorShown) {
+      markCreditsErrorShown();
+      setValidateStage("insufficient");
+      return;
+    }
+    setValidateStage(null);
+    handleDraftValidate();
+  }
+  function handleValidateTryAgain() {
+    setValidateStage(null);
+    handleDraftValidate();
   }
 
   function openRunItemInChat(label: string) {
@@ -768,7 +795,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
           )}
           {recipe.draft ? (
             <button
-              onClick={handleDraftValidate}
+              onClick={openValidateConfirm}
               disabled={draftBtnValidating}
               className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold bg-(--border) text-stone-600 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
@@ -851,7 +878,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                 <Check size={14} className="text-white" strokeWidth={3} />
               </span>
               <p className="text-sm text-emerald-700 dark:text-emerald-300 leading-snug">
-                Congratulations — your recipe is now live in your project.
+                Congratulations, your recipe is now live in your project.
               </p>
             </div>
           )}
@@ -1041,53 +1068,12 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
       </div>
 
       {confirmDelete && (
-        <div className="absolute inset-0 z-30">
-          <div
-            className="absolute inset-0"
-            style={{ backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.18)" }}
-            onClick={() => setConfirmDelete(false)}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className="relative w-80 rounded-xl shadow-2xl overflow-hidden animate-fade-up"
-              style={{
-                background: "var(--content-bg)",
-                border: "1.5px solid var(--border)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">
-                    <AlertTriangle size={16} className="text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Delete "{title}"?</p>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
-                      This removes it from your recipes list. This can't be undone.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="inline-flex h-8 items-center rounded-lg px-3.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteRecipe}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ background: "#ef4444" }}
-                  >
-                    <Trash2 size={12} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmDialog
+          entityType="recipe"
+          entityName={title}
+          onConfirm={handleDeleteRecipe}
+          onClose={() => setConfirmDelete(false)}
+        />
       )}
 
       {mdOpen && (
@@ -1098,6 +1084,15 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
         >
           <RecipeMdContent recipe={recipe} />
         </SlidingSidebar>
+      )}
+
+      {validateStage && (
+        <ValidateConfirmModal
+          stage={validateStage}
+          onCancel={handleValidateCancel}
+          onContinue={handleValidateContinue}
+          onTryAgain={handleValidateTryAgain}
+        />
       )}
     </div>
   );

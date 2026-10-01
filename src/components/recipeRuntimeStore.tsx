@@ -96,6 +96,12 @@ type RecipeRuntimeContextValue = {
   seedOverrides: Record<string, SeedOverride>;
   validateSeed: (recipeId: string) => void;
   publishSeed: (recipeId: string) => void;
+  // The "insufficient credits" mock only ever fires once per session, the
+  // very first time anyone hits Continue on the Validate confirm modal —
+  // shared across the canvas and the recipe detail page, since it's one
+  // demo of the retry path, not a per-recipe or per-surface thing.
+  creditsErrorShown: boolean;
+  markCreditsErrorShown: () => void;
 };
 
 const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(null);
@@ -139,6 +145,11 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
 
   function publishSeed(recipeId: string) {
     setSeedOverrides((prev) => ({ ...prev, [recipeId]: { ...prev[recipeId], draft: false } }));
+  }
+
+  const [creditsErrorShown, setCreditsErrorShown] = useState(false);
+  function markCreditsErrorShown() {
+    setCreditsErrorShown(true);
   }
 
   function startRun(recipeId: string, totalSteps: number, stepMs = 1050) {
@@ -200,7 +211,7 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun, seedOverrides, validateSeed, publishSeed }}>
+    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun, seedOverrides, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown }}>
       {children}
     </RecipeRuntimeContext.Provider>
   );
