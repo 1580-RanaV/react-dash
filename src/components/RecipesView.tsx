@@ -5,13 +5,13 @@ import {
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
   Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
-  Lock, Plug, History, Trash2, AlertTriangle, Clock,
+  Lock, Plug, History, Trash2, AlertTriangle, Clock, Workflow, ShieldCheck,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import SlidingSidebar from "./SlidingSidebar";
-import { useRecipeRuntime, IntegrationLogo } from "./recipeRuntimeStore";
+import { useRecipeRuntime, IntegrationLogo, withSeedOverrides } from "./recipeRuntimeStore";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -506,9 +506,10 @@ const MOCK_STEPS = [
 ];
 
 const RECIPE_TABS = [
-  { key: "details", label: "Details",   icon: <FileText  size={13} /> },
-  { key: "remix",   label: "Remix",     icon: <Shuffle   size={13} /> },
-  { key: "md",      label: ".md file",  icon: <FileCode  size={13} /> },
+  { key: "details", label: "Details",         icon: <FileText  size={13} /> },
+  { key: "canvas",  label: "Open in canvas",  icon: <Workflow  size={13} /> },
+  { key: "remix",   label: "Remix",           icon: <Shuffle   size={13} /> },
+  { key: "md",      label: ".md file",        icon: <FileCode  size={13} /> },
 ];
 
 // A canvas-published draft doesn't get Remix (nothing to clone — it's your
@@ -533,91 +534,9 @@ function openRecipeInCanvas(recipe: Recipe, title: string) {
   }));
 }
 
-// Mock canvas preview for the Steps section — one generic node card repeated
-// once per real step count (so List and Canvas always agree on how many
-// steps there are), not wired to each step's actual title/content, same
-// dot-grid + node-card language as the full pipeline builder in
-// RecipeCanvasView.tsx. Pannable by dragging, like the real canvas.
-function StepsCanvasPreview({ count, onEdit }: { count: number; onEdit: () => void }) {
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const dragging = useRef(false);
-  const hasDragged = useRef(false);
-  const lastMouse = useRef({ x: 0, y: 0 });
-
-  function handleMouseDown(e: React.MouseEvent) {
-    dragging.current = true;
-    hasDragged.current = false;
-    lastMouse.current = { x: e.clientX, y: e.clientY };
-  }
-  function handleMouseMove(e: React.MouseEvent) {
-    if (!dragging.current) return;
-    const dx = e.clientX - lastMouse.current.x;
-    const dy = e.clientY - lastMouse.current.y;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged.current = true;
-    lastMouse.current = { x: e.clientX, y: e.clientY };
-    setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  }
-  function stopDrag() { dragging.current = false; }
-
-  return (
-    <div
-      className="relative h-[480px] select-none overflow-hidden rounded-xl"
-      style={{
-        border: "1px solid var(--border)",
-        backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
-        backgroundSize: "22px 22px",
-        cursor: dragging.current ? "grabbing" : "grab",
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={stopDrag}
-      onMouseLeave={stopDrag}
-    >
-      <div
-        className="flex min-h-full items-center justify-center py-10"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px)`, willChange: "transform" }}
-      >
-        <div className="flex flex-col items-center">
-          <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid var(--stone-400, #a8a29e)", background: "var(--content-bg)" }} />
-          {Array.from({ length: count }, (_, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className="w-px h-3.5" style={{ background: "var(--border)" }} />
-              <div
-                className="flex items-center gap-3 rounded-xl px-5 py-4"
-                style={{ background: "var(--content-bg)", border: "1px solid var(--border)", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}
-              >
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-300"
-                  style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
-                >
-                  {i + 1}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug">Create a segment</p>
-                  <p className="text-xs text-stone-400 dark:text-stone-500 leading-snug mt-0.5">segment &middot; &rarr; segment</p>
-                </div>
-              </div>
-              <div className="w-px h-3.5" style={{ background: "var(--border)" }} />
-            </div>
-          ))}
-          <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid var(--stone-400, #a8a29e)", background: "var(--content-bg)" }} />
-        </div>
-      </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onEdit(); }}
-        className="absolute bottom-3 right-3 inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-stone-600 dark:text-stone-300 transition-colors hover:bg-stone-300 dark:hover:bg-white/14 bg-(--border)"
-      >
-        <Pencil size={12} />
-        Edit
-      </button>
-    </div>
-  );
-}
-
 export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [cmdCopied,  setCmdCopied]  = useState(false);
-  const [stepsView,  setStepsView]  = useState<"list" | "canvas">("list");
   const [title,        setTitle]        = useState(recipe.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft,   setTitleDraft]   = useState("");
@@ -629,10 +548,19 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const mdOpen = activeTab === "md";
   const [btnRunning, setBtnRunning] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal } = useRecipeRuntime();
+  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal, validateSeed, publishSeed } = useRecipeRuntime();
   const runningStep = runningRecipes[recipe.id];
   const isRunningThis = runningStep !== undefined;
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Validate/Publish for a seeded draft recipe — mocks the same two-step
+  // "check, then ship" flow the canvas builder has, just over MOCK_STEPS
+  // instead of real canvas nodes, since a seeded draft has no canvas of its
+  // own until someone opens it in one.
+  const [draftBtnValidating, setDraftBtnValidating] = useState(false);
+  const [draftCheckStep, setDraftCheckStep] = useState<number | null>(null);
+  // Shown briefly in place of the validated-banner once Publish is clicked —
+  // see the banners above the Slash command section.
+  const [justPublished, setJustPublished] = useState(false);
 
   // Tracked so navigating away mid-run (e.g. to build a different recipe)
   // cancels any pending dispatch instead of it firing later on whatever
@@ -699,6 +627,28 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
         by: "Rana V",
       });
     }, 300 + stepTitles.length * 1050 + 200);
+  }
+
+  function handleDraftValidate() {
+    if (draftBtnValidating) return;
+    setDraftBtnValidating(true);
+    const total = MOCK_STEPS.length;
+    const stepMs = 380;
+    for (let i = 0; i < total; i++) {
+      schedule(() => setDraftCheckStep(i), i * stepMs);
+    }
+    schedule(() => setDraftCheckStep(total), total * stepMs);
+    schedule(() => {
+      setDraftBtnValidating(false);
+      setDraftCheckStep(null);
+      validateSeed(recipe.id);
+    }, total * stepMs + 500);
+  }
+
+  function handlePublishDraft() {
+    publishSeed(recipe.id);
+    setJustPublished(true);
+    schedule(() => setJustPublished(false), 5000);
   }
 
   function openRunItemInChat(label: string) {
@@ -816,7 +766,18 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
               </button>
             )
           )}
-          {!recipe.draft && (
+          {recipe.draft ? (
+            <button
+              onClick={handleDraftValidate}
+              disabled={draftBtnValidating}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold bg-(--border) text-stone-600 hover:bg-stone-300 dark:text-stone-300 dark:hover:bg-white/14 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {draftBtnValidating
+                ? <Loader2 size={13} className="animate-spin" />
+                : <ShieldCheck size={13} />}
+              Validate
+            </button>
+          ) : (
             <button
               onClick={handleRun}
               disabled={btnRunning || runLocked}
@@ -842,7 +803,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
             tabs={(recipe.draft || recipe.draftSteps) ? DRAFT_RECIPE_TABS : RECIPE_TABS}
             active={activeTab}
             onChange={(key) => {
-              if (key === "remix") {
+              if (key === "remix" || key === "canvas") {
                 openInCanvas();
                 return;
               }
@@ -855,6 +816,45 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
+
+          {/* Validated / published banners — the draft's own "ready to ship"
+              and "shipped" moments, surfaced here rather than as just another
+              top-bar button so they actually read as milestones. */}
+          {recipe.draft && recipe.validated && (
+            <div
+              className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 animate-fade-up"
+              style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "#3b82f6" }}>
+                  <Check size={14} className="text-white" strokeWidth={3} />
+                </span>
+                <p className="text-sm text-blue-700 dark:text-blue-300 leading-snug">
+                  Your recipe is now validated and ready to be used. Click publish to make it available.
+                </p>
+              </div>
+              <button
+                onClick={handlePublishDraft}
+                className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+                style={{ background: "#3b82f6" }}
+              >
+                Publish
+              </button>
+            </div>
+          )}
+          {justPublished && (
+            <div
+              className="flex items-center gap-2.5 rounded-xl px-4 py-3 animate-fade-up"
+              style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)" }}
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "#10b981" }}>
+                <Check size={14} className="text-white" strokeWidth={3} />
+              </span>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300 leading-snug">
+                Congratulations — your recipe is now live in your project.
+              </p>
+            </div>
+          )}
 
           {/* Slash command block */}
           <section>
@@ -947,54 +947,45 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
 
           {/* Steps */}
           <section>
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-                Steps ({MOCK_STEPS.length})
-              </p>
-              <SubTabCorner
-                tabs={[{ key: "list", label: "List" }, { key: "canvas", label: "Canvas" }]}
-                active={stepsView}
-                onChange={(key) => setStepsView(key as "list" | "canvas")}
-              />
-            </div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-5">
+              Steps ({MOCK_STEPS.length})
+            </p>
 
-            {stepsView === "canvas" ? (
-              <StepsCanvasPreview count={MOCK_STEPS.length} onEdit={openInCanvas} />
-            ) : (
-              <div className="flex flex-col">
-                {MOCK_STEPS.map((s, i) => {
-                  const stepDone = isRunningThis && i < runningStep;
-                  const stepActive = isRunningThis && i === runningStep;
-                  return (
-                  <div key={i} className="flex gap-4">
-                    {/* Number + connector */}
-                    <div className="flex flex-col items-center shrink-0">
-                      <div
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300"
-                        style={
-                          stepDone
-                            ? { background: "#3b82f6", border: "1px solid #3b82f6", color: "#fff" }
-                            : stepActive
-                            ? { background: "var(--muted)", border: "2px solid #3b82f6", color: "#3b82f6" }
-                            : { background: "var(--muted)", border: "1px solid var(--border)", color: "var(--stone-600, #57534e)" }
-                        }
-                      >
-                        {stepDone ? <Check size={12} strokeWidth={3} /> : i + 1}
-                      </div>
-                      {i < MOCK_STEPS.length - 1 && (
-                        <div className="w-px flex-1 my-1.5 transition-colors duration-300" style={{ background: stepDone ? "#3b82f6" : "var(--border)" }} />
-                      )}
+            <div className="flex flex-col">
+              {MOCK_STEPS.map((s, i) => {
+                const activeProgressStep = isRunningThis ? runningStep : draftCheckStep ?? undefined;
+                const isProgressing = activeProgressStep !== undefined;
+                const stepDone = isProgressing && i < activeProgressStep;
+                const stepActive = isProgressing && i === activeProgressStep;
+                return (
+                <div key={i} className="flex gap-4">
+                  {/* Number + connector */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300"
+                      style={
+                        stepDone
+                          ? { background: "#3b82f6", border: "1px solid #3b82f6", color: "#fff" }
+                          : stepActive
+                          ? { background: "var(--muted)", border: "2px solid #3b82f6", color: "#3b82f6" }
+                          : { background: "var(--muted)", border: "1px solid var(--border)", color: "var(--stone-600, #57534e)" }
+                      }
+                    >
+                      {stepDone ? <Check size={12} strokeWidth={3} /> : i + 1}
                     </div>
-                    {/* Content */}
-                    <div className={i < MOCK_STEPS.length - 1 ? "pb-6" : "pb-0"}>
-                      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1">{s.title}</p>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
-                    </div>
+                    {i < MOCK_STEPS.length - 1 && (
+                      <div className="w-px flex-1 my-1.5 transition-colors duration-300" style={{ background: stepDone ? "#3b82f6" : "var(--border)" }} />
+                    )}
                   </div>
-                  );
-                })}
-              </div>
-            )}
+                  {/* Content */}
+                  <div className={i < MOCK_STEPS.length - 1 ? "pb-6" : "pb-0"}>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug mb-1">{s.title}</p>
+                    <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">{s.body}</p>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
           </section>
 
           {/* Recent runs — one generation record per completed Run, BC-RCP-GEN-* */}
@@ -1039,9 +1030,9 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
           <section>
             <button
               onClick={() => setConfirmDelete(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
-              <Trash2 size={12} />
+              <Trash2 size={13} />
               Delete recipe
             </button>
           </section>
@@ -1201,7 +1192,7 @@ const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rou
 
 export default function RecipesView() {
   const navigate = useNavigate();
-  const { isDeleted, draftRecipes } = useRecipeRuntime();
+  const { isDeleted, draftRecipes, seedOverrides } = useRecipeRuntime();
   const [search,       setSearch]       = useState("");
   const [drawerOpen,   setDrawerOpen]   = useState(false);
   const [filterOpen,   setFilterOpen]   = useState(false);
@@ -1248,7 +1239,7 @@ export default function RecipesView() {
   };
 
   const drafts = draftRecipes.filter(matchesFilters);
-  let seeded   = RECIPES.filter(matchesFilters);
+  let seeded   = RECIPES.filter(matchesFilters).map((r) => withSeedOverrides(r, seedOverrides));
 
   // Sort — only applies within the seeded catalog. A just-published canvas
   // recipe has 0 uses and no seeded date, so it would otherwise sink under

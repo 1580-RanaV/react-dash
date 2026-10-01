@@ -54,6 +54,25 @@ export type RunRecord = {
   by: string;
 };
 
+// A seeded draft recipe (RECIPES entries with `draft: true`) has no canvas
+// nodes of its own — Validate/Publish on its detail page just mock-check its
+// MOCK_STEPS, then flip these flags, since the seed array itself is a
+// constant we can't mutate directly.
+type SeedOverride = { validated?: boolean; draft?: boolean };
+
+// Applies a seeded recipe's session-local Validate/Publish overrides on top
+// of its static fields — used wherever a seeded recipe is rendered (list
+// card, detail page) so both agree on its current state.
+export function withSeedOverrides(recipe: Recipe, overrides: Record<string, SeedOverride>): Recipe {
+  const ov = overrides[recipe.id];
+  if (!ov) return recipe;
+  return {
+    ...recipe,
+    draft: ov.draft === false ? false : recipe.draft,
+    validated: ov.validated ? true : recipe.validated,
+  };
+}
+
 type RecipeRuntimeContextValue = {
   isConnected: (integration: string) => boolean;
   connectIntegration: (integration: string) => void;
@@ -72,6 +91,11 @@ type RecipeRuntimeContextValue = {
   // progress too, not just whichever page triggered the Run.
   runningRecipes: Record<string, number>;
   startRun: (recipeId: string, totalSteps: number) => void;
+  // Session-local Validate/Publish state for seeded draft recipes — see
+  // `withSeedOverrides`.
+  seedOverrides: Record<string, SeedOverride>;
+  validateSeed: (recipeId: string) => void;
+  publishSeed: (recipeId: string) => void;
 };
 
 const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(null);
@@ -107,6 +131,15 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [draftRecipes, setDraftRecipes] = useState<Recipe[]>([]);
   const [runningRecipes, setRunningRecipes] = useState<Record<string, number>>({});
+  const [seedOverrides, setSeedOverrides] = useState<Record<string, SeedOverride>>({});
+
+  function validateSeed(recipeId: string) {
+    setSeedOverrides((prev) => ({ ...prev, [recipeId]: { ...prev[recipeId], validated: true } }));
+  }
+
+  function publishSeed(recipeId: string) {
+    setSeedOverrides((prev) => ({ ...prev, [recipeId]: { ...prev[recipeId], draft: false } }));
+  }
 
   function startRun(recipeId: string, totalSteps: number, stepMs = 1050) {
     if (totalSteps <= 0) return;
@@ -167,7 +200,7 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun }}>
+    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun, seedOverrides, validateSeed, publishSeed }}>
       {children}
     </RecipeRuntimeContext.Provider>
   );
