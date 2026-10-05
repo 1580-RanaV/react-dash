@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import HeartButton from "./HeartButton";
+import { Badge } from "./ui/badge";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Chip({ n }: { n: number }) {
   return (
-    <span className="ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400">{n}</span>
+    <Badge className="ml-1 rounded px-1.5 py-0.5 font-medium bg-stone-100 text-stone-500 dark:bg-white/8 dark:text-stone-400">{n}</Badge>
   );
 }
 

@@ -10,6 +10,7 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import SegmentSelector, { Segment } from "./SegmentSelector";
 import FilterBuilder from "./FilterBuilder";
 import { USERS_DATA } from "../mocks/data/users";
+import { Badge } from "./ui/badge";
 
 export { USERS_DATA } from "../mocks/data/users";
 
@@ -23,9 +24,9 @@ const USER_COLUMNS: TableColumn[] = [
 
 function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="rounded-md bg-blue-50 font-medium text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
-    </span>
+    </Badge>
   );
 }
 

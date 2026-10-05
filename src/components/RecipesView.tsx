@@ -1254,7 +1254,8 @@ export default function RecipesView() {
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto">
       {/* Toolbar */}
       <div className="shrink-0 flex flex-wrap items-center gap-2 px-4 pt-3 pb-3">
-        <div className="relative flex-1 min-w-0">
+        <div className="flex flex-1 min-w-0 items-center gap-2">
+        <div className="relative w-full max-w-sm">
           <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
           <input
             value={search}
@@ -1375,6 +1376,7 @@ export default function RecipesView() {
               ))}
             </div>
           )}
+        </div>
         </div>
 
         <button

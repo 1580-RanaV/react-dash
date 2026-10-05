@@ -9,6 +9,7 @@ import SlidingSidebar from "./SlidingSidebar";
 import Toggle from "./Toggle";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import { Badge } from "./ui/badge";
 
 // ── Table data ─────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ function StatusBadge({ label, tone }: { label: string; tone: "blue" | "red" | "g
     red:   "bg-red-50 text-red-500 dark:bg-red-500/12 dark:text-red-300",
     green: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300",
   }[tone];
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>{label}</span>;
+  return <Badge className={`px-2.5 py-1 font-medium ${color}`}>{label}</Badge>;
 }
 
 const MEETING_ROWS: TableRow[] = [

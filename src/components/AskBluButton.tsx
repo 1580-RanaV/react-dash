@@ -22,7 +22,7 @@ export default function AskBluButton({ isOpen }: { isOpen: boolean }) {
     <button
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
-      className="relative w-full flex items-center justify-center px-3 py-2 rounded-full text-sm font-medium active:scale-95 transition-all duration-200 ease-out overflow-hidden"
+      className="relative w-full flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium active:scale-95 transition-all duration-200 ease-out overflow-hidden"
       style={{
         background: "rgba(0,128,255,0.10)",
         border: "none",

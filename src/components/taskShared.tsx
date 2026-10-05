@@ -1,4 +1,4 @@
-
+import { Badge } from "./ui/badge";
 
 export type Priority = "High" | "Medium" | "Low";
 export type Status = "Open" | "Completed";
@@ -25,25 +25,25 @@ export function StatusBadge({ status }: { status: Status }) {
     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/12 dark:text-emerald-300"
     : "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300";
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+    <Badge className={`px-2.5 py-0.5 font-semibold ${tone}`}>
       {status}
-    </span>
+    </Badge>
   );
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
-    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="px-2.5 py-0.5 font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {priority}
-    </span>
+    </Badge>
   );
 }
 
 export function TypeBadge({ type }: { type: TaskType }) {
   return (
-    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300">
+    <Badge className="px-2.5 py-0.5 font-semibold bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300">
       {type}
-    </span>
+    </Badge>
   );
 }
 

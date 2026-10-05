@@ -12,6 +12,7 @@ import RecentDesigns from "./RecentDesigns";
 import RevenueMetricCard from "./MetricCard";
 import { useHomeWidgets } from "./homeWidgets/homeWidgetsStore";
 import HomeWidgetCard from "./homeWidgets/HomeWidgetCard";
+import { Badge } from "./ui/badge";
 import {
   ComposedChart, Bar, Line, AreaChart, Area, LabelList, PieChart, Pie, Cell,
   XAxis, YAxis, ZAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend,
@@ -3427,14 +3428,13 @@ function EmptyHomeDashboard({ tab }: { tab: string }) {
 function MarketingStatusPill({ status }: { status: string }) {
   const isActive = status === "active" || status === "winning";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+    <Badge className={`px-2.5 py-1 font-medium ${
       isActive
         ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300"
         : "bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400"
     }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-stone-400"}`} />
       <span className="capitalize">{status}</span>
-    </span>
+    </Badge>
   );
 }
 
@@ -3596,9 +3596,9 @@ function MarketingSendPerformanceCard({ noData = false }: { noData?: boolean }) 
 
 function MarketingCountBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400">
+    <Badge className="shrink-0 px-2.5 py-1 font-medium bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-400">
       {children}
-    </span>
+    </Badge>
   );
 }
 

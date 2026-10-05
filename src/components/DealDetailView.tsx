@@ -12,6 +12,7 @@ import SubTabCorner from "./SubTabCorner";
 import DateRangePicker from "./DateRangePicker";
 import CodeBlock from "./CodeBlock";
 import DashboardTable, { TableColumn } from "./DashboardTable";
+import { Badge } from "./ui/badge";
 
 // ── data ─────────────────────────────────────────────────────────────────────
 
@@ -224,14 +225,14 @@ function DealStatusChip({ label, tone }: { label: string; tone: "open" | "done" 
   const cls = tone === "done"
     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/12 dark:text-emerald-300"
     : "bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300";
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>;
+  return <Badge className={`px-2.5 py-0.5 font-semibold ${cls}`}>{label}</Badge>;
 }
 
 function DealPriorityChip({ priority }: { priority: "High" | "Medium" | "Low" }) {
   return (
-    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="px-2.5 py-0.5 font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {priority}
-    </span>
+    </Badge>
   );
 }
 

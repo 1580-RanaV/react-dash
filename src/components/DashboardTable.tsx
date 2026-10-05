@@ -16,6 +16,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
+import { Badge } from "./ui/badge";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -61,24 +62,23 @@ function isStatus(value: React.ReactNode | TableCell | TableStatus): value is Ta
   return Boolean(value && typeof value === "object" && "tone" in value && "label" in value);
 }
 
-const STATUS_TONE_VARS: Record<TableStatus["tone"], { bg: string; fg: string; dot: string }> = {
-  green: { bg: "var(--success-background)",     fg: "var(--success)",     dot: "var(--success)" },
-  gray:  { bg: "var(--muted)",                  fg: "var(--muted-foreground)", dot: "var(--icon)" },
-  blue:  { bg: "var(--info-background)",        fg: "var(--info)",        dot: "var(--info)" },
-  red:   { bg: "var(--destructive-background)", fg: "var(--destructive)", dot: "var(--destructive)" },
+const STATUS_TONE_VARS: Record<TableStatus["tone"], { bg: string; fg: string }> = {
+  green: { bg: "var(--success-background)",     fg: "var(--success)" },
+  gray:  { bg: "var(--muted)",                  fg: "var(--muted-foreground)" },
+  blue:  { bg: "var(--info-background)",        fg: "var(--info)" },
+  red:   { bg: "var(--destructive-background)", fg: "var(--destructive)" },
 };
 
 function StatusPill({ status }: { status: TableStatus }) {
   const tone = STATUS_TONE_VARS[status.tone];
 
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+    <Badge
+      className="px-2.5 py-1 font-medium"
       style={{ background: tone.bg, color: tone.fg }}
     >
-      <span className="h-2 w-2 rounded-full" style={{ background: tone.dot }} />
       {status.label}
-    </span>
+    </Badge>
   );
 }
 
@@ -408,7 +408,7 @@ export default function DashboardTable({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
+              <Button variant="outline">
                 Columns <ChevronDown />
               </Button>
             </DropdownMenuTrigger>

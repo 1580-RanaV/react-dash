@@ -5,23 +5,23 @@ import { Plus, Table2 } from "lucide-react";
 import ViewTabs from "./ViewTabs";
 import CreateDealDrawer from "./CreateDealDrawer";
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
+import { Badge } from "./ui/badge";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function StageBadge({ stage }: { stage: string }) {
   return (
-    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="rounded-md px-2 py-0.5 font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {stage}
-    </span>
+    </Badge>
   );
 }
 
 function PriorityBadge({ priority }: { priority: "High" | "Medium" | "Low" }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+    <Badge variant="ghost" className="gap-1.5 font-medium text-blue-600 dark:text-blue-400">
       {priority}
-    </span>
+    </Badge>
   );
 }
 

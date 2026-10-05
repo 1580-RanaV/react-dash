@@ -157,7 +157,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         >
           <div
             className="hidden md:block shrink-0 overflow-hidden my-2 transition-[width,opacity,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0, marginLeft: panelOpen ? 8 : 0 }}
+            style={{ width: panelOpen ? 380 : 0, opacity: panelOpen ? 1 : 0, marginLeft: panelOpen ? 16 : 0 }}
           >
             {panelOpen && (
               <BluChat

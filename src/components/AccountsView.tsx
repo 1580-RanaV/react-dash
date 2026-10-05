@@ -9,31 +9,31 @@ import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { DEFAULT_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import SegmentSelector, { Segment } from "./SegmentSelector";
+import { Badge } from "./ui/badge";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-white/8 dark:text-stone-400">
+    <Badge className="rounded-md bg-stone-100 font-medium text-stone-600 dark:bg-white/8 dark:text-stone-400">
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function LifecycleBadge({ stage }: { stage: string }) {
   return (
-    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="rounded-md px-2 py-0.5 font-semibold bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {stage}
-    </span>
+    </Badge>
   );
 }
 
 function IntentBadge({ level }: { level: "High" | "Medium" | "Low" }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+    <Badge variant="ghost" className="gap-1.5 font-medium text-blue-600 dark:text-blue-400">
       {level}
-    </span>
+    </Badge>
   );
 }
 

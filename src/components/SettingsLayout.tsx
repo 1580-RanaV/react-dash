@@ -6,6 +6,7 @@ import SubTabCorner from "./SubTabCorner";
 import Toggle from "./Toggle";
 import GmailConnectModal from "./GmailConnectModal";
 import GoogleCalendarModal from "./GoogleCalendarModal";
+import { Badge } from "./ui/badge";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { LOCALES } from "../lib/locales";
@@ -1870,9 +1871,9 @@ const INITIAL_DOMAINS: DomainRow[] = [
 
 function CapBadge({ cap }: { cap: Capability }) {
   return (
-    <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${CAPABILITY_COLORS[cap]}`}>
+    <Badge className={`px-2 py-0.5 font-medium ${CAPABILITY_COLORS[cap]}`}>
       {cap}
-    </span>
+    </Badge>
   );
 }
 

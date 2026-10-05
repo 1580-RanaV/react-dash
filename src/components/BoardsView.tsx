@@ -16,6 +16,7 @@ import { useBoards } from "./boards/boardsStore";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import { SubscriptionContent } from "./SubscriptionView";
 import HeartButton from "./HeartButton";
+import { Badge } from "./ui/badge";
 
 // ── Chart data ────────────────────────────────────────────────────────────────
 
@@ -489,10 +490,10 @@ function TypeBadge({ type }: { type: BoardType }) {
   };
   const { icon, label } = config[type];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-stone-600 dark:border-(--border) dark:bg-white/4 dark:text-stone-300">
+    <Badge variant="outline" className="gap-1.5 rounded-md border-stone-200 bg-stone-50 px-2 py-1 font-medium text-stone-600 dark:border-(--border) dark:bg-white/4 dark:text-stone-300">
       {icon}
       {label}
-    </span>
+    </Badge>
   );
 }
 

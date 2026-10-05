@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Loader2, ShieldCheck, ChevronDown, ChevronLeft, Plus, GripVertical,
   Pencil, Trash2, X, AlertTriangle, CircleAlert, Check, MousePointer2, Hand, Minus,
-  Link2, Search, Rocket,
+  Link2, Search, Rocket, Wrench,
 } from "lucide-react";
 import BackButton from "./BackButton";
 import { RECIPES, type Recipe } from "./RecipesView";
 import { useRecipeRuntime } from "./recipeRuntimeStore";
 import ValidateConfirmModal, { type ValidateModalStage } from "./ValidateConfirmModal";
+import { Badge } from "./ui/badge";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,10 @@ type FlowNode = {
   calledRecipeId?: string;
   // Mocked freeform key:value params, edited on the step's own "Params" page.
   params?: string;
+  // Set via the amber panel's own "Solve issue" input — resolving an
+  // argument this way is deliberately separate from editing the step's
+  // title/subtitle through the full Edit drawer.
+  argValue?: string;
 };
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -49,11 +54,11 @@ function getNodeIssues(node: FlowNode): string[] {
 // value — shown independently of Validate, since it's about missing
 // configuration rather than pipeline validity.
 function hasUnresolvedArg(node: FlowNode) {
-  return node.title.trim().toLowerCase() === "arg" && node.subtitle.trim().toLowerCase() === "arg";
+  return node.title.trim().toLowerCase() === "arg" && node.subtitle.trim().toLowerCase() === "arg" && !node.argValue;
 }
 function getNodeArgWarnings(node: FlowNode): string[] {
   if (!hasUnresolvedArg(node)) return [];
-  return ["This step has an argument that isn't set yet. Provide a value before this recipe can run."];
+  return ["This step has an issue that isn't set yet. Provide a value before this recipe can run."];
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -90,6 +95,11 @@ export default function RecipeCanvasView({
   const [editParams,      setEditParams]      = useState("");
   // The edit panel is a small two-page wizard: Description, then Params.
   const [editPage,        setEditPage]        = useState<0 | 1>(0);
+  // Floating "Solve issue" stepper — same floating-panel chrome as Edit,
+  // steps through each unresolved-issue message one at a time.
+  const [solvingId,       setSolvingId]       = useState<string | null>(null);
+  const [solveStep,       setSolveStep]       = useState(0);
+  const [solveValues,     setSolveValues]     = useState<string[]>([]);
   // Delete modal
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // Fading-out nodes
@@ -303,6 +313,7 @@ export default function RecipeCanvasView({
     setEditParams(node.params ?? "");
     setEditPage(0);
     setEditingId(node.id);
+    setSolvingId(null);
     setSelectedId(null);
   }
 
@@ -328,10 +339,31 @@ export default function RecipeCanvasView({
     }, 1100);
   }
 
+  // "Solve issue" opens a floating stepper beside the node (same chrome as
+  // the Edit floating window) instead of a bespoke field inline in the
+  // card — it steps through each unresolved-issue message one at a time.
+  function handleStartSolve(node: FlowNode) {
+    setSolveValues(Array(getNodeArgWarnings(node).length).fill(""));
+    setSolveStep(0);
+    setSolvingId(node.id);
+    setEditingId(null);
+    setSelectedId(null);
+  }
+
+  function handleSolveConfirm() {
+    if (!solvingId) return;
+    const id = solvingId;
+    const value = solveValues.map((v) => v.trim()).filter(Boolean).join(" · ");
+    setSolvingId(null);
+    if (!value) return;
+    setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, argValue: value } : n)));
+  }
+
   function handleStartDelete(id: string) {
     setConfirmDeleteId(id);
     setSelectedId(null);
     setEditingId(null);
+    setSolvingId(null);
   }
 
   function handleConfirmDelete(id: string) {
@@ -468,6 +500,7 @@ export default function RecipeCanvasView({
         onClick={() => handleNodeClick(node.id)}
         onStartEdit={() => handleStartEdit(node)}
         onStartDelete={() => handleStartDelete(node.id)}
+        onStartSolve={() => handleStartSolve(node)}
         onDragStart={() => handleDragStart(node.id)}
         onDragOver={() => handleDragOver(node.id)}
         onDrop={() => handleDrop(node.id)}
@@ -478,6 +511,8 @@ export default function RecipeCanvasView({
 
   const editNode = nodes.find((n) => n.id === editingId);
   const deleteNode = nodes.find((n) => n.id === confirmDeleteId);
+  const solveNode = nodes.find((n) => n.id === solvingId);
+  const solveMessages = solveNode ? getNodeArgWarnings(solveNode) : [];
 
   const emptyState = nodes.length === 0 ? (
     <button
@@ -797,6 +832,95 @@ export default function RecipeCanvasView({
                       onClick={handleEditConfirm}
                       className="flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                       style={{ background: "#3b82f6" }}
+                    >
+                      Confirm
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Solve issue floating stepper ─────────────────────────────────── */}
+        {solvingId && solveNode && (
+          <div
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-72"
+            style={{ left: "calc(50% + 180px)", animation: "float-in 0.22s ease-out both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="rounded-xl shadow-2xl"
+              style={{ background: "var(--content-bg)", border: "1.5px solid #ef4444" }}
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 dark:text-red-400">
+                    Solve issue · step {solveNode.step}
+                  </p>
+                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{solveNode.title}</p>
+                </div>
+                <button
+                  onClick={() => setSolvingId(null)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+              <div className="px-4 pb-4">
+                <p className="text-xs leading-relaxed text-red-500/90 dark:text-red-400/90 mb-3">
+                  {solveMessages[solveStep]}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5">
+                  Value
+                </p>
+                <input
+                  autoFocus
+                  value={solveValues[solveStep] ?? ""}
+                  onChange={(e) => setSolveValues((prev) => prev.map((v, i) => (i === solveStep ? e.target.value : v)))}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    if (solveStep < solveMessages.length - 1) setSolveStep((s) => s + 1);
+                    else handleSolveConfirm();
+                  }}
+                  placeholder="Enter a value for this argument"
+                  className="w-full rounded-lg border px-3 py-2 text-sm text-stone-800 dark:text-stone-100 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500"
+                  style={{ background: "var(--input)", borderColor: "var(--border)" }}
+                />
+                <div className="mt-2.5 flex items-center gap-2">
+                  {solveStep > 0 ? (
+                    <button
+                      onClick={() => setSolveStep((s) => s - 1)}
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg px-3 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/8 transition-colors"
+                    >
+                      <ChevronLeft size={12} />
+                      Back
+                    </button>
+                  ) : <div />}
+                  <div className="flex flex-1 items-center justify-center gap-1.5">
+                    {solveMessages.map((_, i) => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full transition-colors"
+                        style={{ background: i === solveStep ? "#ef4444" : "var(--border)" }}
+                      />
+                    ))}
+                  </div>
+                  {solveStep < solveMessages.length - 1 ? (
+                    <button
+                      onClick={() => setSolveStep((s) => s + 1)}
+                      disabled={!(solveValues[solveStep] ?? "").trim()}
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                      style={{ background: "#ef4444" }}
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSolveConfirm}
+                      disabled={!(solveValues[solveStep] ?? "").trim()}
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                      style={{ background: "#ef4444" }}
                     >
                       Confirm
                     </button>
@@ -1142,18 +1266,18 @@ function IssuePanel({ messages, label, expanded, onToggle }: {
   );
 }
 
-// Same collapsible pill as the red IssuePanel — but an argument isn't
-// resolved through a bespoke input here, it's resolved the same way any
-// other step content changes: the step's own Edit drawer (or Delete, if the
-// step shouldn't exist at all). A single generic "value" field doesn't scale
-// once a step can carry several distinctly-named arguments, so this just
-// hands off to the real editing flow instead of re-inventing a form.
-function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDelete }: {
+// Same collapsible pill as the red IssuePanel. "Solve issue" opens the
+// floating stepper (beside the node, same chrome as Edit) — it's always
+// visible regardless of whether the message list below is expanded, since
+// it's the primary way to clear the issue. Edit is still there for changing
+// the step's actual prompt, and Delete for removing the step entirely.
+function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDelete, onStartSolve }: {
   messages: string[];
   expanded: boolean;
   onToggle: () => void;
   onStartEdit: () => void;
   onStartDelete: () => void;
+  onStartSolve: () => void;
 }) {
   if (messages.length === 0) return null;
 
@@ -1165,7 +1289,7 @@ function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDel
         style={expanded ? undefined : { border: "1px solid #ef4444" }}
       >
         <AlertTriangle size={12} />
-        {messages.length} argument{messages.length > 1 ? "s" : ""} to resolve
+        {messages.length} issue{messages.length > 1 ? "s" : ""} to resolve
         <ChevronDown
           size={11}
           style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.25s" }}
@@ -1180,23 +1304,34 @@ function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDel
             {messages.map((m, i) => (
               <p key={i} className="text-xs leading-relaxed text-red-500/90 dark:text-red-400/90">{m}</p>
             ))}
-            <div className="flex items-stretch gap-1.5">
-              <button
-                onClick={onStartEdit}
-                className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-              >
-                <Pencil size={12} />
-                Edit
-              </button>
-              <button
-                onClick={onStartDelete}
-                className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 size={12} />
-                Delete
-              </button>
-            </div>
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5 pt-2">
+        <button
+          onClick={onStartSolve}
+          className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+          style={{ background: "#ef4444" }}
+        >
+          <Wrench size={12} />
+          Solve issue
+        </button>
+        <div className="flex items-stretch gap-1.5">
+          <button
+            onClick={onStartEdit}
+            className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+          >
+            <Pencil size={12} />
+            Edit
+          </button>
+          <button
+            onClick={onStartDelete}
+            className="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={12} />
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -1208,7 +1343,7 @@ function ArgResolvePanel({ messages, expanded, onToggle, onStartEdit, onStartDel
 function FlowNodeCard({
   node, state, isSelected, isEditing, isConfirming, isFading,
   isDragging, isDragOver, readOnly,
-  onClick, onStartEdit, onStartDelete,
+  onClick, onStartEdit, onStartDelete, onStartSolve,
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: {
   node: FlowNode;
@@ -1223,6 +1358,7 @@ function FlowNodeCard({
   onClick: () => void;
   onStartEdit: () => void;
   onStartDelete: () => void;
+  onStartSolve: () => void;
   onDragStart: () => void;
   onDragOver: () => void;
   onDrop: () => void;
@@ -1259,6 +1395,14 @@ function FlowNodeCard({
 
   const isSpinning = isValidating || isRunning;
 
+  // Selected gets a tinted ring + lift instead of just a thicker border, so
+  // it reads as elevated above the canvas rather than just outlined. Resting
+  // cards get a plain soft shadow that firms up on hover — the only cue
+  // that they're clickable at all before any state is set.
+  const cardShadow = isSelected
+    ? `0 0 0 3px ${borderColor}26, 0 10px 28px rgba(0,0,0,0.14)`
+    : undefined;
+
   const cardAnimation =
     isFading      ? "fade-out-node 0.42s cubic-bezier(0.4,0,1,1) forwards"  :
     isInvalid     ? "invalid-enter 0.55s cubic-bezier(0.22,1,0.36,1) both"  :
@@ -1281,7 +1425,7 @@ function FlowNodeCard({
         </div>
       )}
       <div
-        className="relative w-80 rounded-xl overflow-hidden cursor-pointer"
+        className={`relative w-80 rounded-xl overflow-hidden cursor-pointer ${isSelected ? "" : "shadow-sm hover:shadow-md"}`}
         draggable
         onDragStart={(e) => { e.stopPropagation(); onDragStart(); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); onDragOver(); }}
@@ -1290,6 +1434,7 @@ function FlowNodeCard({
         style={{
           background: "var(--content-bg)",
           border: `1.5px solid ${isSpinning ? "var(--content-bg)" : borderColor}`,
+          boxShadow: cardShadow,
           transition: "border-color 0.25s ease, box-shadow 0.25s ease",
           animation: cardAnimation,
         }}
@@ -1297,14 +1442,14 @@ function FlowNodeCard({
       >
       {/* Top-center drag handle */}
       <div
-        className="flex justify-center pt-2 pb-0 cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:text-stone-400 dark:hover:text-stone-500 transition-colors"
+        className="mx-auto flex w-10 justify-center rounded-b-md py-1 cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:bg-stone-100 dark:hover:bg-white/6 hover:text-stone-400 dark:hover:text-stone-500 transition-colors"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <GripVertical size={13} />
       </div>
 
       {/* Main content row */}
-      <div className="px-4 pt-3 pb-5 flex items-start justify-between gap-3">
+      <div className="px-4 pt-2 pb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div
             className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-stone-600 dark:text-stone-400"
@@ -1312,30 +1457,32 @@ function FlowNodeCard({
           >
             {node.step}
           </div>
-          <div>
+          <div className="min-w-0">
             {node.calledRecipeId && (
-              <span className="mb-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10">
+              <Badge className="mb-1.5 gap-1 bg-blue-50 text-[10px] font-semibold text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                 <Link2 size={9} />
                 Calls recipe
-              </span>
+              </Badge>
             )}
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-snug">{node.title}</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-2 leading-snug">{node.subtitle}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">{node.subtitle}</p>
           </div>
         </div>
-        <div className="shrink-0 mt-1">
+        <div className="shrink-0 mt-0.5">
           {needsArgs ? (
-            <CircleAlert size={20} style={{ color: "#ef4444" }} strokeWidth={2} />
+            <div className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#ef4444" }}>
+              <CircleAlert size={14} className="text-white" strokeWidth={2.5} />
+            </div>
           ) : (isValid || isDone) && (
             <div
-              className="flex h-6 w-6 items-center justify-center rounded-full"
+              className="flex h-7 w-7 items-center justify-center rounded-full"
               style={{ background: isValid ? "#3b82f6" : "#10b981" }}
             >
               <Check size={14} className="text-white" strokeWidth={3} />
             </div>
           )}
           {isInvalid && (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "#ef4444" }}>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "#ef4444" }}>
               <X size={14} className="text-white" strokeWidth={3} />
             </div>
           )}
@@ -1357,11 +1504,14 @@ function FlowNodeCard({
           onToggle={() => setArgsExpanded((e) => !e)}
           onStartEdit={onStartEdit}
           onStartDelete={onStartDelete}
+          onStartSolve={onStartSolve}
         />
       )}
 
-      {/* Selected action row — split 50/50, inset rounded hover fills */}
-      {isSelected && !readOnly && (
+      {/* Selected action row — split 50/50, inset rounded hover fills.
+          Skipped when the arg panel is already showing (it has its own
+          Edit/Delete) to avoid showing both at once. */}
+      {isSelected && !readOnly && !needsArgs && (
         <div className="flex items-stretch gap-1.5 px-2 pb-2 pt-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={onStartEdit}

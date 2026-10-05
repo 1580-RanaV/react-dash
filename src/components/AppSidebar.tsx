@@ -441,11 +441,10 @@ function NavUser() {
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
 
             {/* Appearance — plain buttons, not DropdownMenuItems, so picking
                 one doesn't close the menu */}
-            <div className="px-1 pb-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
+            <div className="px-1 pb-1.5 pt-2" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
                 <button
                   onClick={() => toggleTheme(false)}
@@ -491,16 +490,14 @@ function NavUser() {
                 </div>
               </div>
             )}
-            <DropdownMenuSeparator />
 
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="mt-1.5">
               <DropdownMenuItem className="active:scale-[0.96]" onClick={() => navigate("/settings/billing")}>
                 <Sparkles />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="mt-1.5">
               <DropdownMenuItem className="active:scale-[0.96]" onClick={() => navigate("/settings/about")}>
                 <BadgeCheck />
                 Account
@@ -514,8 +511,7 @@ function NavUser() {
               </DropdownMenuItem>
               <NotificationsSubmenu />
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="mt-1.5">
               <DropdownMenuItem className="active:scale-[0.96]">
                 <Search />
                 Search
@@ -529,8 +525,7 @@ function NavUser() {
                 Public workflow
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="active:scale-[0.96]">
+            <DropdownMenuItem className="active:scale-[0.96] mt-1.5">
               <LogOut />
               Log out
             </DropdownMenuItem>

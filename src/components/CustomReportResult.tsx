@@ -7,6 +7,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } fro
 import DashboardTable, { TableColumn, TableRow } from "./DashboardTable";
 import { useBoards } from "./boards/boardsStore";
 import { useHomeWidgets, type HomeWidgetTab, type HomeWidgetWidth } from "./homeWidgets/homeWidgetsStore";
+import { Badge } from "./ui/badge";
 
 /* ─────────────────────────────────────────────────────────
  * CUSTOM REPORT RESULT — the narrative + chart artifact
@@ -173,13 +174,13 @@ function NoEmbedBadge() {
   const tone = RESULT_STATE_TONE.qualified;
   return (
     <span className="relative inline-flex" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      <span
-        className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+      <Badge
+        className="gap-1 px-3 py-1 font-semibold"
         style={{ background: tone.bg, color: tone.color }}
       >
         Embed not available
         <Info size={12} className="shrink-0" />
-      </span>
+      </Badge>
       {show && (
         <div
           className="animate-tooltip-in absolute left-0 top-[calc(100%+8px)] z-200 w-56 max-w-[80vw] rounded-xl p-3 text-xs leading-relaxed text-stone-700 dark:text-stone-200"

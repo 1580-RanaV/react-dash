@@ -1336,7 +1336,7 @@ export default function BluChat({
       style={
         mode === "fullscreen"
           ? { background: "var(--content-bg)" }
-          : { background: "var(--content-bg)" }
+          : { background: "var(--sidebar)", border: "1px solid var(--border)" }
       }
     >
       {/* Header */}
@@ -2479,9 +2479,9 @@ export default function BluChat({
             className="flex flex-col rounded-t-xl px-3.5 py-3"
             style={{
               background: "var(--content-bg)",
-              borderTop: "2px solid var(--border)",
-              borderLeft: "2px solid var(--border)",
-              borderRight: "2px solid var(--border)",
+              borderTop: "1px solid var(--border)",
+              borderLeft: "1px solid var(--border)",
+              borderRight: "1px solid var(--border)",
               animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
             }}
           >
@@ -2535,9 +2535,9 @@ export default function BluChat({
             style={{
               maxHeight: 280,
               background: "var(--content-bg)",
-              borderTop: "2px solid var(--border)",
-              borderLeft: "2px solid var(--border)",
-              borderRight: "2px solid var(--border)",
+              borderTop: "1px solid var(--border)",
+              borderLeft: "1px solid var(--border)",
+              borderRight: "1px solid var(--border)",
               animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
             }}
           >
@@ -2646,9 +2646,9 @@ export default function BluChat({
             className="flex items-start gap-2 rounded-t-xl px-3 py-2.5"
             style={{
               background: "rgba(239,68,68,0.1)",
-              borderTop: "2px solid var(--border)",
-              borderLeft: "2px solid var(--border)",
-              borderRight: "2px solid var(--border)",
+              borderTop: "1px solid var(--border)",
+              borderLeft: "1px solid var(--border)",
+              borderRight: "1px solid var(--border)",
               animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
             }}
           >
@@ -2668,9 +2668,9 @@ export default function BluChat({
             className="flex items-center gap-2.5 rounded-t-xl px-3 py-2.5"
             style={{
               background: "rgba(0,128,255,0.1)",
-              borderTop: "2px solid var(--border)",
-              borderLeft: "2px solid var(--border)",
-              borderRight: "2px solid var(--border)",
+              borderTop: "1px solid var(--border)",
+              borderLeft: "1px solid var(--border)",
+              borderRight: "1px solid var(--border)",
               animation: "fade-up 350ms cubic-bezier(0.23,1,0.32,1) both",
             }}
           >
@@ -2706,10 +2706,10 @@ export default function BluChat({
               <div
                 className={`px-4 pt-4 pb-4 ${topStripVisible ? "rounded-b-xl" : "rounded-xl"}`}
                 style={{
-                  borderLeft: "2px solid var(--border)",
-                  borderRight: "2px solid var(--border)",
-                  borderBottom: "2px solid var(--border)",
-                  borderTop: topStripVisible ? "none" : "2px solid var(--border)",
+                  borderLeft: "1px solid var(--border)",
+                  borderRight: "1px solid var(--border)",
+                  borderBottom: "1px solid var(--border)",
+                  borderTop: topStripVisible ? "none" : "1px solid var(--border)",
                   boxShadow: "0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
                   background: mode === "fullscreen" ? "var(--content-bg)" : undefined,
                   opacity: inputLocked ? 0.45 : 1,

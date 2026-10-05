@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import BackButton from "./BackButton";
 import HeartButton from "./HeartButton";
+import { Badge } from "./ui/badge";
 import {
   CalendarDays,
   Check,
@@ -160,7 +161,7 @@ function Initial({ label, className }: { label: string; className: string }) {
 }
 
 function TimeBadge({ time }: { time: string }) {
-  return <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-500/12 dark:text-blue-300">{time}</span>;
+  return <Badge className="rounded-md bg-blue-50 px-2 py-0.5 font-semibold text-blue-700 dark:bg-blue-500/12 dark:text-blue-300">{time}</Badge>;
 }
 
 function formatPlayerTime(seconds: number) {

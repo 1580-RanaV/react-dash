@@ -8,6 +8,7 @@ import DashboardTable, { FilterConfig, TableColumn, TableRow } from "./Dashboard
 import { ASSET_MENU_ITEMS, ThreeDotsMenuItem } from "./ThreeDotsMenu";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import ViewTabs from "./ViewTabs";
+import { Badge } from "./ui/badge";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,9 +20,9 @@ function TypeBadge({ type }: { type: "Email Plain" | "Email HTML" | "SMS" | "Ima
     "Image":       "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
   };
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${map[type]}`}>
+    <Badge className={`px-2 py-0.5 font-semibold ${map[type]}`}>
       {type}
-    </span>
+    </Badge>
   );
 }
 
@@ -50,10 +51,9 @@ function UserAvatar({ initial, color, name, muted }: { initial: string; color: s
 
 function StatusDot() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-stone-700 dark:text-stone-300">
-      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+    <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300">
       Active
-    </span>
+    </Badge>
   );
 }
 

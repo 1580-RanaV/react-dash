@@ -6,6 +6,7 @@ import { Building2, Plus, Search, Star, Table2, User, Zap } from "lucide-react";
 import DashboardTable, { TableColumn, TableRow, TableStatus } from "./DashboardTable";
 import SlidingSidebar from "./SlidingSidebar";
 import ViewTabs from "./ViewTabs";
+import { Badge } from "./ui/badge";
 
 const TABS = [
   { key: "table", label: "Table", icon: <Table2 size={14} /> },
@@ -25,25 +26,25 @@ const COLUMNS: TableColumn[] = [
 
 function ObjectBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="px-2 py-0.5 font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function TypeBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
+    <Badge className="px-2 py-0.5 font-medium bg-blue-50 text-blue-600 dark:bg-blue-500/12 dark:text-blue-300">
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function DataTypeBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 font-mono text-xs text-stone-600 dark:bg-white/8 dark:text-stone-300">
+    <Badge className="px-2 py-0.5 font-mono bg-stone-100 text-stone-600 dark:bg-white/8 dark:text-stone-300">
       {label}
-    </span>
+    </Badge>
   );
 }
 
