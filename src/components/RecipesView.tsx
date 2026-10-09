@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Route, Zap, Users2, FlaskConical, Tag, BarChart3,
   Check, Copy, FileText, FileCode, Pencil, Shuffle, Play, Loader2,
   Lock, Plug, History, Trash2, AlertTriangle, Clock, Workflow, ShieldCheck,
+  Palette, Image as ImageIcon,
 } from "lucide-react";
 import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
@@ -42,6 +43,9 @@ export type Recipe = {
   draft?: boolean;
   // BC-RCP-010–017: recipe needs a connected integration before it can run.
   requiresIntegration?: string;
+  // Other setup gaps alongside the integration itself — shown together as
+  // one "things to sort out" checklist instead of a single disabled button.
+  missingAttributes?: { label: string; actionLabel: string; path: string; icon: React.ReactNode }[];
   // BC-RCP-021: recipe is locked by permission, not by a missing connection —
   // no self-serve unlock, just an explanation.
   requiresPermission?: string;
@@ -229,6 +233,10 @@ Taxonomy notes:
     uses: 1800,
     why: "Creative production for a launch usually takes 2–3 days of back-and-forth between marketing and design. This recipe reduces that to a single brief and a single generation run, getting you launch-ready assets in one step.",
     requiresIntegration: "Shopify",
+    missingAttributes: [
+      { label: "Brand colours aren't set", actionLabel: "Set up", path: "/brand", icon: <Palette size={13} className="text-white" /> },
+      { label: "No logo asset uploaded yet", actionLabel: "Upload", path: "/asset-library", icon: <ImageIcon size={13} className="text-white" /> },
+    ],
     spec: { complexity: "Simple", execution: "On-demand", agent: "content creator", products: ["Content"], mode: "saas, b2b", areas: ["Content"] },
     stepDetails: [
       `Step 1 — Open /content and create a new CONTENT GENERATION task. Fill in the launch brief:\n  Product name, tagline, primary CTA, brand colour hex codes, logo asset URL, tone (e.g. bold, professional, playful).\n\nFormats to generate in one run:\n  - Hero banner: 1440×600px (web)\n  - Social square: 1080×1080px (LinkedIn / X)\n  - Email header: 600×200px`,
@@ -537,6 +545,7 @@ function openRecipeInCanvas(recipe: Recipe, title: string) {
 }
 
 export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) {
+  const navigate = useNavigate();
   const [activeTab,  setActiveTab]  = useState("details");
   const [cmdCopied,  setCmdCopied]  = useState(false);
   const [title,        setTitle]        = useState(recipe.title);
@@ -587,6 +596,27 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
     requestGlobal(recipe.id);
   }
   const needsConnection = !!recipe.requiresIntegration && !isConnected(recipe.requiresIntegration);
+  // The connection itself, plus any other setup gaps for this recipe —
+  // surfaced together as one checklist banner instead of a lone disabled
+  // "Connect" button in the top bar.
+  const missingItems = needsConnection
+    ? [
+        {
+          label: `Connect ${recipe.requiresIntegration} to pull in live data`,
+          actionLabel: connecting ? "Connecting…" : "Connect",
+          icon: <IntegrationLogo name={recipe.requiresIntegration!} size={13} fallback={<Plug size={13} className="text-white" />} />,
+          onAction: handleConnect,
+          disabled: connecting,
+        },
+        ...(recipe.missingAttributes ?? []).map((item) => ({
+          label: item.label,
+          actionLabel: item.actionLabel,
+          icon: item.icon,
+          onAction: () => navigate(item.path),
+          disabled: false,
+        })),
+      ]
+    : [];
   const permissionLocked = !!recipe.requiresPermission;
   const notValidated = !!recipe.draftSteps && !recipe.validated;
   const runLocked = needsConnection || permissionLocked || notValidated;
@@ -763,19 +793,9 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-2">
-          {needsConnection && (
-            <button
-              onClick={handleConnect}
-              disabled={connecting}
-              title={`Connect ${recipe.requiresIntegration} to run this recipe`}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 transition-colors hover:bg-amber-100 dark:hover:bg-amber-500/15 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {connecting
-                ? <Loader2 size={12} className="animate-spin" />
-                : <IntegrationLogo name={recipe.requiresIntegration!} size={12} fallback={<Plug size={12} />} />}
-              {connecting ? `Connecting ${recipe.requiresIntegration}…` : `Connect ${recipe.requiresIntegration}`}
-            </button>
-          )}
+          {/* Connecting the integration (and any other setup gaps) now
+              happens via the checklist banner above the Slash command
+              section, not a lone disabled button up here. */}
           {canGoGlobal && (
             recipe.globalStatus === "submitted" ? (
               <span className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10">
@@ -843,6 +863,45 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
+
+          {/* Setup checklist — the integration connection plus any other
+              missing attributes this recipe needs before Run unlocks,
+              surfaced here (not as a lone disabled top-bar button) so each
+              gap has its own fix-it action. */}
+          {missingItems.length > 0 && (
+            <section>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                Prerequisites
+              </p>
+              <div
+                className="flex flex-col rounded-2xl overflow-hidden animate-fade-up"
+                style={{ background: "rgba(245,158,11,0.10)" }}
+              >
+                {missingItems.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-4 py-3.5"
+                    style={i > 0 ? { borderTop: "1px solid rgba(245,158,11,0.18)" } : undefined}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "#f59e0b" }}>
+                      {item.icon}
+                    </span>
+                    <p className="flex-1 min-w-0 text-sm text-amber-900 dark:text-amber-100 leading-snug">
+                      {item.label}
+                    </p>
+                    <button
+                      onClick={item.onAction}
+                      disabled={item.disabled}
+                      className="shrink-0 inline-flex h-8 items-center rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{ background: "#f59e0b" }}
+                    >
+                      {item.disabled ? <Loader2 size={12} className="animate-spin" /> : item.actionLabel}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Validated / published banners — the draft's own "ready to ship"
               and "shipped" moments, surfaced here rather than as just another
