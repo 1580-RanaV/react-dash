@@ -12,7 +12,7 @@ import CreateRecipeDrawer from "./CreateRecipeDrawer";
 import BackButton from "./BackButton";
 import SubTabCorner from "./SubTabCorner";
 import SlidingSidebar from "./SlidingSidebar";
-import { useRecipeRuntime, IntegrationLogo, withSeedOverrides } from "./recipeRuntimeStore";
+import { useRecipeRuntime, IntegrationLogo, withSeedOverrides, type RunRecord } from "./recipeRuntimeStore";
 import ValidateConfirmModal, { type ValidateModalStage } from "./ValidateConfirmModal";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
@@ -60,6 +60,11 @@ export type Recipe = {
   // Set once a user-created recipe's "Make it global" button has been
   // clicked — mocks submitting it for review before it'd be shared org-wide.
   globalStatus?: "submitted";
+  // True for every entry in GLOBAL_RECIPES — someone else's recipe, browsed
+  // from the Global tab. Running it once also adopts it into this project's
+  // own list (see adoptedGlobalIds), where it keeps this flag so the card
+  // still shows the Global badge and its original author.
+  isGlobal?: boolean;
 };
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -310,7 +315,7 @@ export const RECIPE_DATES: Record<string, string> = {
 // Recipes posted by other people across the org/community — a separate,
 // read-only catalog from this project's own RECIPES above. "g"-prefixed ids
 // so they never collide with a seeded or draft id.
-export const GLOBAL_RECIPES: Recipe[] = [
+const GLOBAL_RECIPES_RAW: Recipe[] = [
   {
     id: "g1",
     icon: <Mail size={16} />,
@@ -419,6 +424,8 @@ export const GLOBAL_RECIPES: Recipe[] = [
   },
 ];
 
+export const GLOBAL_RECIPES: Recipe[] = GLOBAL_RECIPES_RAW.map((r) => ({ ...r, isGlobal: true }));
+
 export type Creator = { name: string; initials: string; color: string };
 
 export const RECIPE_CREATORS: Record<string, Creator> = {
@@ -462,8 +469,8 @@ function CreatorChip({ id, author }: { id: string; author?: string }) {
 
 const MAX_VISIBLE_CHIPS = 2;
 
-export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
-  const { runningRecipes } = useRecipeRuntime();
+export function RecipeCard({ recipe, onOpen, isGlobalView }: { recipe: Recipe; onOpen: () => void; isGlobalView?: boolean }) {
+  const { runningRecipes, runHistory } = useRecipeRuntime();
   const allChips = Array.from(new Set([...recipe.spec.areas, ...recipe.spec.products]));
   const visibleChips = allChips.slice(0, MAX_VISIBLE_CHIPS);
   const overflow = allChips.length - MAX_VISIBLE_CHIPS;
@@ -473,6 +480,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => v
   const isRunning = runningStep !== undefined;
   const totalSteps = MOCK_STEPS.length;
   const isRunDone = isRunning && runningStep >= totalSteps;
+  const hasRun = (runHistory[recipe.id]?.length ?? 0) > 0;
 
   return (
     <div
@@ -484,6 +492,9 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => v
         {cloneElement(recipe.icon as React.ReactElement<{ size?: number }>, { size: 76 })}
       </span>
 
+      {/* Bottom-right corner badges — a green "ran successfully" tick (Global
+          tab only) and the Global-origin badge, stacked so both read at a
+          glance without competing with the title/creator row above. */}
       {/* Creator + date + (canvas-backed recipes only) a direct edit shortcut */}
       <div className="flex items-center justify-between">
         <CreatorChip id={recipe.id} author={recipe.author} />
@@ -556,9 +567,20 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => v
         </div>
       )}
 
-      {/* Draft / lock badges */}
-      {(recipe.draft || permissionLocked || notValidated) && (
+      {/* Status badges — Draft / lock / run-check / global, bottom-right
+          corner. Global only shows once a recipe has been adopted into the
+          project list (never in the Global tab itself, where it's a given). */}
+      {(recipe.draft || permissionLocked || notValidated || (isGlobalView && hasRun) || (recipe.isGlobal && !isGlobalView)) && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+          {isGlobalView && hasRun && (
+            <span
+              title="You've run this successfully"
+              className="flex h-5 w-5 items-center justify-center rounded-full"
+              style={{ background: "#10b981" }}
+            >
+              <Check size={11} className="text-white" strokeWidth={3} />
+            </span>
+          )}
           {permissionLocked && (
             <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/8">
               <Lock size={10} />
@@ -576,6 +598,19 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => v
               Draft
             </span>
           )}
+          {recipe.isGlobal && !isGlobalView && (
+            <span
+              className="relative inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 overflow-hidden"
+              style={{
+                backgroundImage: "linear-gradient(110deg, transparent 40%, rgba(59,130,246,0.35) 50%, transparent 60%)",
+                backgroundSize: "250% 100%",
+                animation: "shimmer-sweep 2.6s ease-in-out infinite",
+              }}
+            >
+              <Globe size={10} />
+              Global
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -583,6 +618,32 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => v
 }
 
 // ── Recipe detail ─────────────────────────────────────────────────────────────
+
+// What a run "produced" — mocked per category since there's no real
+// generation backend, shown in the run record's hover popover.
+function mockOutputItems(recipe: Recipe): string[] {
+  switch (recipe.category) {
+    case "Content":
+      return [`A clean 600×200px illustrative banner for "${recipe.title}"`, `Social square + email header set for "${recipe.title}"`];
+    case "Email":
+      return [`Re-engagement email: ${recipe.title}`, `Re-Send follow-up for non-openers`];
+    case "Data":
+      return [`Report: ${recipe.title}`];
+    case "Journey Builder":
+      return [`Journey sequence: ${recipe.title}`, `In-app nudge: ${recipe.title}`];
+    case "Feedback":
+      return [`Follow-up ticket flow: ${recipe.title}`];
+    case "Growth":
+      return [`Referral kickoff email: ${recipe.title}`];
+    case "Experiments":
+    case "Experimentation":
+      return [`Experiment digest: ${recipe.title}`];
+    case "Lifecycle":
+      return [`Lifecycle nudge sequence: ${recipe.title}`];
+    default:
+      return [`${recipe.title} — output`];
+  }
+}
 
 function toSlashCommand(title: string) {
   return "/" + title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");
@@ -594,6 +655,54 @@ function formatRunTimestamp(at: number) {
   return isToday
     ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
     : d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+// The "output" pill on a run record — hovering reveals what that run
+// actually generated instead of making you click through to find out.
+function RunOutputButton({ run, recipeTitle, onOpen }: { run: RunRecord; recipeTitle: string; onOpen: (label: string) => void }) {
+  const [hovered, setHovered] = useState(false);
+  const items = run.items ?? [];
+
+  return (
+    <div
+      className="relative shrink-0"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        onClick={() => onOpen(run.createdLabel)}
+        className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/15 transition-colors"
+      >
+        {run.createdLabel}
+      </button>
+
+      {hovered && items.length > 0 && (
+        <div
+          className="animate-tooltip-in absolute bottom-[calc(100%+8px)] right-0 z-50 w-72 rounded-xl p-3"
+          style={{
+            background: "var(--content-bg)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)",
+          }}
+        >
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 truncate">
+            {recipeTitle}
+          </p>
+          <div className="flex flex-col gap-1">
+            {items.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => onOpen(item)}
+                className="truncate text-left text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -672,7 +781,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
   const mdOpen = activeTab === "md";
   const [btnRunning, setBtnRunning] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown } = useRecipeRuntime();
+  const { isConnected, connectIntegration, runHistory, addRunRecord, deleteRecipe, startRun, runningRecipes, requestGlobal, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown, adoptGlobalRecipe } = useRecipeRuntime();
   const runningStep = runningRecipes[recipe.id];
   const isRunningThis = runningStep !== undefined;
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -756,6 +865,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
 
   function handleRun() {
     if (btnRunning || runLocked) return;
+    if (recipe.isGlobal) adoptGlobalRecipe(recipe.id);
     setBtnRunning(true);
     window.dispatchEvent(new Event("open-blu-chat"));
     const stepTitles = MOCK_STEPS.map((s) => s.title);
@@ -770,6 +880,7 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
         at: Date.now(),
         createdLabel: "output",
         by: "Rana V",
+        items: mockOutputItems(recipe),
       });
     }, 300 + stepTitles.length * 1050 + 200);
   }
@@ -1213,12 +1324,11 @@ export function RecipeDetailView({ recipe, onBack }: { recipe: Recipe; onBack: (
                         {formatRunTimestamp(run.at)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => openRunItemInChat(run.createdLabel)}
-                      className="shrink-0 inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/15 transition-colors"
-                    >
-                      {run.createdLabel}
-                    </button>
+                    <RunOutputButton
+                      run={run}
+                      recipeTitle={recipe.title}
+                      onOpen={(label) => openRunItemInChat(label)}
+                    />
                   </div>
                 ))}
               </div>
@@ -1359,7 +1469,7 @@ const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rou
 
 export default function RecipesView() {
   const navigate = useNavigate();
-  const { isDeleted, draftRecipes, seedOverrides } = useRecipeRuntime();
+  const { isDeleted, draftRecipes, seedOverrides, adoptedGlobalIds, runHistory } = useRecipeRuntime();
   const [searchParams, setSearchParams] = useSearchParams();
   // Global scope reuses this exact same view/toolbar/grid, just switched to
   // a different (read-only, no drafts) catalog — a query param rather than
@@ -1414,9 +1524,13 @@ export default function RecipesView() {
   };
 
   const drafts = isGlobal ? [] : draftRecipes.filter(matchesFilters);
+  // Running a global recipe at least once adopts it into this project's own
+  // list too (see adoptGlobalRecipe) — shown alongside the seeded catalog,
+  // keeping its isGlobal flag so the card still shows the Global badge.
+  const adopted = isGlobal ? [] : GLOBAL_RECIPES.filter((r) => adoptedGlobalIds.has(r.id)).filter(matchesFilters);
   let seeded   = isGlobal
     ? GLOBAL_RECIPES.filter(matchesFilters)
-    : RECIPES.filter(matchesFilters).map((r) => withSeedOverrides(r, seedOverrides));
+    : [...RECIPES.filter(matchesFilters).map((r) => withSeedOverrides(r, seedOverrides)), ...adopted];
 
   // Sort — only applies within the seeded catalog. A just-published canvas
   // recipe has 0 uses and no seeded date, so it would otherwise sink under
@@ -1426,6 +1540,14 @@ export default function RecipesView() {
   else if (sortBy === "recently-added")   seeded = [...seeded].sort((a, b) => parseDateMs(RECIPE_DATES[b.id]) - parseDateMs(RECIPE_DATES[a.id]));
   else if (sortBy === "az")               seeded = [...seeded].sort((a, b) => a.title.localeCompare(b.title));
   else if (sortBy === "recently-updated") seeded = [...seeded].sort((a, b) => parseDateMs(RECIPE_UPDATED_DATES[b.id]) - parseDateMs(RECIPE_UPDATED_DATES[a.id]));
+
+  // Global tab only — recipes you've already run successfully float to the
+  // top, ahead of whatever sort order is otherwise picked. A stable sort so
+  // it only partitions ran-vs-not, it doesn't reorder within either group.
+  if (isGlobal) {
+    const hasRun = (r: Recipe) => (runHistory[r.id]?.length ?? 0) > 0;
+    seeded = [...seeded].sort((a, b) => Number(hasRun(b)) - Number(hasRun(a)));
+  }
 
   const result = [...drafts, ...seeded];
 
@@ -1563,10 +1685,8 @@ export default function RecipesView() {
 
         <button
           onClick={toggleGlobal}
-          className={isGlobal
-            ? "flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
-            : BTN}
-          style={isGlobal ? { background: "#0080FF" } : undefined}
+          title="Toggle between your project's recipes and the global catalog"
+          className={`${BTN}${isGlobal ? " border-blue-300! bg-blue-50! text-blue-600! dark:border-blue-500/30! dark:bg-blue-500/10! dark:text-blue-400!" : ""}`}
         >
           <Globe size={13} />
           <span className="hidden sm:inline">Global recipes</span>
@@ -1597,6 +1717,7 @@ export default function RecipesView() {
                 key={r.id}
                 recipe={r}
                 onOpen={() => navigate(`/recipes/${r.id}`)}
+                isGlobalView={isGlobal}
               />
             ))}
           </div>

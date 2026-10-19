@@ -171,7 +171,7 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
             </div>
 
             <div
-              className="flex items-center justify-between gap-3 rounded-xl px-4 py-3.5"
+              className="flex flex-col gap-3 rounded-xl px-4 py-3.5"
               style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
             >
               <div>
@@ -180,7 +180,7 @@ export default function CreateRecipeDrawer({ onClose }: { onClose: () => void })
               </div>
               <button
                 onClick={downloadRecipeTemplate}
-                className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-stone-600 dark:text-stone-300 bg-(--border) hover:bg-stone-300 dark:hover:bg-white/14 transition-colors"
+                className="self-start inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-stone-600 dark:text-stone-300 bg-(--border) hover:bg-stone-300 dark:hover:bg-white/14 transition-colors"
               >
                 <Download size={12} />
                 Template

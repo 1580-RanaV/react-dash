@@ -52,6 +52,10 @@ export type RunRecord = {
   at: number;
   createdLabel: string;
   by: string;
+  // What this specific run actually generated — shown in a hover popover
+  // over the record's "output" button instead of making you click through
+  // to find out.
+  items?: string[];
 };
 
 // A seeded draft recipe (RECIPES entries with `draft: true`) has no canvas
@@ -102,6 +106,11 @@ type RecipeRuntimeContextValue = {
   // demo of the retry path, not a per-recipe or per-surface thing.
   creditsErrorShown: boolean;
   markCreditsErrorShown: () => void;
+  // Running a global (another person's) recipe at least once "adopts" it
+  // into this project's own recipe list too — same card, same author, just
+  // with a Global badge — rather than it only ever living in the Global tab.
+  adoptedGlobalIds: Set<string>;
+  adoptGlobalRecipe: (recipeId: string) => void;
 };
 
 const RecipeRuntimeContext = createContext<RecipeRuntimeContextValue | null>(null);
@@ -119,15 +128,15 @@ const DAY = 24 * HOUR;
 // (someone who already had the permission ran it before it was locked down).
 const SEEDED_RUN_HISTORY: Record<string, RunRecord[]> = {
   "3": [
-    { id: "seed-3-1", at: Date.now() - 2 * DAY, createdLabel: "output", by: "Maya Patel" },
-    { id: "seed-3-2", at: Date.now() - 6 * DAY, createdLabel: "output", by: "Sam Chen" },
+    { id: "seed-3-1", at: Date.now() - 2 * DAY, createdLabel: "output", by: "Maya Patel", items: ["Variant A: Abstract illustration hero", "Variant B: Product screenshot hero"] },
+    { id: "seed-3-2", at: Date.now() - 6 * DAY, createdLabel: "output", by: "Sam Chen", items: ["Variant A: Abstract illustration hero", "Variant C: Customer/team photo hero"] },
   ],
   "14": [
-    { id: "seed-14-1", at: Date.now() - 1 * DAY, createdLabel: "output", by: "Sam Chen" },
-    { id: "seed-14-2", at: Date.now() - 4 * DAY, createdLabel: "output", by: "Tyler Brooks" },
+    { id: "seed-14-1", at: Date.now() - 1 * DAY, createdLabel: "output", by: "Sam Chen", items: ["Funnel report: Signup → Activated → Engaged → Expanded", "Cohort breakdown by signup source"] },
+    { id: "seed-14-2", at: Date.now() - 4 * DAY, createdLabel: "output", by: "Tyler Brooks", items: ["Funnel report: Signup → Activated → Engaged → Expanded"] },
   ],
   "11": [
-    { id: "seed-11-1", at: Date.now() - 9 * DAY, createdLabel: "output", by: "April Dunford" },
+    { id: "seed-11-1", at: Date.now() - 9 * DAY, createdLabel: "output", by: "April Dunford", items: ["In-app nudge: Storage limit reached", "Upsell email sequence: Next tier"] },
   ],
 };
 
@@ -138,6 +147,11 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   const [draftRecipes, setDraftRecipes] = useState<Recipe[]>([]);
   const [runningRecipes, setRunningRecipes] = useState<Record<string, number>>({});
   const [seedOverrides, setSeedOverrides] = useState<Record<string, SeedOverride>>({});
+  const [adoptedGlobalIds, setAdoptedGlobalIds] = useState<Set<string>>(new Set());
+
+  function adoptGlobalRecipe(recipeId: string) {
+    setAdoptedGlobalIds((prev) => (prev.has(recipeId) ? prev : new Set(prev).add(recipeId)));
+  }
 
   function validateSeed(recipeId: string) {
     setSeedOverrides((prev) => ({ ...prev, [recipeId]: { ...prev[recipeId], validated: true } }));
@@ -211,7 +225,7 @@ export function RecipeRuntimeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun, seedOverrides, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown }}>
+    <RecipeRuntimeContext.Provider value={{ isConnected, connectIntegration, runHistory, addRunRecord, isDeleted, deleteRecipe, draftRecipes, addDraftRecipe, requestGlobal, runningRecipes, startRun, seedOverrides, validateSeed, publishSeed, creditsErrorShown, markCreditsErrorShown, adoptedGlobalIds, adoptGlobalRecipe }}>
       {children}
     </RecipeRuntimeContext.Provider>
   );
