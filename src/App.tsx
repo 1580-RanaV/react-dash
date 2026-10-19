@@ -22,7 +22,7 @@ import { PoseDetailPage } from "./components/PoseDetailView";
 import BluFullscreenView from "./components/BluFullscreenView";
 import PublicRecipeView from "./components/public-view/PublicRecipeView";
 import PublicWorkflowView from "./components/public-view/PublicWorkflowView";
-import { RecipeDetailView, RECIPES } from "./components/RecipesView";
+import { RecipeDetailView, RECIPES, GLOBAL_RECIPES } from "./components/RecipesView";
 import RecipeCanvasView from "./components/RecipeCanvasView";
 import { useRecipeRuntime, withSeedOverrides } from "./components/recipeRuntimeStore";
 import DesktopOnlyGate from "./components/DesktopOnlyGate";
@@ -51,9 +51,10 @@ function RecipeDetailPage() {
   const navigate = useNavigate();
   const { draftRecipes, seedOverrides } = useRecipeRuntime();
   const seeded = RECIPES.find(r => r.id === id);
-  const recipe = seeded ? withSeedOverrides(seeded, seedOverrides) : draftRecipes.find(r => r.id === id);
+  const fromGlobal = GLOBAL_RECIPES.find(r => r.id === id);
+  const recipe = seeded ? withSeedOverrides(seeded, seedOverrides) : fromGlobal ?? draftRecipes.find(r => r.id === id);
   if (!recipe) return <Navigate to="/recipes" replace />;
-  return <RecipeDetailView recipe={recipe} onBack={() => navigate("/recipes")} />;
+  return <RecipeDetailView recipe={recipe} onBack={() => navigate(fromGlobal ? "/recipes?scope=global" : "/recipes")} />;
 }
 
 function ExperienceDetailPage() {

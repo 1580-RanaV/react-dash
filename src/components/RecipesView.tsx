@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, cloneElement } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, ArrowUpDown, SlidersHorizontal, ChevronDown,
   Mail, MessageSquare, Bell, Globe, Camera, Type, Package,
@@ -306,6 +306,119 @@ export const RECIPE_DATES: Record<string, string> = {
   "10": "Jun 5, 2026", "11": "Apr 11, 2026", "12": "Jul 1, 2026", "14": "May 26, 2026",
 };
 
+// ── Global (marketplace) recipes ─────────────────────────────────────────────
+// Recipes posted by other people across the org/community — a separate,
+// read-only catalog from this project's own RECIPES above. "g"-prefixed ids
+// so they never collide with a seeded or draft id.
+export const GLOBAL_RECIPES: Recipe[] = [
+  {
+    id: "g1",
+    icon: <Mail size={16} />,
+    category: "Email",
+    title: "Cart Abandonment Win-back",
+    description: "Catches carts left for 2+ hours and sends a 3-email nudge sequence with a time-boxed discount on the final touch.",
+    tags: ["Email", "Ecommerce"],
+    author: "Jasmine Cole",
+    steps: 3,
+    uses: 4100,
+    why: "Most cart-recovery flows send one generic reminder. This one escalates — reminder, then social proof, then a discount only on the last touch — so you're not discounting every recoverable cart by default.",
+    spec: { complexity: "Standard", execution: "Live", agent: "email strategist", products: ["Email", "Segments"], mode: "ecommerce", areas: ["Email"] },
+    stepDetails: [
+      `Step 1 — Trigger on cart_abandoned where cart_value > 0 and no purchase within 2 hours.`,
+      `Step 2 — Email 1 (+2h): plain reminder with cart contents. Email 2 (+24h): add a review/testimonial for the top item in cart. Email 3 (+48h): 10% code, expires in 24h.`,
+      `Step 3 — Exit on purchase_completed or unsubscribed. Suppress from this flow for 14 days after it completes.`,
+    ],
+  },
+  {
+    id: "g2",
+    icon: <MessageSquare size={16} />,
+    category: "Feedback",
+    title: "NPS Follow-up Flow",
+    description: "Routes detractors to a support follow-up and promoters to a review/referral ask, automatically, right after an NPS response.",
+    tags: ["Feedback", "Workflows"],
+    author: "Marco Rinaldi",
+    steps: 3,
+    uses: 2300,
+    why: "An NPS score with no follow-up is a missed save or a missed advocate. This closes the loop the same day the response comes in, while it's still fresh.",
+    spec: { complexity: "Simple", execution: "Live", agent: "journey builder", products: ["Journeys", "Email"], mode: "saas", areas: ["Journey Builder"] },
+    stepDetails: [
+      `Step 1 — Trigger on nps_response_submitted.`,
+      `Step 2 — Score 0–6 (detractor): create a support ticket tagged "nps-followup" and notify the account owner. Score 9–10 (promoter): send a review-site link + referral code by email.`,
+      `Step 3 — Score 7–8 (passive): no action — log only.`,
+    ],
+  },
+  {
+    id: "g3",
+    icon: <Bell size={16} />,
+    category: "Lifecycle",
+    title: "Trial Expiry Nudge",
+    description: "A 3-touch countdown in the final week of a trial, with usage-based messaging instead of a generic reminder.",
+    tags: ["Email", "Lifecycle"],
+    author: "Priya Nair",
+    steps: 3,
+    uses: 3600,
+    why: "Generic 'your trial ends soon' emails underperform. Referencing what the account actually used (or didn't) makes the nudge feel earned, not automated.",
+    spec: { complexity: "Standard", execution: "Live", agent: "email strategist", products: ["Email", "Accounts"], mode: "saas, b2b", areas: ["Email"] },
+    stepDetails: [
+      `Step 1 — Trigger 7 days before trial_end_date.`,
+      `Step 2 — Day -7: usage recap (features used, time saved). Day -3: pricing + a 15-min call offer if usage is low. Day -1: final reminder with a one-click extend-trial link (if eligible).`,
+      `Step 3 — Exit on plan_upgraded or trial_ended.`,
+    ],
+  },
+  {
+    id: "g4",
+    icon: <BarChart3 size={16} />,
+    category: "Data",
+    title: "Churn Risk Scoring",
+    description: "A weekly-updating churn risk score from login frequency, feature usage decline, and support ticket volume — surfaced on the account record.",
+    tags: ["Reports", "Attributes"],
+    author: "Devon Walsh",
+    steps: 2,
+    uses: 2900,
+    why: "Churn is rarely a single signal — it's a combination fading at once. Scoring the combination catches at-risk accounts weeks before a cancellation request.",
+    spec: { complexity: "Advanced", execution: "Live", agent: "data analyst", products: ["Attributes", "Accounts", "Reports"], mode: "saas, b2b", areas: ["Data"] },
+    stepDetails: [
+      `Step 1 — Define a computed attribute "churn_risk_score": login frequency trend (-30d vs prior 30d), feature-usage trend, and support ticket count (30d). Weight 40/40/20, scale to 0–100.`,
+      `Step 2 — Add the score to the account record and a weekly digest report grouped by CSM. Threshold ≥ 70 triggers a Slack alert to the owning CSM.`,
+    ],
+  },
+  {
+    id: "g5",
+    icon: <Users2 size={16} />,
+    category: "Growth",
+    title: "Referral Program Kickoff",
+    description: "Generates a unique referral code on first value moment (not signup), and a 2-sided reward once the referred user converts.",
+    tags: ["Email", "Workflows"],
+    author: "Lena Fischer",
+    steps: 3,
+    uses: 1500,
+    why: "Asking for a referral at signup is too early — the user hasn't felt the value yet. Waiting for a real 'aha' moment gets meaningfully higher share rates.",
+    spec: { complexity: "Standard", execution: "Live", agent: "journey builder", products: ["Journeys", "Email"], mode: "saas", areas: ["Journey Builder"] },
+    stepDetails: [
+      `Step 1 — Trigger on first_value_moment (define per product — e.g. first report shared, first automation published).`,
+      `Step 2 — Generate a unique referral code, email it with a short "give $20, get $20" explainer.`,
+      `Step 3 — On referred_signup_converted: credit both accounts automatically, notify the referrer by email.`,
+    ],
+  },
+  {
+    id: "g6",
+    icon: <FlaskConical size={16} />,
+    category: "Experimentation",
+    title: "A/B Test Report Digest",
+    description: "A weekly digest that pulls every running experiment's current lift, confidence, and sample size into one report — no manual export.",
+    tags: ["Reports", "Experiments"],
+    author: "Tomás Herrera",
+    steps: 2,
+    uses: 1100,
+    why: "Experiment results scattered across tools mean stale decisions. One weekly digest keeps everyone looking at the same numbers, updated automatically.",
+    spec: { complexity: "Simple", execution: "Live", agent: "data analyst", products: ["Reports"], mode: "saas, b2b", areas: ["Data"] },
+    stepDetails: [
+      `Step 1 — Pull all experiments with status = running into a REPORT: variant, lift vs control, confidence, sample size, days running.`,
+      `Step 2 — Schedule the report to send every Monday 9am to the experimentation channel. Flag any experiment past 95% confidence in bold.`,
+    ],
+  },
+];
+
 export type Creator = { name: string; initials: string; color: string };
 
 export const RECIPE_CREATORS: Record<string, Creator> = {
@@ -349,7 +462,7 @@ function CreatorChip({ id, author }: { id: string; author?: string }) {
 
 const MAX_VISIBLE_CHIPS = 2;
 
-function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
+export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
   const { runningRecipes } = useRecipeRuntime();
   const allChips = Array.from(new Set([...recipe.spec.areas, ...recipe.spec.products]));
   const visibleChips = allChips.slice(0, MAX_VISIBLE_CHIPS);
@@ -1247,6 +1360,14 @@ const BTN = "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rou
 export default function RecipesView() {
   const navigate = useNavigate();
   const { isDeleted, draftRecipes, seedOverrides } = useRecipeRuntime();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Global scope reuses this exact same view/toolbar/grid, just switched to
+  // a different (read-only, no drafts) catalog — a query param rather than
+  // a separate page, so it's one toggle button instead of a whole new route.
+  const isGlobal = searchParams.get("scope") === "global";
+  function toggleGlobal() {
+    setSearchParams(isGlobal ? {} : { scope: "global" });
+  }
   const [search,       setSearch]       = useState("");
   const [drawerOpen,   setDrawerOpen]   = useState(false);
   const [filterOpen,   setFilterOpen]   = useState(false);
@@ -1292,8 +1413,10 @@ export default function RecipesView() {
     return true;
   };
 
-  const drafts = draftRecipes.filter(matchesFilters);
-  let seeded   = RECIPES.filter(matchesFilters).map((r) => withSeedOverrides(r, seedOverrides));
+  const drafts = isGlobal ? [] : draftRecipes.filter(matchesFilters);
+  let seeded   = isGlobal
+    ? GLOBAL_RECIPES.filter(matchesFilters)
+    : RECIPES.filter(matchesFilters).map((r) => withSeedOverrides(r, seedOverrides));
 
   // Sort — only applies within the seeded catalog. A just-published canvas
   // recipe has 0 uses and no seeded date, so it would otherwise sink under
@@ -1319,7 +1442,7 @@ export default function RecipesView() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search recipes…"
+            placeholder={isGlobal ? "Search global recipes…" : "Search recipes…"}
             className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-(--border) dark:bg-(--input) dark:text-stone-100 dark:placeholder:text-stone-500"
           />
         </div>
@@ -1439,6 +1562,17 @@ export default function RecipesView() {
         </div>
 
         <button
+          onClick={toggleGlobal}
+          className={isGlobal
+            ? "flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+            : BTN}
+          style={isGlobal ? { background: "#0080FF" } : undefined}
+        >
+          <Globe size={13} />
+          <span className="hidden sm:inline">Global recipes</span>
+        </button>
+
+        <button
           onClick={() => setDrawerOpen(true)}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
           style={{ background: "#0080FF" }}
@@ -1448,8 +1582,10 @@ export default function RecipesView() {
         </button>
       </div>
 
-      {/* Card grid */}
-      <div className="px-4 pb-6 pt-1 animate-fade-up">
+      {/* Card grid — keyed on scope so toggling Global recipes remounts this
+          (instead of just re-rendering in place), replaying the fade-up
+          entrance instead of the cards silently swapping underneath. */}
+      <div key={isGlobal ? "global" : "project"} className="px-4 pb-6 pt-1 animate-fade-up">
         {result.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
             <p className="text-sm text-stone-400 dark:text-stone-500">No recipes match your search</p>
@@ -1471,3 +1607,4 @@ export default function RecipesView() {
     </div>
   );
 }
+
